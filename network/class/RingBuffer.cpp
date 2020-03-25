@@ -14,7 +14,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  ****************************************************************************/
-
+#include<string.h>
 #include "RingBuffer.h"
 
 CByteRingBuffer::CByteRingBuffer(unsigned int nSize)
@@ -23,6 +23,8 @@ CByteRingBuffer::CByteRingBuffer(unsigned int nSize)
 
 	nHeadPos = 0;
 	nLastPos = 0;
+
+	m_nSize = 0;
 }
 
 CByteRingBuffer::~CByteRingBuffer()

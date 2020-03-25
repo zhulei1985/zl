@@ -164,7 +164,7 @@ namespace zlnetwork
 		if (it == m_mapConnector.end())
 		{
 			tagConnecter& tagInfo = m_mapConnector[nConnectID];
-			strcpy_s(tagInfo.strIP, sizeof(tagInfo.strIP), pIP);
+			strncpy(tagInfo.strIP, pIP,sizeof(tagInfo.strIP));
 			tagInfo.nPort = Port;
 			tagInfo.nServerID = nConnectID;
 			tagInfo.nType = 1;

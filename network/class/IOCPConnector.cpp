@@ -14,7 +14,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  ****************************************************************************/
-
+#ifdef _WIN32
 //#include <assert.h>
 #include <thread>
 
@@ -481,9 +481,10 @@ namespace zlnetwork
 		//如果还有数据，继续发送
 		if (!SendByOverlapped(pPlus))
 		{
-			RemoveSendByOverlapped(pPlus);
+			return RemoveSendByOverlapped(pPlus);
 			//printf("MoreSendByOverlapped SendByOverlapped false \n");
 		}
+		return true;
 	}
 	bool CSocketConnector::RemoveSendByOverlapped(SOVERLAPPEDPLUS* pPlus)
 	{
@@ -710,3 +711,4 @@ namespace zlnetwork
 		return;
 	}
 }
+#endif

@@ -16,7 +16,7 @@
 // So, this file is used to help us to include winsock2.h safely, it should be 
 // placed before any other header files.
 // 
-
+#ifdef _WIN32
 
 #ifndef _WINSOCK2API_
 
@@ -61,4 +61,5 @@ inline bool FinalSocket()
 	WSACleanup();
 	return true;
 }
+#endif
 #endif

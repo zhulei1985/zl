@@ -16,7 +16,7 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
  ****************************************************************************/
-
+#ifdef _WIN32
 #include "winsock2i.h"
 #include <windows.h>
 
@@ -235,3 +235,4 @@ namespace zlnetwork
 	};
 
 }
+#endif

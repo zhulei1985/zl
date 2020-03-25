@@ -19,7 +19,12 @@
 #include <functional> 
 #ifdef _WIN32
 #include "IOCPConnector.h"
+#pragma warning(disable : 4996) 
+#else
+#include<string.h>
+#include "EpollConnector.h"
 #endif
+#include "nowin.h"
 #include <map>
 #include <mutex>
 #include <atomic>
@@ -28,7 +33,6 @@ namespace zlnetwork
 {
 	//链接有2种模式，一种是使用ip和端口，链接到其他进程上去，称作client模式
 	//一种是提供监听端口，等待其他进程链接过来，称作server模式
-	class CBaseConnector;
 	class CSocketConnectorMgr// : public CSingle<CSocketConnectorMgr>
 	{
 	public:
@@ -71,7 +75,7 @@ namespace zlnetwork
 			{
 				return false;
 			}
-			strcpy_s(m_strPassword, sizeof(m_strPassword), pStr);
+			strncpy(m_strPassword, pStr,sizeof(m_strPassword));
 			return true;
 		}
 		bool GetCanConnect()

@@ -18,7 +18,7 @@
 #ifndef __BYTE_ARRAY_H_ZHULEI__
 #define __BYTE_ARRAY_H_ZHULEI__
 #include "stdlib.h"
-
+#include<string.h>
 #include <vector>
 #define DECODEDATA_RESULT_ERROR -2
 

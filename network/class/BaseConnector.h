@@ -17,6 +17,7 @@
 	limitations under the License.
  ****************************************************************************/
 #include "RingBuffer.h"
+#include "nowin.h"
 #include <list>
 #include <mutex>
 namespace zlnetwork
