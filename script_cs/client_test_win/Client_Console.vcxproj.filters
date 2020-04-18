@@ -1,0 +1,189 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="network">
+      <UniqueIdentifier>{77b49e29-ecf5-451b-a620-cee1ed151448}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script">
+      <UniqueIdentifier>{d33b704c-cce3-4310-8f29-e2a6268a139d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{b56e8d66-274d-45d5-92de-bdfcf4454cfe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="class">
+      <UniqueIdentifier>{d1c35ee9-d8b6-437e-abd5-a98636415712}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Client_Console.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\network\class\BaseConnector.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\network\class\EpollConnector.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\network\class\IOCPConnector.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\network\class\RingBuffer.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\network\class\SocketConnectorMgr.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptCallBackFunion.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptClassMgr.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptCodeLoader.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptDataMgr.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptDebugPrint.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptEventMgr.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptExecBlock.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptPointInterface.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptStack.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptSuperPointer.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptTriggerMg.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\ScriptVirtualMachine.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\script\class\zStringBuffer.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\getFileNameFromPath.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Client.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\ClientConnectMgr.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\network\class\BaseConnector.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\network\class\EpollConnector.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\network\class\IOCPConnector.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\network\class\nowin.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\network\class\RingBuffer.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\network\class\SocketConnectorMgr.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\network\class\winsock2i.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\network\class\zByteArray.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\EMicroCodeType.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\EScriptSentenceType.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\EScriptVariableType.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptCallBackFunion.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptClassMgr.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptCodeLoader.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\scriptcommon.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptDataMgr.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptDebugPrint.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptEventMgr.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptExecBlock.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptPointInterface.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptStack.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptSuperPointer.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptTriggerMgr.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ScriptVirtualMachine.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\zByteArray.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\ZLScript.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\script\class\zStringBuffer.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\getFileNameFromPath.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Client.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ClientConnectMgr.h">
+      <Filter>common</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

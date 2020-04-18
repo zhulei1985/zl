@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 /****************************************************************************
 	Copyright (c) 2020 ZhuLei
@@ -68,7 +68,7 @@ namespace zlnetwork
 		void SetListen(int nPort, CreateConnectorFun Fun);
 
 	public:
-		//¼àÌı¶Ë¿ÚÃÇ
+		//ç›‘å¬ç«¯å£ä»¬
 		struct tagListen
 		{
 			tagListen()
@@ -76,8 +76,8 @@ namespace zlnetwork
 				m_nPort = 0;
 				m_sListen = INVALID_SOCKET;
 			}
-			int m_nPort;//¶Ë¿Ú
-			int m_sListen;//¼àÌısocket
+			int m_nPort;//ç«¯å£
+			int m_sListen;//ç›‘å¬socket
 			CreateConnectorFun m_Fun;
 		};
 		std::map<int, tagListen> m_mapListen;
@@ -91,7 +91,7 @@ namespace zlnetwork
 		};
 		struct tagEpollEventData
 		{
-			int nType;//0,¼àÌı,1 Á¬½Ó
+			int nType;//0,ç›‘å¬,1 è¿æ¥
 			int nListenPort;
 			CSocketConnector* pSocketConnector;
 		};
@@ -110,7 +110,7 @@ namespace zlnetwork
 		struct epoll_event eventList[100];
 	};
 
-	//ºÍ¿Í»§¶ËµÄÁ¬½Ó
+	//å’Œå®¢æˆ·ç«¯çš„è¿æ¥
 	class CSocketConnector : public CBaseConnector
 	{
 	public:
@@ -164,8 +164,8 @@ namespace zlnetwork
 
 		std::mutex m_xSocketCtrl;
 
-		//ÒÔÏÂÊÇ²Ù×÷ÖØµş¶Ë¿ÚµÄ²¿·Ö
-	private://ÕâÊÇÌá¹©¸øIOCPµÄÊı¾İÊÕ·¢
+		//ä»¥ä¸‹æ˜¯æ“ä½œé‡å ç«¯å£çš„éƒ¨åˆ†
+	private://è¿™æ˜¯æä¾›ç»™IOCPçš„æ•°æ®æ”¶å‘
 		void SetSendMode();
 		void SetRecvMode();
 	public:
@@ -185,18 +185,18 @@ namespace zlnetwork
 			E_OPER_SEND,
 			E_OPER_RECV,
 		};
-		//±£Ö¤Í¬Ò»Ê±¿ÌÖ»ÓĞÒ»¸öWSASend
+		//ä¿è¯åŒä¸€æ—¶åˆ»åªæœ‰ä¸€ä¸ªWSASend
 		std::atomic_int m_bIsSendOrRecv;
 
 
-		////È·±£°²È«»úÖÆ
+		////ç¡®ä¿å®‰å…¨æœºåˆ¶
 		std::mutex m_lockSend;
 		std::mutex m_lockRecv;
 	private:
 
-		//Á¬½ÓÆ÷ÊµÀıÖØÓÃµÄÇé¿öÏÂ
-		//Á¬½ÓÆ÷ÌØÊâÂë£¬ºÍÖ¸ÕëÒ»Æğ±êÊ¾ÊÇ·ñÊÇ
-		//±»Á¬½ÓµÄÍê³ÉÏûÏ¢
+		//è¿æ¥å™¨å®ä¾‹é‡ç”¨çš„æƒ…å†µä¸‹
+		//è¿æ¥å™¨ç‰¹æ®Šç ï¼Œå’ŒæŒ‡é’ˆä¸€èµ·æ ‡ç¤ºæ˜¯å¦æ˜¯
+		//è¢«è¿æ¥çš„å®Œæˆæ¶ˆæ¯
 		unsigned int m_dwConnecttorSpecialKey;
 	protected:
 		CEpollConnector::tagEpollEventData m_eventData;

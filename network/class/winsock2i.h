@@ -1,4 +1,4 @@
-//
+ï»¿//
 // winsock2i.h - Include winsock2.h safely.
 //
 // Copyleft  02/24/2005  by freefalcon
@@ -51,7 +51,7 @@ inline bool initSocket()
 	int err = WSAStartup( wVersionRequested, &wsaData );
 	if ( err != 0 ) 
 	{// error
-		//PrintDebug("system","ÍøÂç³õÊ¼»¯Ê§°Ü£¡%d",WSAGetLastError());
+		//PrintDebug("system","ç½‘ç»œåˆå§‹åŒ–å¤±è´¥ï¼%d",WSAGetLastError());
 		return false;
 	}
 	return true;

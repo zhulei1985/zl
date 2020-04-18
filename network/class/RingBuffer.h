@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 /****************************************************************************
 	Copyright (c) 2020 ZhuLei
@@ -20,7 +20,7 @@
 #include <atomic>
 #include <mutex>
 
-//×Ö½ÚµÄ»·ĞÎ»º³åÇø,²»¼ÓËø£¬½öÏŞÓÚÒ»½øÒ»³ö
+//å­—èŠ‚çš„ç¯å½¢ç¼“å†²åŒº,ä¸åŠ é”ï¼Œä»…é™äºä¸€è¿›ä¸€å‡º
 class CByteRingBuffer
 {
 public:
@@ -28,13 +28,13 @@ public:
 	~CByteRingBuffer();
 
 public:
-	//Èç¹ûĞ´ÈëµÄÊı¾İ´óÓÚ¿ÕÓà¿Õ¼ä£¬ÄÇÃ´²»»áĞ´Èë²¢ÇÒ·µ»Øfalse
+	//å¦‚æœå†™å…¥çš„æ•°æ®å¤§äºç©ºä½™ç©ºé—´ï¼Œé‚£ä¹ˆä¸ä¼šå†™å…¥å¹¶ä¸”è¿”å›false
 	virtual bool Push(const char* pBuff, unsigned int nSize);
-	//Èç¹ûÏëÒª»ñÈ¡µÄÊı¾İ´óÓÚÒÑÓĞÊı¾İ£¬ÄÇÃ´²»»áÈ¡³ö²¢ÇÒ·µ»Øfalse
+	//å¦‚æœæƒ³è¦è·å–çš„æ•°æ®å¤§äºå·²æœ‰æ•°æ®ï¼Œé‚£ä¹ˆä¸ä¼šå–å‡ºå¹¶ä¸”è¿”å›false
 	virtual bool Get(std::vector<char> &vOut, unsigned int nSize);
-	//Èç¹ûÏëÒª»ñÈ¡µÄÊı¾İ´óÓÚÒÑÓĞÊı¾İ£¬ÄÇÃ´»áÈ¡³öËùÓĞ
+	//å¦‚æœæƒ³è¦è·å–çš„æ•°æ®å¤§äºå·²æœ‰æ•°æ®ï¼Œé‚£ä¹ˆä¼šå–å‡ºæ‰€æœ‰
 	virtual bool Get2(std::vector<char>& vOut, unsigned int nSize);
-	//Èç¹ûÏëÒªÉ¾³ıµÄÊı¾İ´óÓÚÒÑÓĞÊı¾İ£¬»áÉ¾³ıËùÓĞÒÑÓĞÊı¾İ
+	//å¦‚æœæƒ³è¦åˆ é™¤çš„æ•°æ®å¤§äºå·²æœ‰æ•°æ®ï¼Œä¼šåˆ é™¤æ‰€æœ‰å·²æœ‰æ•°æ®
 	//bool Pop(unsigned int nSize);
 
 	unsigned int GetSize();
@@ -42,9 +42,9 @@ public:
 protected:
 
 	std::atomic_uint m_nSize;
-	//Ö¸ÏòµÚÒ»¸öÊı¾İ
+	//æŒ‡å‘ç¬¬ä¸€ä¸ªæ•°æ®
 	unsigned int nHeadPos;
-	//Ö¸ÏòµÚÒ»¸ö¿ÕÊı¾İ
+	//æŒ‡å‘ç¬¬ä¸€ä¸ªç©ºæ•°æ®
 	unsigned int nLastPos;
 	
 	std::vector<char> m_vBuffer;
@@ -57,18 +57,18 @@ public:
 	CRingBuffer(unsigned int nSize);
 	~CRingBuffer();
 
-	//Èç¹û»º´æÒÑÂú»áÊÍ·ÅµôÕâ¸öÖ¸Õë
+	//å¦‚æœç¼“å­˜å·²æ»¡ä¼šé‡Šæ”¾æ‰è¿™ä¸ªæŒ‡é’ˆ
 	virtual void Push(T*);
-	//Èç¹û»º´æÎª¿Õ»ánewÒ»¸ö
+	//å¦‚æœç¼“å­˜ä¸ºç©ºä¼šnewä¸€ä¸ª
 	virtual T* Get();
 
 	unsigned int GetSize();
 	unsigned int GetEmptySize();
 public:
 	std::atomic_uint m_nSize;
-	//Ö¸ÏòµÚÒ»¸öÊı¾İ
+	//æŒ‡å‘ç¬¬ä¸€ä¸ªæ•°æ®
 	unsigned int nHeadPos;
-	//Ö¸ÏòµÚÒ»¸ö¿ÕÊı¾İ
+	//æŒ‡å‘ç¬¬ä¸€ä¸ªç©ºæ•°æ®
 	unsigned int nLastPos;
 
 	std::vector<T*> m_vBuffer;

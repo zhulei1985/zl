@@ -1,4 +1,4 @@
-/****************************************************************************
+ï»¿/****************************************************************************
 	Copyright (c) 2020 ZhuLei
 	Email:zhulei1985@foxmail.com
 
@@ -22,7 +22,6 @@ namespace zlnetwork
 	CSocketConnectorMgr::CSocketConnectorMgr()
 	{
 		m_bCanConnect = true;
-		m_nAllotConnectID = 0;
 		memset(m_strPassword, 0, sizeof(m_strPassword));
 
 	}
@@ -68,18 +67,18 @@ namespace zlnetwork
 		for (; it != m_mapConnector.end();)
 		{
 			tagConnecter& tagInfo = it->second;
-			if (tagInfo.nType >= 1 && tagInfo.nPort == 0)
+			if (tagInfo.nType >= 1 && tagInfo.pConnector == nullptr && tagInfo.nPort == 0)
 			{
 				it++;
 				continue;
 			}
-			if (tagInfo.pConnector == NULL)
+			if (tagInfo.pConnector == nullptr)
 			{
 				tagInfo.pConnector = Create();
 				tagInfo.pConnector->SetIP(tagInfo.strIP);
 				tagInfo.pConnector->SetPort(tagInfo.nPort);
 			}
-			if (tagInfo.pConnector != NULL)
+			if (tagInfo.pConnector != nullptr)
 			{
 				if (tagInfo.pConnector->IsSocketClosed())
 				{
@@ -87,10 +86,10 @@ namespace zlnetwork
 					{
 						tagInfo.pConnector->Open();
 						tagInfo.pConnector->OnInit();
-						tagInfo.pConnector->SetID(m_nAllotConnectID++);
 					}
 					else if (tagInfo.pConnector->CheckOverlappedIOCompleted())
 					{
+						tagInfo.pConnector->OnDestroy();
 						delete tagInfo.pConnector;
 						m_mapConnector.erase(it++);
 						continue;
@@ -100,9 +99,9 @@ namespace zlnetwork
 			}
 			it++;
 		}
-		//PERF("ÏûÏ¢½ÓÊÕ¶ÓÁĞÆ½¾ù³¤¶È",nMsgRecvAmount);
-		//PERF("ÏûÏ¢·¢ËÍ¶ÓÁĞÆ½¾ù³¤¶È",nMsgSendAmount);
-		//PERF("¿Í»§¶Ëµ±Ç°Á´½ÓÊı",m_mapConnector.size());
+		//PERF("æ¶ˆæ¯æ¥æ”¶é˜Ÿåˆ—å¹³å‡é•¿åº¦",nMsgRecvAmount);
+		//PERF("æ¶ˆæ¯å‘é€é˜Ÿåˆ—å¹³å‡é•¿åº¦",nMsgSendAmount);
+		//PERF("å®¢æˆ·ç«¯å½“å‰é“¾æ¥æ•°",m_mapConnector.size());
 		m_ConnecterLock.unlock();
 		return;
 	}
@@ -182,32 +181,11 @@ namespace zlnetwork
 		}
 		std::lock_guard<std::mutex> Lock(m_ConnecterLock);
 
-		pConn->SetID(++m_nAllotConnectID);
-
 		tagConnecter& tagInfo = m_mapConnector[pConn->GetID()];
 		tagInfo.pConnector = pConn;
 
 		return true;
 	}
-	bool CSocketConnectorMgr::ChangeClientID(int nOldID, int nNewID)
-	{
-		if (nNewID >= m_nAllotConnectID)
-		{
-			return false;
-		}
-		m_ConnecterLock.lock();
-		std::map<__int64, tagConnecter>::iterator it = m_mapConnector.find(nOldID);
-		if (m_mapConnector.find(nNewID) == m_mapConnector.end() && it != m_mapConnector.end())
-		{
-			m_mapConnector[nNewID] = it->second;
-			m_mapConnector.erase(it);
-			m_ConnecterLock.unlock();
-			return true;
-		}
-		m_ConnecterLock.unlock();
-		return false;
-	}
-
 
 
 	bool CSocketConnectorMgr::waitMsgAndClose()

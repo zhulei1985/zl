@@ -1,4 +1,4 @@
-/****************************************************************************
+ï»¿/****************************************************************************
 	Copyright (c) 2020 ZhuLei
 	Email:zhulei1985@foxmail.com
 
@@ -64,7 +64,7 @@ namespace zlnetwork
 		}
 
 
-		//´´½¨IOCP¹¤×÷Ïß³Ì
+		//åˆ›å»ºIOCPå·¥ä½œçº¿ç¨‹
 		for (int iLoop = 0; iLoop < iThreadNum; iLoop++)
 		{
 			std::thread tbg(ProcessOverlappedFunc, hIoCompletionPort);
@@ -82,7 +82,7 @@ namespace zlnetwork
 		memset(&overlapped, 0, sizeof(overlapped));
 		overlapped.iOpCode = OP_STOPTHREAD;
 
-		//È·ÈÏÏß³Ì¹Ø±Õ
+		//ç¡®è®¤çº¿ç¨‹å…³é—­
 		while (m_lActiveThreadNum > 0)
 		{
 			PostQueuedCompletionStatus(hIoCompletionPort,
@@ -118,7 +118,7 @@ namespace zlnetwork
 				if (taglisten.m_sListen == SOCKET_ERROR)
 				{
 					char strMsg[128];
-					sprintf(strMsg, "socket·ÖÅä Error (%d)", WSAGetLastError());
+					sprintf(strMsg, "socketåˆ†é… Error (%d)", WSAGetLastError());
 
 					//PrintDebug("debug",strMsg);
 					continue;
@@ -139,11 +139,11 @@ namespace zlnetwork
 					//PrintDebug("debug",strMsg);
 					continue;
 				}
-				// ÉèÖÃÎª·Ç×èÈû·½Ê½
+				// è®¾ç½®ä¸ºéé˜»å¡æ–¹å¼
 				unsigned long	i = 1;
 				if (ioctlsocket(taglisten.m_sListen, FIONBIO, &i))
 				{
-					// ²¶»ñ´íÎó
+					// æ•è·é”™è¯¯
 					int err = WSAGetLastError();
 
 					closesocket(taglisten.m_sListen);
@@ -162,7 +162,7 @@ namespace zlnetwork
 
 			if (taglisten.m_sListen != INVALID_SOCKET)
 			{
-				// µÈ´ı½ÓÊÜÎ´¾öµÄÁ¬½ÓÇëÇó 
+				// ç­‰å¾…æ¥å—æœªå†³çš„è¿æ¥è¯·æ±‚ 
 				SOCKADDR_IN saRemote;
 				int nRemoteLen = sizeof(saRemote);
 				SOCKET sRemote = ::accept(taglisten.m_sListen, (sockaddr*)&saRemote, &nRemoteLen);
@@ -269,7 +269,7 @@ namespace zlnetwork
 		}
 
 		{
-			//½«Òª·¢ËÍµÄÊı¾İÌá½»¸øIOCP
+			//å°†è¦å‘é€çš„æ•°æ®æäº¤ç»™IOCP
 			//std::lock_guard<std::mutex> Lock(m_lockSend);
 			if (m_bIsSendByOverlapped == false && m_Buffer_Send.GetSize() > 0)
 			{
@@ -284,11 +284,12 @@ namespace zlnetwork
 
 	void CSocketConnector::OnInit()
 	{
+		CBaseConnector::OnInit();
 		EnableIoCompletionPort(CIOCPConnector::GetHIoCompletionPort());
 	}
 	void CSocketConnector::OnDestroy()
 	{
-
+		CBaseConnector::OnDestroy();
 	}
 	void CSocketConnector::SetIP(const char* pStr)
 	{
@@ -344,7 +345,7 @@ namespace zlnetwork
 				return false;
 			}
 
-			// ÉèÖÃÎª·Ç×èÈû·½Ê½
+			// è®¾ç½®ä¸ºéé˜»å¡æ–¹å¼
 			unsigned long i = 1;
 			if (ioctlsocket(m_Socket, FIONBIO, &i))
 			{
@@ -359,7 +360,7 @@ namespace zlnetwork
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(m_nPort);
 		addr.sin_addr.S_un.S_addr = inet_addr(strIP);
-		//PrintDebug("network","³¢ÊÔÁ¬½Ó·şÎñÆ÷,IP:%s,PORT:%d",strIP,m_nPort);
+		//PrintDebug("network","å°è¯•è¿æ¥æœåŠ¡å™¨,IP:%s,PORT:%d",strIP,m_nPort);
 		int ret = connect(m_Socket, (sockaddr*)&addr, sizeof(addr));
 		if (ret == -1)
 		{
@@ -408,7 +409,7 @@ namespace zlnetwork
 	void CSocketConnector::clear()
 	{
 
-		// PrintDebug("iocp","m_xSendCtrl,ÍË³öÁÙ½çÇø3");
+		// PrintDebug("iocp","m_xSendCtrl,é€€å‡ºä¸´ç•ŒåŒº3");
 		memset(strIP, 0, sizeof(strIP));
 		m_nPort = 0;
 		if (m_Socket != INVALID_SOCKET)
@@ -478,7 +479,7 @@ namespace zlnetwork
 			return false;
 		}
 		//printf("MoreSendByOverlapped \n");
-		//Èç¹û»¹ÓĞÊı¾İ£¬¼ÌĞø·¢ËÍ
+		//å¦‚æœè¿˜æœ‰æ•°æ®ï¼Œç»§ç»­å‘é€
 		if (!SendByOverlapped(pPlus))
 		{
 			return RemoveSendByOverlapped(pPlus);
@@ -580,17 +581,17 @@ namespace zlnetwork
 		while (!bFin)
 		{
 			bRet = GetQueuedCompletionStatus(
-				hIoCompletionPort,	//ĞèÒª¼àÊÓµÄÍê³É¶Ë¿Ú¾ä±ú
-				&dwBytesXfered,		//Êµ¼Ê´«ÊäµÄ×Ö½Ú
-				&dwKey,				//µ¥¾ä±úÊı¾İ
-				&lpOverlapped,		//Ò»¸öÖ¸ÏòÎ±ÔìµÄÖØµşIOµÄÖ¸Õë£¬´óĞ¡È¡¾öÓÚÄãµÄ¶¨Òå
-				1000				////µÈ´ı¶àÉÙÃë
+				hIoCompletionPort,	//éœ€è¦ç›‘è§†çš„å®Œæˆç«¯å£å¥æŸ„
+				&dwBytesXfered,		//å®é™…ä¼ è¾“çš„å­—èŠ‚
+				&dwKey,				//å•å¥æŸ„æ•°æ®
+				&lpOverlapped,		//ä¸€ä¸ªæŒ‡å‘ä¼ªé€ çš„é‡å IOçš„æŒ‡é’ˆï¼Œå¤§å°å–å†³äºä½ çš„å®šä¹‰
+				1000				////ç­‰å¾…å¤šå°‘ç§’
 			);
 			if (0 == bRet)
 			{
 				if (lpOverlapped)
 				{
-					//iocp·¢ÏÖÒ»¸öÁ¬½Ó¶Ï¿ª
+					//iocpå‘ç°ä¸€ä¸ªè¿æ¥æ–­å¼€
 					pPlus = (SOVERLAPPEDPLUS*)lpOverlapped;
 					CSocketConnector* pConnecttor = pPlus->pConnecttor;
 					if (pConnecttor)
@@ -654,23 +655,23 @@ namespace zlnetwork
 				}
 				if (dwBytesXfered == 0)
 				{
-					//Ò»°ãÇé¿öÏÂ£¬dwBytesXferedÎª0±íÊ¾¿Í»§¶ËÖ÷¶¯¶Ï¿ªÁ¬½Ó
+					//ä¸€èˆ¬æƒ…å†µä¸‹ï¼ŒdwBytesXferedä¸º0è¡¨ç¤ºå®¢æˆ·ç«¯ä¸»åŠ¨æ–­å¼€è¿æ¥
 					int nError = GetLastError();
-					//PrintRelease("iocp","SendRecvFuncÖĞ·¢ÏÖ¿Í»§¶ËÖ÷¶¯¶Ï¿ª %d ´íÎó¶Ï¿ªÁ¬½Ó,ID:%lld", nError,pConnecttor->GetID());
+					//PrintRelease("iocp","SendRecvFuncä¸­å‘ç°å®¢æˆ·ç«¯ä¸»åŠ¨æ–­å¼€ %d é”™è¯¯æ–­å¼€è¿æ¥,ID:%lld", nError,pConnecttor->GetID());
 					pConnecttor->Close();
 					pConnecttor->RemoveRecvByOverlapped(pPlus);
 
 					break;
 				}
 
-				//PrintDebug("iocp","IOCP(ID:%lld)½ÓÊÕÊı¾İ,³¤¶È:%d",pConnecttor->GetID(),dwBytesXfered);
+				//PrintDebug("iocp","IOCP(ID:%lld)æ¥æ”¶æ•°æ®,é•¿åº¦:%d",pConnecttor->GetID(),dwBytesXfered);
 				//pPlus->wsabuf.len = dwBytesXfered;
 				CIOCPConnector::m_AllRecvDataCount += dwBytesXfered;
 				if (pConnecttor->Recv((char*)pPlus->wsabuf.buf, dwBytesXfered) == false)
 					//if (pConnecttor->Recv(pPlus) == false)
 				{
 					pConnecttor->Close();
-					//PrintRelease("iocp","IOCP(ID:%lld)Êı¾İ½ÓÊÕÊ§°Ü£¬¶Ï¿ª´ËÁ´½Ó",pConnecttor->GetID());
+					//PrintRelease("iocp","IOCP(ID:%lld)æ•°æ®æ¥æ”¶å¤±è´¥ï¼Œæ–­å¼€æ­¤é“¾æ¥",pConnecttor->GetID());
 					pConnecttor->RemoveRecvByOverlapped(pPlus);
 					break;
 				}
@@ -685,7 +686,7 @@ namespace zlnetwork
 					//if (pConnecttor->m_lHaveSentPolicyFileRequestReq > 0)
 					//{
 					//  InterlockedDecrement(&pConnecttor->m_lHaveSentPolicyFileRequestReq);
-					//  //PrintDebug("iocp","SendRecvFuncÖĞ¶Ï¿ªÁ¬½Ó,Ä¿Ç°ÓÃÓÚflash as3µÄ°²È«²ßÂÔ,ID:%d", pConnecttor->GetID());
+					//  //PrintDebug("iocp","SendRecvFuncä¸­æ–­å¼€è¿æ¥,ç›®å‰ç”¨äºflash as3çš„å®‰å…¨ç­–ç•¥,ID:%d", pConnecttor->GetID());
 					//  //pConnecttor->Close();
 					//}
 					break;
@@ -694,7 +695,7 @@ namespace zlnetwork
 				CIOCPConnector::m_AllSendDataCount += dwBytesXfered;
 				if (pPlus->wsabuf.len != dwBytesXfered)
 				{
-					//PrintRelease("error","iocp sendÏûÏ¢·¢ËÍÓĞÎÊÌâ£¬%d//%d",dwBytesXfered,pPlus->wsabuf.len);
+					//PrintRelease("error","iocp sendæ¶ˆæ¯å‘é€æœ‰é—®é¢˜ï¼Œ%d//%d",dwBytesXfered,pPlus->wsabuf.len);
 				}
 				pConnecttor->MoreSendByOverlapped(pPlus);
 			}

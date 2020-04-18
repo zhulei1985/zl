@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 /****************************************************************************
 	Copyright (c) 2020 ZhuLei
@@ -31,8 +31,8 @@
 
 namespace zlnetwork
 {
-	//Á´½ÓÓĞ2ÖÖÄ£Ê½£¬Ò»ÖÖÊÇÊ¹ÓÃipºÍ¶Ë¿Ú£¬Á´½Óµ½ÆäËû½ø³ÌÉÏÈ¥£¬³Æ×÷clientÄ£Ê½
-	//Ò»ÖÖÊÇÌá¹©¼àÌı¶Ë¿Ú£¬µÈ´ıÆäËû½ø³ÌÁ´½Ó¹ıÀ´£¬³Æ×÷serverÄ£Ê½
+	//é“¾æ¥æœ‰2ç§æ¨¡å¼ï¼Œä¸€ç§æ˜¯ä½¿ç”¨ipå’Œç«¯å£ï¼Œé“¾æ¥åˆ°å…¶ä»–è¿›ç¨‹ä¸Šå»ï¼Œç§°ä½œclientæ¨¡å¼
+	//ä¸€ç§æ˜¯æä¾›ç›‘å¬ç«¯å£ï¼Œç­‰å¾…å…¶ä»–è¿›ç¨‹é“¾æ¥è¿‡æ¥ï¼Œç§°ä½œserveræ¨¡å¼
 	class CSocketConnectorMgr// : public CSingle<CSocketConnectorMgr>
 	{
 	public:
@@ -51,24 +51,16 @@ namespace zlnetwork
 
 		virtual bool AddClient(const char* pIP, int Port, __int64 nConnectID);
 		virtual bool AddClient(CBaseConnector* pConn);
-		virtual bool ChangeClientID(int nOldID, int NewID);
 
 		virtual bool waitMsgAndClose();
 		virtual bool kickAll();
-		//Õâ¸öCreateÊÇÎªclientÄ£Ê½×¼±¸µÄ
+		//è¿™ä¸ªCreateæ˜¯ä¸ºclientæ¨¡å¼å‡†å¤‡çš„
 		virtual CBaseConnector* Create() = 0;
 	public:
-		//×÷ÎªserverÄ£Ê½£¬¸øIOCPÌá¹©µÄ»Øµ÷º¯Êı
+		//ä½œä¸ºserveræ¨¡å¼ï¼Œç»™IOCPæä¾›çš„å›è°ƒå‡½æ•°
 		//static CSocketConnector* CreateNew(SOCKET sRemote,SOCKADDR_IN& saAdd);
 
-		__int64 GetAllotConnectID() const
-		{
-			return m_nAllotConnectID;
-		}
-		void SetAllotConnectID(__int64 val)
-		{
-			m_nAllotConnectID = val;
-		}
+
 		bool SetPassword(const char* pStr)
 		{
 			if (pStr == NULL)
@@ -103,13 +95,12 @@ namespace zlnetwork
 				nPort = 0;
 				nServerID = 0;
 			}
-			int nType;//0,±»¶¯Á´½Ó£¬serverÄ£Ê½ÏÂµÄÁ´½Ó,1,Ö÷¶¯Á´½Ó£¬clientÄ£Ê½ÏÂµÄÁ´½Ó
+			int nType;//0,è¢«åŠ¨é“¾æ¥ï¼Œserveræ¨¡å¼ä¸‹çš„é“¾æ¥,1,ä¸»åŠ¨é“¾æ¥ï¼Œclientæ¨¡å¼ä¸‹çš„é“¾æ¥
 			char strIP[16];
 			int nPort;
 			__int64 nServerID;
 			CBaseConnector* pConnector;
 		};
-		std::atomic_ullong m_nAllotConnectID;
 
 		std::map<__int64, tagConnecter> m_mapConnector;
 		//CRITICAL_SECTION	m_xContainerCtrl;

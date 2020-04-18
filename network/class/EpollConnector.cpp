@@ -1,4 +1,4 @@
-/****************************************************************************
+ï»¿/****************************************************************************
 	Copyright (c) 2020 ZhuLei
 	Email:zhulei1985@foxmail.com
 
@@ -42,7 +42,7 @@ namespace zlnetwork
 		int ret = epoll_wait(m_epollfd, eventList, m_nMaxEventSize, 100);
 		if (ret < 0)
 		{
-			//´íÎó
+			//é”™è¯¯
 			if (errno)
 			{
 
@@ -170,7 +170,7 @@ namespace zlnetwork
 				return;
 			}
 
-			//½¨Á¢¼àÌı¶Ë¿ÚµÄÊÂ¼ş
+			//å»ºç«‹ç›‘å¬ç«¯å£çš„äº‹ä»¶
 			tagEpollEventData* pData = m_EpollEventCache.Get();
 			if (pData)
 			{
@@ -181,7 +181,7 @@ namespace zlnetwork
 				event.data.ptr = pData;
 				if (epoll_ctl(m_epollfd, EPOLL_CTL_ADD, taglisten.m_sListen, &event) == -1)
 				{
-					//´íÎó
+					//é”™è¯¯
 					close(taglisten.m_sListen);
 					taglisten.m_sListen = SOCKET_ERROR;
 					return;
@@ -233,10 +233,12 @@ namespace zlnetwork
 
 	void CSocketConnector::OnInit()
 	{
+		CBaseConnector::OnInit();
+
 		m_eventData.nType = CEpollConnector::E_EPOLL_EVENT_CONNECT;
 		m_eventData.pSocketConnector = this;
 
-		// ÉèÖÃÎª·Ç×èÈû·½Ê½
+		// è®¾ç½®ä¸ºéé˜»å¡æ–¹å¼
 		int oldopt = fcntl(m_Socket, F_GETFL);
 		int newopt = oldopt | O_NONBLOCK;
 		fcntl(m_Socket, F_SETFL, newopt);
@@ -245,7 +247,7 @@ namespace zlnetwork
 		event.events = EPOLLIN | EPOLLET | EPOLLERR;
 		event.data.ptr = &m_eventData;
 		if (epoll_ctl(CEpollConnector::GetEpollFD(), EPOLL_CTL_ADD, m_Socket, &event) < 0) {
-			//´íÎó
+			//é”™è¯¯
 			if (errno)
 			{
 
@@ -254,9 +256,15 @@ namespace zlnetwork
 	}
 	bool CSocketConnector::OnProcess()
 	{
+		if (IsSocketClosed())
+		{
+			return false;
+		}
+		return true;
 	}
 	void CSocketConnector::OnDestroy()
 	{
+		CBaseConnector::OnDestroy();
 	}
 
 	bool CSocketConnector::Recv()
@@ -292,7 +300,7 @@ namespace zlnetwork
 	{
 		m_bIsSendOrRecv = E_OPER_NONE;
 		int ret = 0;
-		// ÏÈ·¢ËÍÉÏ´ÎÃ»ÓĞ·¢ËÍÍêµÄÊı¾İ
+		// å…ˆå‘é€ä¸Šæ¬¡æ²¡æœ‰å‘é€å®Œçš„æ•°æ®
 		while (vSend_Buf.size() > 0)
 		{
 			ret = send(m_Socket, &vSend_Buf[0], vSend_Buf.size(), 0);
@@ -302,7 +310,7 @@ namespace zlnetwork
 				if (errno == EINTR)
 					continue;
 
-				// µ±socketÊÇ·Ç×èÈûÊ±,Èç·µ»Ø´Ë´íÎó,±íÊ¾Ğ´»º³å¶ÓÁĞÒÑÂú,
+				// å½“socketæ˜¯éé˜»å¡æ—¶,å¦‚è¿”å›æ­¤é”™è¯¯,è¡¨ç¤ºå†™ç¼“å†²é˜Ÿåˆ—å·²æ»¡,
 				if (errno == EAGAIN)
 				{
 					SetSendMode();
@@ -325,7 +333,7 @@ namespace zlnetwork
 					if (errno == EINTR)
 						continue;
 
-					// µ±socketÊÇ·Ç×èÈûÊ±,Èç·µ»Ø´Ë´íÎó,±íÊ¾Ğ´»º³å¶ÓÁĞÒÑÂú,
+					// å½“socketæ˜¯éé˜»å¡æ—¶,å¦‚è¿”å›æ­¤é”™è¯¯,è¡¨ç¤ºå†™ç¼“å†²é˜Ÿåˆ—å·²æ»¡,
 					if (errno == EAGAIN)
 					{
 						SetSendMode();
@@ -351,7 +359,7 @@ namespace zlnetwork
 				return false;
 			}
 
-			// ÉèÖÃÎª·Ç×èÈû·½Ê½
+			// è®¾ç½®ä¸ºéé˜»å¡æ–¹å¼
 			int oldopt = fcntl(m_Socket, F_GETFL);
 			int newopt = oldopt | O_NONBLOCK;
 			fcntl(m_Socket, F_SETFL, newopt);
@@ -362,7 +370,7 @@ namespace zlnetwork
 		addr.sin_port = htons(m_nPort);
 		inet_pton(PF_INET, "0.0.0.0", &addr.sin_addr);
 
-		//PrintDebug("network","³¢ÊÔÁ¬½Ó·şÎñÆ÷,IP:%s,PORT:%d",strIP,m_nPort);
+		//PrintDebug("network","å°è¯•è¿æ¥æœåŠ¡å™¨,IP:%s,PORT:%d",strIP,m_nPort);
 		int ret = connect(m_Socket, (sockaddr*)&addr, sizeof(addr));
 		if (ret == -1)
 		{
@@ -391,7 +399,7 @@ namespace zlnetwork
 	void CSocketConnector::clear()
 	{
 
-		// PrintDebug("iocp","m_xSendCtrl,ÍË³öÁÙ½çÇø3");
+		// PrintDebug("iocp","m_xSendCtrl,é€€å‡ºä¸´ç•ŒåŒº3");
 		memset(strIP, 0, sizeof(strIP));
 		m_nPort = 0;
 		if (m_Socket != INVALID_SOCKET)
@@ -420,7 +428,7 @@ namespace zlnetwork
 			event.events = EPOLLOUT | EPOLLET | EPOLLERR;
 			event.data.ptr = &m_eventData;
 			if (epoll_ctl(CEpollConnector::GetEpollFD(), EPOLL_CTL_MOD, m_Socket, &event) < 0) {
-					//´íÎó
+					//é”™è¯¯
 				if (errno)
 				{
 
@@ -440,7 +448,7 @@ namespace zlnetwork
 			event.events = EPOLLIN | EPOLLET | EPOLLERR;
 			event.data.ptr = &m_eventData;
 			if (epoll_ctl(CEpollConnector::GetEpollFD(), EPOLL_CTL_MOD, m_Socket, &event) < 0) {
-					//´íÎó
+					//é”™è¯¯
 				if (errno)
 				{
 

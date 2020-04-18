@@ -1,4 +1,4 @@
-/****************************************************************************
+ï»¿/****************************************************************************
 	Copyright (c) 2020 ZhuLei
 	Email:zhulei1985@foxmail.com
 
@@ -44,10 +44,10 @@ namespace zlnetwork
 	{
 		if (!AddData2ChainIfChainNoEmpty(pBuff, nSize))
 		{
-			//µ±Á´±íÃ»ÓĞÊı¾İÊ±£¬²ÅÄÜÍùringbufferÀïÌîÈëÊı¾İ£¬²»È»»áµ¼ÖÂË³Ğò´íÂÒ
+			//å½“é“¾è¡¨æ²¡æœ‰æ•°æ®æ—¶ï¼Œæ‰èƒ½å¾€ringbufferé‡Œå¡«å…¥æ•°æ®ï¼Œä¸ç„¶ä¼šå¯¼è‡´é¡ºåºé”™ä¹±
 			if (!CByteRingBuffer::Push(pBuff, nSize))
 			{
-				//Ñ¹ÈëÊ§°Ü£¬ËµÃ÷»º´æ¿Õ¼ä²»×ã£¬Êı¾İ·ÅÈëÁ´±í
+				//å‹å…¥å¤±è´¥ï¼Œè¯´æ˜ç¼“å­˜ç©ºé—´ä¸è¶³ï¼Œæ•°æ®æ”¾å…¥é“¾è¡¨
 				AddData2Chain(pBuff, nSize);
 			}
 		}
@@ -58,7 +58,7 @@ namespace zlnetwork
 	{
 		if (CByteRingBuffer::Get(vOut, nSize))
 		{
-			//È¡³öÁËÒ»Ğ©Êı¾İ£¬³¢ÊÔ½«Á´±íÖĞµÄÊı¾İ·ÅÈëÒ»Ğ©µ½ringbufferÀï
+			//å–å‡ºäº†ä¸€äº›æ•°æ®ï¼Œå°è¯•å°†é“¾è¡¨ä¸­çš„æ•°æ®æ”¾å…¥ä¸€äº›åˆ°ringbufferé‡Œ
 			PushChainData();
 			return true;
 		}
@@ -72,7 +72,7 @@ namespace zlnetwork
 		{
 			bResult = true;
 		}
-		//³¢ÊÔ½«Á´±íÖĞµÄÊı¾İ·ÅÈëÒ»Ğ©µ½ringbufferÀï
+		//å°è¯•å°†é“¾è¡¨ä¸­çš„æ•°æ®æ”¾å…¥ä¸€äº›åˆ°ringbufferé‡Œ
 		PushChainData();
 		return bResult;
 	}
@@ -125,6 +125,7 @@ namespace zlnetwork
 		}
 
 	}
+	std::atomic_ullong CBaseConnector::m_nAllotConnectID(0);
 
 	CBaseConnector::CBaseConnector() :m_Buffer_Send(32768), m_Buffer_Recv(32768)
 	{
@@ -134,6 +135,14 @@ namespace zlnetwork
 	CBaseConnector::~CBaseConnector()
 	{
 	}
+	void CBaseConnector::OnInit()
+	{
+		SetID(++m_nAllotConnectID);
+	}
+	void CBaseConnector::OnDestroy()
+	{
+		m_nAllotConnectID = 0;
+	}
 	void CBaseConnector::SendData(const char* pData, unsigned int nSize)
 	{
 		m_Buffer_Send.Push(pData, nSize);
@@ -142,7 +151,7 @@ namespace zlnetwork
 	{
 		//if (m_nWaitRecvDataLen == 0)
 		//{
-		//	//»ñÈ¡Êı¾İ¶Î´óĞ¡
+		//	//è·å–æ•°æ®æ®µå¤§å°
 		//	if (!m_Buffer_Recv.Get(vOut, 2))
 		//	{
 		//		return false;

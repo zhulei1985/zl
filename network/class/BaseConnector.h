@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 /****************************************************************************
 	Copyright (c) 2020 ZhuLei
@@ -20,9 +20,10 @@
 #include "nowin.h"
 #include <list>
 #include <mutex>
+#include <atomic>
 namespace zlnetwork
 {
-	//ÔÚ»·ĞÎ»º³åÇøµÄ»ù´¡ÉÏ£¬¼ÓÈëÒ»¸ö³¬³ö»º³åÔò½¨Á¢ÁÙÊ±Êı¾İÁ´±íµÄ¹¦ÄÜ
+	//åœ¨ç¯å½¢ç¼“å†²åŒºçš„åŸºç¡€ä¸Šï¼ŒåŠ å…¥ä¸€ä¸ªè¶…å‡ºç¼“å†²åˆ™å»ºç«‹ä¸´æ—¶æ•°æ®é“¾è¡¨çš„åŠŸèƒ½
 	class CConnectorDataBuffer : public CByteRingBuffer
 	{
 	public:
@@ -52,9 +53,9 @@ namespace zlnetwork
 		CBaseConnector();
 		~CBaseConnector();
 	public:
-		virtual void OnInit() = 0;
+		virtual void OnInit();
 		virtual bool OnProcess() = 0;
-		virtual void OnDestroy() = 0;
+		virtual void OnDestroy();
 		virtual bool IsSocketClosed() = 0;
 		virtual bool Open() = 0;
 		virtual void Close() = 0;
@@ -79,21 +80,22 @@ namespace zlnetwork
 	protected:
 		__int64 m_nID;
 
+		static std::atomic_ullong m_nAllotConnectID;
 	public:
-		//·¢ËÍÏûÏ¢
+		//å‘é€æ¶ˆæ¯
 		virtual void SendData(const char *pData,unsigned int nSize);
 
-		//´¦ÀíÏûÏ¢½ÓÊÕ
+		//å¤„ç†æ¶ˆæ¯æ¥æ”¶
 		bool GetData(std::vector<char>& vOut, unsigned int nSize);
-		//´¦ÀíÏûÏ¢½ÓÊÕ
+		//å¤„ç†æ¶ˆæ¯æ¥æ”¶
 		bool GetData2(std::vector<char>& vOut, unsigned int nSize);
 	protected:
-		//ÕıÔÚµÈ´ı½ÓÊÕµÄÏûÏ¢³¤¶È
+		//æ­£åœ¨ç­‰å¾…æ¥æ”¶çš„æ¶ˆæ¯é•¿åº¦
 		unsigned int m_nWaitRecvDataLen;
 	protected:
-		//ÓÃÓÚ»º´æ½«Òª·¢ËÍµÄÏûÏ¢Êı¾İ
+		//ç”¨äºç¼“å­˜å°†è¦å‘é€çš„æ¶ˆæ¯æ•°æ®
 		CConnectorDataBuffer m_Buffer_Send;
-		//ÓÃÓÚ»º´æÒÑ¾­½ÓÊÕµ½µÄÏûÏ¢Êı¾İ
+		//ç”¨äºç¼“å­˜å·²ç»æ¥æ”¶åˆ°çš„æ¶ˆæ¯æ•°æ®
 		CConnectorDataBuffer m_Buffer_Recv;
 	};
 

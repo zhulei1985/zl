@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 /****************************************************************************
 	Copyright (c) 2020 ZhuLei
@@ -31,7 +31,7 @@
 
 
 #define IOCP_BUFFER_SIZE 8192
-//ÎŞÏûÏ¢½ÓÊÕ£¬³¬Ê±Ê±¼ä
+//æ— æ¶ˆæ¯æ¥æ”¶ï¼Œè¶…æ—¶æ—¶é—´
 #define TIMEOUT_NO_RECVDATA 600000
 
 namespace zlnetwork
@@ -50,7 +50,7 @@ namespace zlnetwork
 
 	struct SOVERLAPPEDPLUS
 	{
-		//ol±ØĞëÊÇµÚÒ»¸ö¶¨Òå
+		//olå¿…é¡»æ˜¯ç¬¬ä¸€ä¸ªå®šä¹‰
 		OVERLAPPED	ol;
 		WSABUF		wsabuf;
 		CSocketConnector* pConnecttor;
@@ -110,9 +110,9 @@ namespace zlnetwork
 	protected:
 
 		static HANDLE hIoCompletionPort;
-		static std::atomic_int m_lActiveThreadNum;//»î¶¯Ïß³ÌÊı
+		static std::atomic_int m_lActiveThreadNum;//æ´»åŠ¨çº¿ç¨‹æ•°
 
-		//¼àÌı¶Ë¿ÚÃÇ
+		//ç›‘å¬ç«¯å£ä»¬
 		struct tagListen
 		{
 			tagListen()
@@ -120,8 +120,8 @@ namespace zlnetwork
 				m_nPort = 0;
 				m_sListen = INVALID_SOCKET;
 			}
-			int m_nPort;//¶Ë¿Ú
-			SOCKET m_sListen;//¼àÌısocket
+			int m_nPort;//ç«¯å£
+			SOCKET m_sListen;//ç›‘å¬socket
 			CreateConnectorFun m_Fun;
 		};
 		std::map<int, tagListen> m_mapListen;
@@ -139,14 +139,14 @@ namespace zlnetwork
 	//SOVERLAPPEDPLUS m_overlappedsend;
 	//typedef struct _PER_HANDLE_DATA
 	//{
-	//	SOCKET      s;      // ¶ÔÓ¦µÄÌ×½Ó×Ö¾ä±ú 
-	//	sockaddr_in addr;   // ¶Ô·½µÄµØÖ·
+	//	SOCKET      s;      // å¯¹åº”çš„å¥—æ¥å­—å¥æŸ„ 
+	//	sockaddr_in addr;   // å¯¹æ–¹çš„åœ°å€
 
 	//}PER_HANDLE_DATA, * PPER_HANDLE_DATA;
 
 
 
-	//ºÍ¿Í»§¶ËµÄÁ¬½Ó
+	//å’Œå®¢æˆ·ç«¯çš„è¿æ¥
 	class CSocketConnector : public CBaseConnector
 	{
 	public:
@@ -194,8 +194,8 @@ namespace zlnetwork
 	protected:
 		std::mutex m_xSocketCtrl;
 
-	  //ÒÔÏÂÊÇ²Ù×÷ÖØµş¶Ë¿ÚµÄ²¿·Ö
-	private://ÕâÊÇÌá¹©¸øIOCPµÄÊı¾İÊÕ·¢
+	  //ä»¥ä¸‹æ˜¯æ“ä½œé‡å ç«¯å£çš„éƒ¨åˆ†
+	private://è¿™æ˜¯æä¾›ç»™IOCPçš„æ•°æ®æ”¶å‘
 		//int UpdataSendData(unsigned int iSentBytes);
 
 		bool Recv(char* pBytes, int nLen);
@@ -213,21 +213,21 @@ namespace zlnetwork
 		bool MoreRecvByOverlapped(SOVERLAPPEDPLUS* pPlus);
 		bool RemoveRecvByOverlapped(SOVERLAPPEDPLUS* pPlus);
 	private:
-		//±£Ö¤Í¬Ò»Ê±¿ÌÖ»ÓĞÒ»¸öWSASend
+		//ä¿è¯åŒä¸€æ—¶åˆ»åªæœ‰ä¸€ä¸ªWSASend
 		std::atomic_bool m_bIsSendByOverlapped;
 		std::atomic_bool m_bIsRecvByOverlapped;
 
 
-		////È·±£°²È«»úÖÆ
+		////ç¡®ä¿å®‰å…¨æœºåˆ¶
 		std::mutex m_lockSend;
 		std::mutex m_lockRecv;
 	public:
 		static CRingBuffer<SOVERLAPPEDPLUS> s_OverlappedCache;
 	private:
 
-		//Á¬½ÓÆ÷ÊµÀıÖØÓÃµÄÇé¿öÏÂ
-		//Á¬½ÓÆ÷ÌØÊâÂë£¬ºÍÖ¸ÕëÒ»Æğ±êÊ¾ÊÇ·ñÊÇ
-		//±»Á¬½ÓµÄÍê³ÉÏûÏ¢
+		//è¿æ¥å™¨å®ä¾‹é‡ç”¨çš„æƒ…å†µä¸‹
+		//è¿æ¥å™¨ç‰¹æ®Šç ï¼Œå’ŒæŒ‡é’ˆä¸€èµ·æ ‡ç¤ºæ˜¯å¦æ˜¯
+		//è¢«è¿æ¥çš„å®Œæˆæ¶ˆæ¯
 		DWORD		m_dwConnecttorSpecialKey;
 	protected:
 
