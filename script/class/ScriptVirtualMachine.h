@@ -87,25 +87,25 @@ namespace zlscript
 		//int CurCallFunParamNum;//当前调用函数的参数数量
 		//int CurStackSizeWithoutFunParam;//除了函数参数，堆栈的大小
 	public:
-		bool PushEmptyVarToStack();
-		bool PushVarToStack(int nVal);
-		bool PushVarToStack(__int64 nVal);
-		bool PushVarToStack(double Double);
-		bool PushVarToStack(const char* pstr);
-		bool PushClassPointToStack(__int64 nIndex);
+		virtual bool PushEmptyVarToStack();
+		virtual bool PushVarToStack(int nVal);
+		virtual bool PushVarToStack(__int64 nVal);
+		virtual bool PushVarToStack(double Double);
+		virtual bool PushVarToStack(const char* pstr);
+		virtual bool PushClassPointToStack(__int64 nIndex);
 
-		bool PushVarToStack(StackVarInfo& Val);
+		virtual bool PushVarToStack(StackVarInfo& Val);
 
 		template<class T>
 		bool PushClassPointToStack(T* pVal);
 
-		__int64 PopIntVarFormStack();
-		double PopDoubleVarFormStack();
-		char* PopCharVarFormStack();
-		__int64 PopClassPointFormStack();
-		StackVarInfo PopVarFormStack();
+		virtual __int64 PopIntVarFormStack();
+		virtual double PopDoubleVarFormStack();
+		virtual char* PopCharVarFormStack();
+		virtual __int64 PopClassPointFormStack();
+		virtual StackVarInfo PopVarFormStack();
 
-		int GetParamNum();
+		virtual int GetParamNum();
 
 		//void SetParamNum(int val)
 		//{
@@ -114,15 +114,17 @@ namespace zlscript
 		//}
 		//void CopyToRegister(CScriptRunState* pState, int nNum);
 
-		void CopyFromStack(CScriptStack* pStack);
+		virtual void CopyToStack(CScriptStack* pStack, int nNum);
+		virtual void CopyFromStack(CScriptStack* pStack);
 
 		//获取函数变量
-		void ClearFunParam();
+		virtual void ClearFunParam();
 		//void ClearFunParam(int nKeepNum);
 
 		void ClearStack();
 		void ClearExecBlock(bool bPrint = false);
 
+		void PrintExecBlock();
 		void ClearAll();
 
 		int CallFun(CScriptVirtualMachine* pMachine, CScriptExecBlock* pCurBlock, int nType, int FunIndex, int nParmNum,bool bIsBreak=false);
@@ -205,10 +207,10 @@ namespace zlscript
 		bool CheckRun(__int64 id);
 		CScriptRunState* GetRunState(unsigned long id);
 		CScriptRunState* PopRunState(unsigned long id);
-		CScriptCodeLoader::VarPoint* GetGlobalVar(unsigned int pos);
+		StackVarInfo* GetGlobalVar(unsigned int pos);
 	protected:
 
-		std::vector<CScriptCodeLoader::VarPoint> vGlobalNumVar;
+		std::vector<StackVarInfo> vGlobalNumVar;
 
 		//****************运行管理******************//
 		typedef std::list<CScriptRunState*> listRunState;

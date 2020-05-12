@@ -1,0 +1,59 @@
+int Test_Add(int x, int y)
+{
+	return x+y;
+}
+void RegisterAccount(string strAccount, string password, Client pClient)
+{
+	CArray AccountArray = GetVal4Data("Data","Account");
+	if (CheckClassPoint(AccountArray) == 0)
+	{
+		AccountArray = NewArray();
+		SetVal2Data("Data","Account",AccountArray);
+	}
+	CAccount pAccount = AccountArray->GetVal(strAccount);
+	if (CheckClassPoint(pAccount))
+	{
+		//账号已存在，注册失败
+
+		return;
+	}
+	pAccount = new CAccount;
+	pAccount->SetAccountName(strAccount);
+	pAccount->SetPassword(password);
+	pClient->SetAccount(strAccount);
+	AccountArray->SetVal(strAccount,pAccount);
+	//发送注册成功，登录成功
+	//pClient->RunScript(0,"RegisterSuccess",pAccount);
+	pClient->RunScript(0,"LoginSuccess",pAccount);
+}
+void LoginAccount(string strAccount, string password, Client pClient)
+{
+	CArray AccountArray = GetVal4Data("Data","Account");
+	if (CheckClassPoint(AccountArray) == 0)
+	{
+		AccountArray = NewArray();
+		SetVal2Data("Data","Account",AccountArray);
+	}
+	CAccount pAccount = AccountArray->GetVal(strAccount);
+	if (CheckClassPoint(pAccount) == 0)
+	{
+		//账号不存在，登录失败
+
+		return;
+	}
+	if (password != pAccount->GetPassword())
+	{
+		//密码错误，登录失败
+		return;
+	}
+	pClient->SetAccount(strAccount);
+	pClient->RunScript(0,"LoginSuccess",pAccount);
+}
+void main()
+{
+	//初始化数据
+	CData pData = GetData("Data");
+
+	SetListenPort(9999);
+	print("启动完成");
+}

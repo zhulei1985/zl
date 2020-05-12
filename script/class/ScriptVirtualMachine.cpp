@@ -353,59 +353,27 @@ namespace zlscript
 		}
 		return 0;
 	}
-	//CScriptBasePointer * CScriptRunState::PopRealClassPointForStack()
-	//{
-	//	if (m_varRegister.empty())
-	//	{
-	//		return 0;
-	//	}
-	//	StackVarInfo var = m_varRegister.top();
-	//	CScriptPointInterface *pReturn = nullptr;
-	//	__int64 index = 0;
-	//	switch (var.cType)
-	//	{
-	//	case EScriptVal_ClassPointIndex:
-	//		index = var.Int64;
-	//		break;
-	//	//case EScriptVal_String:
-	//	//	if (var.pStr)
-	//	//	{
-	//	//		if (var.cExtend > 0)
-	//	//		{
-	//	//			SAFE_DELETE_ARRAY(var.pStr);
-	//	//		}
-	//	//	}
-	//	//	break;
-	//	}
-	//
-	//	m_varRegister.pop();
-	//
-	//	CScriptBasePointer *pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(index);
-	//	if (pPoint)
-	//	{
-	//		return pPoint;
-	//	}
-	//	return nullptr;
-	//}
-	//void CScriptRunState::CopyToRegister(CScriptRunState * pState, int nNum)
-	//{
-	//	std::vector<StackVarInfo> vInfo;
-	//	for (int i = 0; i < nNum; i++)
-	//	{
-	//		if (m_varRegister.empty())
-	//		{
-	//			break;
-	//		}
-	//		StackVarInfo var = m_varRegister.top();
-	//		vInfo.push_back(var);
-	//		m_varRegister.pop();
-	//	}
-	//	for (int i = (int)vInfo.size() - 1; i >= 0; i--)
-	//	{
-	//		pState->m_varRegister.push(vInfo[i]);
-	//	}
-	//	pState->SetParamNum(vInfo.size());
-	//}
+	void CScriptRunState::CopyToStack(CScriptStack* pStack, int nNum)
+	{
+		if (pStack == nullptr)
+		{
+			return;
+		}
+		if (m_BlockStack.size() > 0)
+		{
+			CScriptExecBlock* pBlock = m_BlockStack.top();
+			if (pBlock)
+			{
+				for (unsigned int i = pBlock->GetVarSize()- nNum; i < pBlock->GetVarSize(); i++)
+				{
+					auto pVar = pBlock->GetVar(i);
+					if (pVar)
+						pStack->push(*pVar);
+				}
+			}
+		}
+	}
+
 	void CScriptRunState::CopyFromStack(CScriptStack* pStack)
 	{
 		if (pStack == nullptr)
@@ -560,8 +528,8 @@ namespace zlscript
 	}
 	void CScriptRunState::ClearExecBlock(bool bPrint)
 	{
-		if (!m_BlockStack.empty())
-			zlscript::CScriptDebugPrintMgr::GetInstance()->Print("Script Run Error");
+		//if (!m_BlockStack.empty())
+		//	zlscript::CScriptDebugPrintMgr::GetInstance()->Print("Script Run Error");
 		while (!m_BlockStack.empty())
 		{
 
@@ -573,6 +541,22 @@ namespace zlscript
 			SAFE_DELETE(pBlock);
 			m_BlockStack.pop();
 		}
+	}
+	void CScriptRunState::PrintExecBlock()
+	{
+		//if (!m_BlockStack.empty())
+		//	zlscript::CScriptDebugPrintMgr::GetInstance()->Print("Script Run Error");
+		//while (!m_BlockStack.empty())
+		//{
+
+		//	CScriptExecBlock* pBlock = m_BlockStack.top();
+		//	if (bPrint)
+		//	{
+		//		zlscript::CScriptDebugPrintMgr::GetInstance()->Print(pBlock->GetCurSourceWords().c_str());
+		//	}
+		//	SAFE_DELETE(pBlock);
+		//	m_BlockStack.pop();
+		//}
 	}
 	void CScriptRunState::ClearAll()
 	{
@@ -645,9 +629,32 @@ namespace zlscript
 					}
 				case CScriptExecBlock::ERESULT_ERROR:
 					{
-						ClearExecBlock(true);
+					//2020/4/23 执行错误后不再退出整个堆栈，而是只终结当前代码块并且返回默认值
+						//ClearExecBlock(true);
 						SCRIPT_PRINT("script","Error script 执行错误: %s",FunName.c_str());
-						return ERunTime_Error;
+						//退出本代码块，返回默认返回值
+						m_BlockStack.pop();
+						if (pBlock->GetDefaultReturnType() != EScriptVal_None)
+						{
+							if (m_BlockStack.empty())
+							{
+								StackVarInfo var;
+								m_varReturn = var;
+								return ERunTime_Complete;
+							}
+							else
+							{
+								auto pCurBlock = m_BlockStack.top();
+								if (pCurBlock)
+								{
+									StackVarInfo var;
+									pCurBlock->PushVar(var);
+								}
+								SAFE_DELETE(pBlock);
+							}
+						}
+						bBreak = true;
+						break;
 					}
 				case CScriptExecBlock::ERESULT_WAITING:
 					{
@@ -1111,7 +1118,6 @@ namespace zlscript
 
 	unsigned int CScriptVirtualMachine::Exec(unsigned int nDelay,unsigned int unTimeRes)
 	{
-
 		for (auto it = m_mapEventProcess.begin(); it != m_mapEventProcess.end(); it++)
 		{
 			CScriptEventMgr::GetInstance()->ProcessEvent(it->first, m_nEventListIndex, it->second);
@@ -1329,7 +1335,7 @@ namespace zlscript
 		}
 		return nullptr;
 	}
-	CScriptCodeLoader::VarPoint *CScriptVirtualMachine::GetGlobalVar(unsigned int pos)
+	StackVarInfo*CScriptVirtualMachine::GetGlobalVar(unsigned int pos)
 	{
 		if (pos < vGlobalNumVar.size())
 		{
@@ -1389,7 +1395,7 @@ namespace zlscript
 			std::string strScript = ScriptStack_GetString(ParmInfo);
 			m_pScriptState->nNetworkID = nSendID;
 
-			printf("network run script : %s", strScript.c_str());
+			//printf("network run script : %s\n", strScript.c_str());
 			if (nScriptStateID != 0)
 			{
 				m_pScriptState->nCallEventIndex = nEventID;

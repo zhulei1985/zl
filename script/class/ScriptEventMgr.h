@@ -49,6 +49,7 @@ namespace zlscript
 		tagEventChannel()
 		{
 			nChannelID = 0;
+			isBlocking = false;
 		}
 		~tagEventChannel()
 		{
@@ -57,6 +58,7 @@ namespace zlscript
 		void clear();
 	public:
 		int nChannelID;
+		bool isBlocking;
 		std::list<tagScriptEvent*> listEvent;
 	};
 	class tagMapEventChannel
@@ -83,6 +85,8 @@ namespace zlscript
 
 		void RegisterEvent(int nEventType, int nChannelID);
 		void RemoveEvent(int nEventType, int nChannelID);
+
+		void SetEventBlock(int nEventType, int nID, bool IsBlock);
 
 		bool SendEvent(int nEventType, int nSendID, CScriptStack& vIn, int nRecvID = 0);
 		void GetEvent(int nEventType, int nChannelID,std::vector<tagScriptEvent> &vOut);

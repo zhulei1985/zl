@@ -141,7 +141,7 @@ namespace zlnetwork
 	}
 	void CBaseConnector::OnDestroy()
 	{
-		m_nAllotConnectID = 0;
+		m_nID = 0;
 	}
 	void CBaseConnector::SendData(const char* pData, unsigned int nSize)
 	{
