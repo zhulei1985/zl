@@ -35,6 +35,11 @@ public:
 		CBaseConnector::SetID(val);
 	}
 
+	int GetScriptEventIndex()
+	{
+		return nScriptEventIndex;
+	}
+
 	virtual void OnInit();
 	bool OnProcess();
 	virtual void OnDestroy();
@@ -52,6 +57,7 @@ protected:
 	//µ±Ç°µÇÂ¼µÄÕËºÅ
 	std::string strAccountName;
 
+	int nScriptEventIndex;
 public:
 
 	void EventReturnFun(int nSendID, CScriptStack& ParmInfo);

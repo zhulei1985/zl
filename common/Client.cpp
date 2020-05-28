@@ -154,9 +154,10 @@ void CClient::OnInit()
 {
 	CSocketConnector::OnInit();
 
+	nScriptEventIndex = CScriptEventMgr::GetInstance()->AssignID();
+
 	AddClassObject(this->GetScriptPointIndex(), this);
 
-	CScriptEventMgr::GetInstance()->RegisterEvent(E_SCRIPT_EVENT_NEWTWORK_RETURN, CBaseConnector::GetID());
 }
 bool CClient::OnProcess()
 {
@@ -194,14 +195,22 @@ bool CClient::OnProcess()
 		}
 	}
 
-	CScriptEventMgr::GetInstance()->ProcessEvent(E_SCRIPT_EVENT_NEWTWORK_RETURN, CBaseConnector::GetID(),
-		std::bind(&CClient::EventReturnFun, this, std::placeholders::_1, std::placeholders::_2));
 
+	std::vector<tagScriptEvent*> vEvent;
+	CScriptEventMgr::GetInstance()->GetEventByChannel(GetScriptEventIndex(), vEvent);
+	for (size_t i = 0; i < vEvent.size(); i++)
+	{
+		tagScriptEvent* pEvent = vEvent[i];
+		if (pEvent && pEvent->nEventType == E_SCRIPT_EVENT_NEWTWORK_RETURN)
+		{
+			EventReturnFun(pEvent->nSendID, pEvent->m_Parm);
+		}
+		CScriptEventMgr::GetInstance()->ReleaseEvent(pEvent);
+	}
 	return true;
 }
 void CClient::OnDestroy()
 {
-	CScriptEventMgr::GetInstance()->RemoveEvent(E_SCRIPT_EVENT_NEWTWORK_RETURN, CBaseConnector::GetID());
 
 	CSocketConnector::OnDestroy();
 
