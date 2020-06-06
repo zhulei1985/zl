@@ -29,7 +29,7 @@ namespace zlnetwork
 	std::atomic_int CIOCPConnector::m_lActiveThreadNum = 0;
 	std::atomic_ullong CIOCPConnector::m_AllSendDataCount = 0;
 	std::atomic_ullong CIOCPConnector::m_AllRecvDataCount = 0;
-	CIOCPConnector::CIOCPConnector()
+	CIOCPConnector::CIOCPConnector(int nThreadNum):m_nThreadNum(nThreadNum)
 	{
 		hIoCompletionPort = 0;
 		m_lActiveThreadNum = 0;
@@ -98,7 +98,7 @@ namespace zlnetwork
 
 	void CIOCPConnector::OnInit()
 	{
-		StartIoCompletionPort();
+		StartIoCompletionPort(m_nThreadNum);
 	}
 	bool CIOCPConnector::OnProcess()
 	{
@@ -171,7 +171,11 @@ namespace zlnetwork
 				{
 					char strbuff[16] = { 0 };
 					strcpy_s(strbuff, sizeof(strbuff), inet_ntoa(saRemote.sin_addr));
-					taglisten.m_Fun(sRemote, strbuff);
+					auto pConnector = taglisten.m_Fun(sRemote, strbuff);
+					if (pConnector)
+					{
+						pConnector->SetPort(taglisten.m_nPort);
+					}
 				}
 			}
 		}

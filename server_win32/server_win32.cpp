@@ -37,10 +37,62 @@ void BackGroundThreadFun()
 			break;
 		}
 
-		//std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 
+int UserInput(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	char strTemp[1024];
+
+	std::cin.getline(strTemp, 1024);
+
+	pState->ClearFunParam();
+	pState->PushVarToStack(strTemp);
+	return ECALLBACK_FINISH;
+}
+int ExecuteCommand(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	std::vector<std::string> vStrings;
+	std::string strString = pState->PopCharVarFormStack();
+	std::string strTemp;
+	for (size_t i = 0; i < strString.size(); i++)
+	{
+		char ch[2] = { 0,0 };
+		if (strString[i] == ' ')
+		{
+			if (strTemp.size() > 0)
+			{
+				vStrings.push_back(strTemp);
+				strTemp.clear();
+			}
+		}
+		else
+		{
+			ch[0] = strString[i];
+			strTemp += ch;
+		}
+	}
+	if (strTemp.size() > 0)
+	{
+		vStrings.push_back(strTemp);
+		strTemp.clear();
+	}
+	pState->ClearFunParam();
+	for (auto it = vStrings.rbegin(); it != vStrings.rend(); it++)
+	{
+		pState->PushVarToStack((*it).c_str());
+	}
+	return ECALLBACK_FINISH;
+}
 
 int main()
 {
@@ -49,7 +101,8 @@ int main()
 	InitNetworkConnect();
 	CClient::Init2Script();
 	CAccount::Init2Script();
-
+	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("UserInput", UserInput);
+	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("ExecuteCommand", ExecuteCommand);
 	//设置脚本DEBUG输出
 	std::function<void(const char*)> debugfun = [](const char* pstr)
 	{

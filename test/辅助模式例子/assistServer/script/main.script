@@ -1,0 +1,18 @@
+void Error_CannotRunScript(string strFunName)
+{
+	print("指令错误或是没有权限"+strFunName);
+	if (strFunName == "SetRemoteFun")
+	{
+		//说明mainserver还未设置权限，再申请一次
+		pClient->RunScript(0,"SetRemoteFun","CalFun1");
+	}
+}
+void main()
+{
+	Client pClient = NewClient("127.0.0.1",10000);
+	pClient->SetScriptLimit("Error_CannotRunScript",1);
+	pClient->SetScriptLimit("CalFun1",1);
+	wait(100);
+	print("申请辅助CalFun1函数");
+	pClient->RunScript(0,"SetRemoteFun","CalFun1");
+}

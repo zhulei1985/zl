@@ -1,0 +1,35 @@
+void InitClient(Client pClient)
+{
+	if (pClient->GetPort() == 9999)
+	{
+
+	}
+	else if (pClient->GetPort() == 10000)
+	{
+		print("辅助服务器连接");
+		pClient->SetScriptLimit("SetRemoteFun",1);
+	}
+}
+void SetRemoteFun(string FunName, Client pClient)
+{
+	pClient->SetRemoteFunction(FunName);
+}
+
+void main()
+{
+	//初始化数据
+	CData pData = GetData("Data");
+
+	//9999给客户端用
+	SetListenPort(9999);
+	//10000端口给辅助服务器用
+	SetListenPort(10000);
+	print("启动完成");
+
+	while(1)
+	{
+		CalFun2(100);
+		print("===================");
+		wait(1000);
+	}
+}

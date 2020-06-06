@@ -4,6 +4,7 @@
 #include "SyncScriptPointInterface.h"
 #include "MsgReceive.h"
 #include <atomic>
+#include <set>
 using namespace zlnetwork;
 using namespace zlscript;
 
@@ -17,6 +18,8 @@ public:
 
 	int GetID2Script(CScriptRunState* pState);
 
+	int GetPort2Script(CScriptRunState* pState);
+
 	int IsConnect2Script(CScriptRunState* pState);
 	int RunScript2Script(CScriptRunState* pState);
 
@@ -25,6 +28,8 @@ public:
 
 	int SetScriptLimit2Script(CScriptRunState* pState);
 	int CheckScriptLimit2Script(CScriptRunState* pState);
+
+	int SetRemoteFunction2Script(CScriptRunState* pState);
 public:
 	__int64 GetID() const
 	{
@@ -57,11 +62,11 @@ protected:
 	//当前登录的账号
 	std::string strAccountName;
 
-	int nScriptEventIndex;
+	__int64 nScriptEventIndex;
 public:
 
-	void EventReturnFun(int nSendID, CScriptStack& ParmInfo);
-
+	void EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo);
+	void EventRunFun(__int64 nSendID, CScriptStack& ParmInfo);
 public:
 	__int64 GetImageIndex(__int64);
 	void SetImageIndex(__int64, __int64);
@@ -75,5 +80,8 @@ public:
 private:
 	//可用脚本
 	std::map<std::string, int> m_mapScriptLimit;
+
+	//注册的远程函数
+	std::set<std::string> m_setRemoteFunName;
 };
 

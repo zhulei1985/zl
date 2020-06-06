@@ -1,0 +1,26 @@
+int CalFun1(int n)
+{
+	int sum = 0;
+	int i = 1;
+	while (i <= n)
+	{
+		sum = sum + i;
+		i = i + 1;
+	}
+	print("CalFun1 run: " + sum);
+	return sum;
+}
+
+int CalFun2(int n)
+{
+	int sum = 0;
+	int i = 1;
+	while (i <= n)
+	{
+		sum = sum + CalFun1(i);
+		i = i + 1;
+	}
+
+	print("CalFun2 run: " + sum);
+	return sum;
+}

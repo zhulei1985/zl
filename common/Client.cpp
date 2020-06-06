@@ -1,5 +1,6 @@
 #include "Client.h"
 #include "zByteArray.h"
+#include "ScriptExecCodeMgr.h"
 
 CClient::CClient()
 {
@@ -8,6 +9,7 @@ CClient::CClient()
 	pCurMsgReceive = nullptr;
 
 	RegisterClassFun(GetID, this, &CClient::GetID2Script);
+	RegisterClassFun(GetPort, this, &CClient::GetPort2Script);
 
 	RegisterClassFun(IsConnect, this, &CClient::IsConnect2Script);
 	RegisterClassFun(RunScript,this, &CClient::RunScript2Script);
@@ -16,6 +18,8 @@ CClient::CClient()
 
 	RegisterClassFun(SetScriptLimit, this, &CClient::SetScriptLimit2Script);
 	RegisterClassFun(CheckScriptLimit, this, &CClient::CheckScriptLimit2Script);
+
+	RegisterClassFun(SetRemoteFunction, this, &CClient::SetRemoteFunction2Script);
 }
 
 
@@ -27,6 +31,7 @@ void CClient::Init2Script()
 	RegisterClassType("Client", CClient);
 
 	RegisterClassFun1("GetID", CClient);
+	RegisterClassFun1("GetPort", CClient);
 
 	RegisterClassFun1("IsConnect", CClient);
 	RegisterClassFun1("RunScript", CClient);
@@ -35,6 +40,8 @@ void CClient::Init2Script()
 
 	RegisterClassFun1("SetScriptLimit", CClient);
 	RegisterClassFun1("CheckScriptLimit", CClient);
+
+	RegisterClassFun1("SetRemoteFunction", CClient);
 }
 int CClient::GetID2Script(CScriptRunState* pState)
 {
@@ -45,6 +52,17 @@ int CClient::GetID2Script(CScriptRunState* pState)
 
 	pState->ClearFunParam();
 	pState->PushVarToStack(GetID());
+	return ECALLBACK_FINISH;
+}
+int CClient::GetPort2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+
+	pState->ClearFunParam();
+	pState->PushVarToStack(GetPort());
 	return ECALLBACK_FINISH;
 }
 int CClient::IsConnect2Script(CScriptRunState* pState)
@@ -150,6 +168,18 @@ int CClient::CheckScriptLimit2Script(CScriptRunState* pState)
 	pState->PushVarToStack(bCheck?1:0);
 	return ECALLBACK_FINISH;
 }
+int CClient::SetRemoteFunction2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	std::string strName = pState->PopCharVarFormStack();
+	CScriptExecCodeMgr::GetInstance()->SetRemoteFunction(strName, GetScriptEventIndex());
+	m_setRemoteFunName.insert(strName);
+	pState->ClearFunParam();
+	return ECALLBACK_FINISH;
+}
 void CClient::OnInit()
 {
 	CSocketConnector::OnInit();
@@ -201,9 +231,16 @@ bool CClient::OnProcess()
 	for (size_t i = 0; i < vEvent.size(); i++)
 	{
 		tagScriptEvent* pEvent = vEvent[i];
-		if (pEvent && pEvent->nEventType == E_SCRIPT_EVENT_NEWTWORK_RETURN)
+		if (pEvent)
 		{
-			EventReturnFun(pEvent->nSendID, pEvent->m_Parm);
+			if (pEvent->nEventType == E_SCRIPT_EVENT_NEWTWORK_RETURN)
+			{
+				EventReturnFun(pEvent->nSendID, pEvent->m_Parm);
+			}
+			else if (pEvent->nEventType == E_SCRIPT_EVENT_NETWORK_RUNSCRIPT)
+			{
+				EventRunFun(pEvent->nSendID, pEvent->m_Parm);
+			}
 		}
 		CScriptEventMgr::GetInstance()->ReleaseEvent(pEvent);
 	}
@@ -211,7 +248,10 @@ bool CClient::OnProcess()
 }
 void CClient::OnDestroy()
 {
-
+	for (auto it = m_setRemoteFunName.begin(); it != m_setRemoteFunName.end(); it++)
+	{
+		CScriptExecCodeMgr::GetInstance()->RemoveRemoteFunction(*it, GetScriptEventIndex());
+	}
 	CSocketConnector::OnDestroy();
 
 	RemoveClassObject(this->GetScriptPointIndex());
@@ -338,17 +378,39 @@ void CClient::SyncDownClassFunRun(CSyncScriptPointInterface* pPoint, std::string
 
 
 
-void CClient::EventReturnFun(int nSendID, CScriptStack& ParmInfo)
+void CClient::EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
 
 	m_vBuff.clear();
 
 	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT_RETURN);
 
-	int nEventIndex = ScriptStack_GetInt(ParmInfo);
+	__int64 nEventIndex = ScriptStack_GetInt(ParmInfo);
 	AddInt2Bytes(m_vBuff, nEventIndex);
 	__int64 nStateID = ScriptStack_GetInt(ParmInfo);
 	AddInt642Bytes(m_vBuff, nStateID);
+
+	AddChar2Bytes(m_vBuff, (char)ParmInfo.size());
+	while (ParmInfo.size() > 0)
+	{
+		AddVar2Bytes(m_vBuff, &ParmInfo.top());
+		ParmInfo.pop();
+	}
+	SendData(&m_vBuff[0], m_vBuff.size());
+}
+
+void CClient::EventRunFun(__int64 nSendID, CScriptStack& ParmInfo)
+{
+	m_vBuff.clear();
+
+	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT);
+
+	__int64 nEventIndex = ScriptStack_GetInt(ParmInfo);
+	AddInt2Bytes(m_vBuff, nEventIndex);
+	__int64 nStateID = ScriptStack_GetInt(ParmInfo);
+	AddInt642Bytes(m_vBuff, nStateID);
+	std::string name = ScriptStack_GetString(ParmInfo);
+	AddString2Bytes(m_vBuff, (char*)name.c_str());
 
 	AddChar2Bytes(m_vBuff, (char)ParmInfo.size());
 	while (ParmInfo.size() > 0)

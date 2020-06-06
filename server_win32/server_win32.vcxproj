@@ -173,6 +173,7 @@
     <ClCompile Include="..\script\class\ScriptDebugPrint.cpp" />
     <ClCompile Include="..\script\class\ScriptEventMgr.cpp" />
     <ClCompile Include="..\script\class\ScriptExecBlock.cpp" />
+    <ClCompile Include="..\script\class\ScriptExecCodeMgr.cpp" />
     <ClCompile Include="..\script\class\ScriptIntermediateCode.cpp" />
     <ClCompile Include="..\script\class\ScriptPointInterface.cpp" />
     <ClCompile Include="..\script\class\ScriptStack.cpp" />
@@ -210,6 +211,7 @@
     <ClInclude Include="..\script\class\ScriptDebugPrint.h" />
     <ClInclude Include="..\script\class\ScriptEventMgr.h" />
     <ClInclude Include="..\script\class\ScriptExecBlock.h" />
+    <ClInclude Include="..\script\class\ScriptExecCodeMgr.h" />
     <ClInclude Include="..\script\class\ScriptIntermediateCode.h" />
     <ClInclude Include="..\script\class\ScriptPointInterface.h" />
     <ClInclude Include="..\script\class\ScriptStack.h" />

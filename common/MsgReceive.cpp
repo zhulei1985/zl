@@ -226,11 +226,12 @@ bool CScriptMsgReceiveState::OnProcess(CClient* pClient)
 	{
 		ScriptVector_PushVar(m_scriptParm, pClient);
 		//读取完成，执行结果
-		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_NETWORK_RUNSCRIPT, pClient->CBaseConnector::GetID(), m_scriptParm);
+		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_NETWORK_RUNSCRIPT, pClient->GetScriptEventIndex(), m_scriptParm);
 	}
 	else
 	{
 		CTempScriptRunState tempState;
+		tempState.PushVarToStack(strScriptFunName.c_str());
 		tempState.PushVarToStack("Error_CannotRunScript");
 		tempState.PushVarToStack(0);
 		pClient->RunScript2Script(&tempState);
@@ -249,7 +250,7 @@ bool CReturnMsgReceiveState::OnProcess(CClient* pClient)
 		{
 			nPos = 0;
 			nEventListIndex = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			ScriptVector_PushVar(m_scriptParm, (__int64)nEventListIndex);
+			//ScriptVector_PushVar(m_scriptParm, (__int64)nEventListIndex);
 		}
 		else
 		{
@@ -277,8 +278,8 @@ bool CReturnMsgReceiveState::OnProcess(CClient* pClient)
 		{
 			nPos = 0;
 			nScriptParmNum = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-			//前面已经有2个值被压入堆栈
-			nScriptParmNum += 2;
+			//前面已经有1个值被压入堆栈
+			nScriptParmNum += 1;
 		}
 		else
 		{

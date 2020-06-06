@@ -78,7 +78,7 @@ namespace zlnetwork
 	class CIOCPConnector
 	{
 	public:
-		CIOCPConnector();
+		CIOCPConnector(int nThreadNum = -1);
 		virtual ~CIOCPConnector();
 
 	public:
@@ -129,6 +129,8 @@ namespace zlnetwork
 
 		bool m_bRun;
 
+		//线程数量
+		int m_nThreadNum;
 	public:
 		friend void ProcessOverlappedFunc(LPVOID lpParam);
 
