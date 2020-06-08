@@ -8,7 +8,7 @@ enum E_MSG_TYPE
 	E_SYNC_UP_PASSAGE,//上行同步通道
 };
 
-class CClient;
+class CScriptConnector;
 #include "ZLScript.h"
 #include "SyncScriptPointInterface.h"
 using namespace zlscript;
@@ -16,7 +16,7 @@ using namespace zlscript;
 class CBaseMsgReceiveState
 {
 public:
-	virtual bool OnProcess(CClient*) = 0;
+	virtual bool OnProcess(CScriptConnector*) = 0;
 };
 class CScriptMsgReceiveState : public CBaseMsgReceiveState
 {
@@ -30,7 +30,7 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-	virtual bool OnProcess(CClient*);
+	virtual bool OnProcess(CScriptConnector*);
 
 private:
 	int nEventListIndex;//脚本执行器的ID
@@ -57,7 +57,7 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-	virtual bool OnProcess(CClient*);
+	virtual bool OnProcess(CScriptConnector*);
 
 private:
 	int nEventListIndex;//脚本执行器的ID
@@ -82,7 +82,7 @@ public:
 		nDataLen = -1;
 		m_pPoint = nullptr;
 	}
-	virtual bool OnProcess(CClient*);
+	virtual bool OnProcess(CScriptConnector*);
 private:
 	int nClassNameStringLen;
 	std::string strClassName;
@@ -105,7 +105,7 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-	virtual bool OnProcess(CClient*);
+	virtual bool OnProcess(CScriptConnector*);
 
 private:
 	__int64 nClassID;//涉及到的类ID
@@ -133,7 +133,7 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-	virtual bool OnProcess(CClient*);
+	virtual bool OnProcess(CScriptConnector*);
 
 private:
 	__int64 nClassID;//涉及到的类ID

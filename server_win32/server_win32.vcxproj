@@ -154,8 +154,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\common\Client.cpp" />
-    <ClCompile Include="..\common\ClientConnectMgr.cpp" />
+    <ClCompile Include="..\common\ScriptConnector.cpp" />
+    <ClCompile Include="..\common\ScriptConnectMgr.cpp" />
     <ClCompile Include="..\common\getFileNameFromPath.cpp" />
     <ClCompile Include="..\common\MsgReceive.cpp" />
     <ClCompile Include="..\common\SyncScriptPointInterface.cpp" />
@@ -186,8 +186,8 @@
     <ClCompile Include="TestClass.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\Client.h" />
-    <ClInclude Include="..\common\ClientConnectMgr.h" />
+    <ClInclude Include="..\common\ScriptConnector.h" />
+    <ClInclude Include="..\common\ScriptConnectMgr.h" />
     <ClInclude Include="..\common\getFileNameFromPath.h" />
     <ClInclude Include="..\common\MsgReceive.h" />
     <ClInclude Include="..\common\SyncScriptPointInterface.h" />

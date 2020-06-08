@@ -8,8 +8,8 @@
 #include <chrono>
 #include <direct.h>
 #include "getFileNameFromPath.h"
-#include "Client.h"
-#include "ClientConnectMgr.h"
+#include "ScriptConnector.h"
+#include "ScriptConnectMgr.h"
 #include "Account.h"
 std::atomic_int g_nThreadRunState = 0;//0 退出 1 运行 2 暂停
 void BackGroundThreadFun()
@@ -99,7 +99,7 @@ int main()
     //std::cout << "Hello World!\n";
 	zlscript::InitScript();
 	InitNetworkConnect();
-	CClient::Init2Script();
+	CScriptConnector::Init2Script();
 	CAccount::Init2Script();
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("UserInput", UserInput);
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("ExecuteCommand", ExecuteCommand);
@@ -137,7 +137,7 @@ int main()
 	zlscript::RunScript("main");
 	while (1)
 	{
-		CClientConnectMgr::GetInstance()->OnProcess();
+		CScriptConnectMgr::GetInstance()->OnProcess();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	g_nThreadRunState = 0;

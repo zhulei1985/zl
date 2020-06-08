@@ -1,6 +1,6 @@
 #include "SyncScriptPointInterface.h"
-#include "Client.h"
-#include "ClientConnectMgr.h"
+#include "ScriptConnector.h"
+#include "ScriptConnectMgr.h"
 #include "zByteArray.h"
 namespace zlscript
 {
@@ -36,7 +36,7 @@ namespace zlscript
 					}
 				}
 				m_FunLock.unlock();
-				CClient* pClient = CClientConnectMgr::GetInstance()->GetClient(GetProcessID());
+				CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(GetProcessID());
 				if (pClient)
 				{
 					pClient->SyncUpClassFunRun(this, funName, tempStack);
@@ -72,7 +72,7 @@ namespace zlscript
 				for (; Syncit != m_listSyncProcessID.end(); )
 				{
 					std::vector<char> vBuff;
-					CClient* pClient = CClientConnectMgr::GetInstance()->GetClient(*Syncit);
+					CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(*Syncit);
 					if (pClient)
 					{
 						pClient->SyncDownClassFunRun(this, funName, tempStack);
@@ -100,7 +100,7 @@ namespace zlscript
 			CScriptStack tempStack;
 			pState->CopyToStack(&tempStack, pState->GetParamNum());
 
-			CClient* pClient = CClientConnectMgr::GetInstance()->GetClient(GetProcessID());
+			CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(GetProcessID());
 			if (pClient)
 			{
 				pClient->SyncUpClassFunRun(this, strFun, tempStack);
@@ -141,7 +141,7 @@ namespace zlscript
 		for (; Syncit != m_listSyncProcessID.end(); )
 		{
 			std::vector<char> vBuff;
-			CClient* pClient = CClientConnectMgr::GetInstance()->GetClient(*Syncit);
+			CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(*Syncit);
 			if (pClient)
 			{
 				pClient->SyncDownClassFunRun(this, funName, tempStack);

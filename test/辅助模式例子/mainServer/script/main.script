@@ -1,18 +1,18 @@
-void InitClient(Client pClient)
+void InitConnector(Connector pConnector)
 {
-	if (pClient->GetPort() == 9999)
+	if (pConnector->GetPort() == 9999)
 	{
 
 	}
-	else if (pClient->GetPort() == 10000)
+	else if (pConnector->GetPort() == 10000)
 	{
 		print("辅助服务器连接");
-		pClient->SetScriptLimit("SetRemoteFun",1);
+		pConnector->SetScriptLimit("SetRemoteFun",1);
 	}
 }
-void SetRemoteFun(string FunName, Client pClient)
+void SetRemoteFun(string FunName, Connector pConnector)
 {
-	pClient->SetRemoteFunction(FunName);
+	pConnector->SetRemoteFunction(FunName);
 }
 
 void main()

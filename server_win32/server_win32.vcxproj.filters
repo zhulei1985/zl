@@ -59,12 +59,6 @@
     <ClCompile Include="..\script\class\zStringBuffer.cpp">
       <Filter>script</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\Client.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\ClientConnectMgr.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\getFileNameFromPath.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -88,6 +82,12 @@
     </ClCompile>
     <ClCompile Include="..\script\class\ScriptExecCodeMgr.cpp">
       <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\ScriptConnector.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\ScriptConnectMgr.cpp">
+      <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -186,12 +186,6 @@
     <ClInclude Include="..\script\class\zStringBuffer.h">
       <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\Client.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\ClientConnectMgr.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\getFileNameFromPath.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -215,6 +209,12 @@
     </ClInclude>
     <ClInclude Include="..\script\class\ScriptExecCodeMgr.h">
       <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ScriptConnector.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ScriptConnectMgr.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

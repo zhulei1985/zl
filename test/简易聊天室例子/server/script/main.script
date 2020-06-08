@@ -1,10 +1,10 @@
-void InitClient(Client pClient)
+void InitConnector(Connector pConnector)
 {
-	pClient->SetScriptLimit("Error_CannotRunScript",1);
-	pClient->SetScriptLimit("RegisterAccount",1);
-	pClient->SetScriptLimit("LoginAccount",1);
+	pConnector->SetScriptLimit("Error_CannotRunScript",1);
+	pConnector->SetScriptLimit("RegisterAccount",1);
+	pConnector->SetScriptLimit("LoginAccount",1);
 }
-void RegisterAccount(string strAccount, string password, Client pClient)
+void RegisterAccount(string strAccount, string password, Connector pConnector)
 {
 	CArray AccountArray = GetVal4Data("Data","Account");
 	if (CheckClassPoint(AccountArray) == 0)
@@ -16,7 +16,7 @@ void RegisterAccount(string strAccount, string password, Client pClient)
 	if (CheckClassPoint(pAccount))
 	{
 		//ÕËºÅÒÑ´æÔÚ£¬×¢²áÊ§°Ü
-		pClient->RunScript(0,"RegisterFail",pAccount);
+		pConnector->RunScript(0,"RegisterFail",pAccount);
 		return;
 	}
 	pAccount = new CAccount;
@@ -24,15 +24,14 @@ void RegisterAccount(string strAccount, string password, Client pClient)
 	pAccount->SetPassword(password);
 	pAccount->SetNickName(strAccount);
 
-	pAccount->SetConnectID(pClient->GetID());
-	pClient->SetAccount(strAccount);
+	pAccount->SetConnectID(pConnector->GetID());
+	pConnector->SetAccount(strAccount);
 	AccountArray->SetVal(strAccount,pAccount);
 	//·¢ËÍ×¢²á³É¹¦£¬µÇÂ¼³É¹¦
-	//pClient->RunScript(0,"RegisterSuccess",pAccount);
-	pClient->RunScript(0,"LoginSuccess",pAccount);
-	pClient->SetScriptLimit("Talk",1);
+	pConnector->RunScript(0,"LoginSuccess",pAccount);
+	pConnector->SetScriptLimit("Talk",1);
 }
-void LoginAccount(string strAccount, string password, Client pClient)
+void LoginAccount(string strAccount, string password, Connector pConnector)
 {
 	CArray AccountArray = GetVal4Data("Data","Account");
 	if (0 == CheckClassPoint(AccountArray))
@@ -44,23 +43,23 @@ void LoginAccount(string strAccount, string password, Client pClient)
 	if (0 == CheckClassPoint(pAccount))
 	{
 		//ÕËºÅ²»´æÔÚ£¬µÇÂ¼Ê§°Ü
-		pClient->RunScript(0,"LoginFail",pAccount,1);
+		pConnector->RunScript(0,"LoginFail",pAccount,1);
 		return;
 	}
 	if (password != pAccount->GetPassword())
 	{
 		//ÃÜÂë´íÎó£¬µÇÂ¼Ê§°Ü
-		pClient->RunScript(0,"LoginFail",pAccount,2);
+		pConnector->RunScript(0,"LoginFail",pAccount,2);
 		return;
 	}
 
-	pAccount->SetConnectID(pClient->GetID());
-	pClient->SetAccount(strAccount);
-	pClient->RunScript(0,"LoginSuccess",pAccount);
-	pClient->SetScriptLimit("Talk",1);
+	pAccount->SetConnectID(pConnector->GetID());
+	pConnector->SetAccount(strAccount);
+	pConnector->RunScript(0,"LoginSuccess",pAccount);
+	pConnector->SetScriptLimit("Talk",1);
 }
 
-void Talk(string strContent, Client pClient)
+void Talk(string strContent, Connector pConnector)
 {
 
 	if (strContent != "")
@@ -68,14 +67,14 @@ void Talk(string strContent, Client pClient)
 		CArray AccountArray = GetVal4Data("Data","Account");
 		if (CheckClassPoint(AccountArray))
 		{
-			CAccount pMainAccount = AccountArray->GetVal(pClient->GetAccount());
+			CAccount pMainAccount = AccountArray->GetVal(pConnector->GetAccount());
 			int i = 0;
 			while (i < AccountArray->GetSize())
 			{
 				CAccount pAccount = AccountArray->GetValByIndex(i);
 				if (CheckClassPoint(pAccount))
 				{
-					Client pAccClient = GetClient(pAccount->GetConnectID());
+					pConnector pAccClient = GetConnector(pAccount->GetConnectID());
 					if (CheckClassPoint(pAccClient))
 					{
 						pAccClient->RunScript(0,"SendMessage",pMainAccount,strContent);

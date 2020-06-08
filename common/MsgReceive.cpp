@@ -1,10 +1,10 @@
-#include "Client.h"
+#include "ScriptConnector.h"
 #include "MsgReceive.h"
 #include "zByteArray.h"
 
 #include "TempScriptRunState.h"
 
-bool CScriptMsgReceiveState::OnProcess(CClient* pClient)
+bool CScriptMsgReceiveState::OnProcess(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
@@ -240,7 +240,7 @@ bool CScriptMsgReceiveState::OnProcess(CClient* pClient)
 	return true;
 }
 
-bool CReturnMsgReceiveState::OnProcess(CClient* pClient)
+bool CReturnMsgReceiveState::OnProcess(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
@@ -436,7 +436,7 @@ bool CReturnMsgReceiveState::OnProcess(CClient* pClient)
 }
 
 
-bool CSyncClassDataMsgReceiveState::OnProcess(CClient* pClient)
+bool CSyncClassDataMsgReceiveState::OnProcess(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
@@ -537,7 +537,7 @@ bool CSyncClassDataMsgReceiveState::OnProcess(CClient* pClient)
 	return true;
 }
 
-bool CSyncUpMsgReceiveState::OnProcess(CClient* pClient)
+bool CSyncUpMsgReceiveState::OnProcess(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
@@ -760,7 +760,7 @@ bool CSyncUpMsgReceiveState::OnProcess(CClient* pClient)
 	return true;
 }
 
-bool CSyncDownMsgReceiveState::OnProcess(CClient* pClient)
+bool CSyncDownMsgReceiveState::OnProcess(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
