@@ -74,7 +74,7 @@ void Talk(string strContent, Connector pConnector)
 				CAccount pAccount = AccountArray->GetValByIndex(i);
 				if (CheckClassPoint(pAccount))
 				{
-					pConnector pAccClient = GetConnector(pAccount->GetConnectID());
+					Connector pAccClient = GetConnector(pAccount->GetConnectID());
 					if (CheckClassPoint(pAccClient))
 					{
 						pAccClient->RunScript(0,"SendMessage",pMainAccount,strContent);

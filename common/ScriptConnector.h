@@ -57,7 +57,7 @@ public:
 	void SyncDownClassFunRun(CSyncScriptPointInterface* pPoint,std::string strFunName, CScriptStack& stack);
 protected:
 	CBaseMsgReceiveState* pCurMsgReceive;
-	std::vector<char> m_vBuff;
+	//std::vector<char> m_vBuff;
 
 	//µ±Ç°µÇÂ¼µÄÕËºÅ
 	std::string strAccountName;

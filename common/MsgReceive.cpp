@@ -4,16 +4,16 @@
 
 #include "TempScriptRunState.h"
 
-bool CScriptMsgReceiveState::OnProcess(CScriptConnector* pClient)
+bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
 	if (nEventListIndex == -1)
 	{
-		if (pClient->GetData(vOut, 4))
+		if (pClient->GetData(vOut, 8))
 		{
 			nPos = 0;
-			nEventListIndex = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+			nEventListIndex = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 			ScriptVector_PushVar(m_scriptParm, (__int64)nEventListIndex);
 		}
 		else
@@ -221,6 +221,12 @@ bool CScriptMsgReceiveState::OnProcess(CScriptConnector* pClient)
 		}
 		nCurParmType = -1;
 	}
+
+	return true;
+}
+
+bool CScriptMsgReceiveState::Run(CScriptConnector* pClient)
+{
 	//对连接可执行的脚本做限制
 	if (pClient->CheckScriptLimit(strScriptFunName))
 	{
@@ -236,20 +242,38 @@ bool CScriptMsgReceiveState::OnProcess(CScriptConnector* pClient)
 		tempState.PushVarToStack(0);
 		pClient->RunScript2Script(&tempState);
 	}
-
 	return true;
 }
 
-bool CReturnMsgReceiveState::OnProcess(CScriptConnector* pClient)
+bool CScriptMsgReceiveState::Send(CScriptConnector* pClient)
+{
+	std::vector<char> m_vBuff;
+	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT);
+	AddInt642Bytes(m_vBuff, nEventListIndex);
+	AddInt642Bytes(m_vBuff, nStateID);
+	AddString2Bytes(m_vBuff, (char*)strScriptFunName.c_str());
+	AddChar2Bytes(m_vBuff, (char)m_scriptParm.size());
+
+	while (!m_scriptParm.empty())
+	{
+		pClient->AddVar2Bytes(m_vBuff, &m_scriptParm.top());
+		m_scriptParm.pop();
+	}
+
+	pClient->SendData(&m_vBuff[0], m_vBuff.size());
+	return true;
+}
+
+bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
 	if (nEventListIndex == -1)
 	{
-		if (pClient->GetData(vOut, 4))
+		if (pClient->GetData(vOut, 8))
 		{
 			nPos = 0;
-			nEventListIndex = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+			nEventListIndex = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 			//ScriptVector_PushVar(m_scriptParm, (__int64)nEventListIndex);
 		}
 		else
@@ -429,14 +453,36 @@ bool CReturnMsgReceiveState::OnProcess(CScriptConnector* pClient)
 		nCurParmType = -1;
 	}
 
+	return true;
+}
+
+bool CReturnMsgReceiveState::Run(CScriptConnector* pClient)
+{
 	//读取完成，执行结果
 	CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN, 0, m_scriptParm, nEventListIndex);
+	return true;
+}
 
+bool CReturnMsgReceiveState::Send(CScriptConnector* pClient)
+{
+	std::vector<char> m_vBuff;
+	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT_RETURN);
+	AddInt642Bytes(m_vBuff, nEventListIndex);
+	AddInt642Bytes(m_vBuff, nStateID);
+	AddChar2Bytes(m_vBuff, (char)m_scriptParm.size());
+
+	while (!m_scriptParm.empty())
+	{
+		pClient->AddVar2Bytes(m_vBuff, &m_scriptParm.top());
+		m_scriptParm.pop();
+	}
+
+	pClient->SendData(&m_vBuff[0], m_vBuff.size());
 	return true;
 }
 
 
-bool CSyncClassDataMsgReceiveState::OnProcess(CScriptConnector* pClient)
+bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
@@ -537,7 +583,30 @@ bool CSyncClassDataMsgReceiveState::OnProcess(CScriptConnector* pClient)
 	return true;
 }
 
-bool CSyncUpMsgReceiveState::OnProcess(CScriptConnector* pClient)
+bool CSyncClassDataMsgReceiveState::Run(CScriptConnector* pClient)
+{
+	return true;
+}
+
+bool CSyncClassDataMsgReceiveState::Send(CScriptConnector* pClient)
+{
+	if (m_pPoint == nullptr)
+	{
+		return false;
+	}
+	tagByteArray vBuff;
+	AddChar2Bytes(vBuff, E_SYNC_CLASS_DATA);
+	AddInt642Bytes(vBuff, m_pPoint->GetScriptPointIndex());
+	AddString2Bytes(vBuff, (char*)strClassName.c_str());
+
+	tagByteArray vDataBuff;
+	m_pPoint->AddAllData2Bytes(vDataBuff);
+	AddData2Bytes(vBuff, vDataBuff);
+	pClient->SendData(&vBuff[0], vBuff.size());
+	return true;
+}
+
+bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
@@ -737,6 +806,12 @@ bool CSyncUpMsgReceiveState::OnProcess(CScriptConnector* pClient)
 		}
 		nCurParmType = -1;
 	}
+
+	return true;
+}
+
+bool CSyncUpMsgReceiveState::Run(CScriptConnector* pClient)
+{
 	//将参数放入临时状态中
 	CTempScriptRunState TempState;
 	TempState.CopyFromStack(&m_scriptParm);
@@ -760,7 +835,24 @@ bool CSyncUpMsgReceiveState::OnProcess(CScriptConnector* pClient)
 	return true;
 }
 
-bool CSyncDownMsgReceiveState::OnProcess(CScriptConnector* pClient)
+bool CSyncUpMsgReceiveState::Send(CScriptConnector* pClient)
+{
+	tagByteArray vBuff;
+	AddChar2Bytes(vBuff, E_SYNC_UP_PASSAGE);
+	AddInt642Bytes(vBuff, nClassID);
+	AddString2Bytes(vBuff, (char*)strFunName.c_str());
+
+	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
+	while (!m_scriptParm.empty())
+	{
+		pClient->AddVar2Bytes(vBuff, &m_scriptParm.top());
+		m_scriptParm.pop();
+	}
+	pClient->SendData(&vBuff[0], vBuff.size());
+	return true;
+}
+
+bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
@@ -961,6 +1053,11 @@ bool CSyncDownMsgReceiveState::OnProcess(CScriptConnector* pClient)
 		}
 		nCurParmType = -1;
 	}
+	return true;
+}
+
+bool CSyncDownMsgReceiveState::Run(CScriptConnector* pClient)
+{
 	//将参数放入临时状态中
 	CTempScriptRunState TempState;
 	TempState.CopyFromStack(&m_scriptParm);
@@ -975,12 +1072,29 @@ bool CSyncDownMsgReceiveState::OnProcess(CScriptConnector* pClient)
 			auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
 			if (pMaster)
 			{
-				pMaster->SyncDownRunFun(pPoint->GetType(),strFunName,&TempState);
+				pMaster->SyncDownRunFun(pPoint->GetType(), strFunName, &TempState);
 			}
 			pPoint->Unlock();
 		}
 		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
+	return true;
+}
+
+bool CSyncDownMsgReceiveState::Send(CScriptConnector* pClient)
+{
+	tagByteArray vBuff;
+	AddChar2Bytes(vBuff, E_SYNC_DOWN_PASSAGE);
+	AddInt642Bytes(vBuff, nClassID);
+	AddString2Bytes(vBuff, (char*)strFunName.c_str());
+
+	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
+	while (!m_scriptParm.empty())
+	{
+		pClient->AddVar2Bytes(vBuff, &m_scriptParm.top());
+		m_scriptParm.pop();
+	}
+	pClient->SendData(&vBuff[0], vBuff.size());
 	return true;
 }
 

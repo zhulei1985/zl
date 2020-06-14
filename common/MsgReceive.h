@@ -16,7 +16,9 @@ using namespace zlscript;
 class CBaseMsgReceiveState
 {
 public:
-	virtual bool OnProcess(CScriptConnector*) = 0;
+	virtual bool Recv(CScriptConnector*) = 0;
+	virtual bool Run(CScriptConnector* pClient) = 0;
+	virtual bool Send(CScriptConnector*) = 0;
 };
 class CScriptMsgReceiveState : public CBaseMsgReceiveState
 {
@@ -30,16 +32,18 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-	virtual bool OnProcess(CScriptConnector*);
-
-private:
-	int nEventListIndex;//脚本执行器的ID
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CScriptConnector* pClient);
+	virtual bool Send(CScriptConnector*);
+public:
+	__int64 nEventListIndex;//脚本执行器的ID
 	__int64 nStateID;//脚本执行状态的ID
-	int nScriptFunNameLen;
-	std::string strScriptFunName;//脚本名
 
-	//以下是读取脚本函数参数时需要的变量
+	std::string strScriptFunName;//脚本名
 	CScriptStack m_scriptParm;
+protected:
+	//以下是读取时的临时变量
+	int nScriptFunNameLen;
 	int nScriptParmNum;
 	int nCurParmType;
 	int nStringLen;
@@ -57,14 +61,17 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-	virtual bool OnProcess(CScriptConnector*);
 
-private:
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CScriptConnector* pClient);
+	virtual bool Send(CScriptConnector*);
+public:
 	int nEventListIndex;//脚本执行器的ID
 	__int64 nStateID;//脚本执行状态的ID
-
-	//以下是读取脚本函数参数时需要的变量
 	CScriptStack m_scriptParm;
+protected:
+	//以下是读取时的临时变量
+
 	int nScriptParmNum;
 	int nCurParmType;
 	int nStringLen;
@@ -82,14 +89,16 @@ public:
 		nDataLen = -1;
 		m_pPoint = nullptr;
 	}
-	virtual bool OnProcess(CScriptConnector*);
-private:
-	int nClassNameStringLen;
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CScriptConnector* pClient);
+	virtual bool Send(CScriptConnector*);
+public:
 	std::string strClassName;
-	__int64 nClassID;//涉及到的类ID
-
 	CSyncScriptPointInterface* m_pPoint;
-
+private:
+	//以下是读取时的临时变量
+	int nClassNameStringLen;
+	__int64 nClassID;//涉及到的类ID
 	int nDataLen;
 };
 class CSyncUpMsgReceiveState : public CBaseMsgReceiveState
@@ -105,16 +114,17 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-	virtual bool OnProcess(CScriptConnector*);
-
-private:
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CScriptConnector* pClient);
+	virtual bool Send(CScriptConnector*);
+public:
 	__int64 nClassID;//涉及到的类ID
 
-	int nFunNameStringLen;
 	std::string strFunName;
-
-	//以下是读取脚本函数参数时需要的变量
 	CScriptStack m_scriptParm;
+protected:
+	//以下是读取时的临时变量
+	int nFunNameStringLen;
 	int nScriptParmNum;
 	int nCurParmType;
 	int nStringLen;
@@ -133,16 +143,17 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-	virtual bool OnProcess(CScriptConnector*);
-
-private:
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CScriptConnector* pClient);
+	virtual bool Send(CScriptConnector*);
+public:
 	__int64 nClassID;//涉及到的类ID
-
-	int nFunNameStringLen;
 	std::string strFunName;
-
-	//以下是读取脚本函数参数时需要的变量
 	CScriptStack m_scriptParm;
+
+protected:
+	//以下是读取时的临时变量
+	int nFunNameStringLen;
 	int nScriptParmNum;
 	int nCurParmType;
 	int nStringLen;

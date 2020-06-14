@@ -82,29 +82,21 @@ int CScriptConnector::RunScript2Script(CScriptRunState* pState)
 	{
 		return ECALLBACK_ERROR;
 	}
-	m_vBuff.clear();
+	CScriptMsgReceiveState msg;
 	int nParmNum = pState->GetParamNum() - 2;
-	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT);
 	if (pState->m_pMachine)
-		AddInt2Bytes(m_vBuff, pState->m_pMachine->m_nEventListIndex);
+		msg.nEventListIndex = pState->m_pMachine->m_nEventListIndex;
 	else
-		AddInt2Bytes(m_vBuff, 0);
+		msg.nEventListIndex = 0;
 	int nIsWaiting = pState->PopIntVarFormStack();//是否等待调用函数完成
 	if (nIsWaiting > 0)
-		AddInt642Bytes(m_vBuff, (__int64)pState->GetId());
+		msg.nStateID = (__int64)pState->GetId();
 	else
-		AddInt642Bytes(m_vBuff, (__int64)0);
-	std::string scriptName = pState->PopCharVarFormStack();
-	AddString2Bytes(m_vBuff, (char*)scriptName.c_str());//脚本函数名
+		msg.nStateID = 0;
+	msg.strScriptFunName = pState->PopCharVarFormStack();
 
-	AddChar2Bytes(m_vBuff, (char)nParmNum);
-
-	for (int i = 0; i < nParmNum; i++)
-	{
-		AddVar2Bytes(m_vBuff, &pState->PopVarFormStack());
-	}
-	SendData(&m_vBuff[0], m_vBuff.size());
-
+	pState->CopyToStack(&msg.m_scriptParm, nParmNum);
+	msg.Send(this);
 
 	pState->ClearFunParam();
 	if (nIsWaiting > 0)
@@ -213,8 +205,9 @@ bool CScriptConnector::OnProcess()
 	}
 	if (pCurMsgReceive)
 	{
-		if (pCurMsgReceive->OnProcess(this) == true)
+		if (pCurMsgReceive->Recv(this) == true)
 		{
+			pCurMsgReceive->Run(this);
 			CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
 			pCurMsgReceive = nullptr;
 		}
@@ -335,90 +328,51 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 
 void CScriptConnector::SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint)
 {
-	tagByteArray vBuff;
-	AddChar2Bytes(vBuff, E_SYNC_CLASS_DATA);
-	AddInt642Bytes(vBuff, pPoint->GetScriptPointIndex());
-	AddString2Bytes(vBuff, (char*)strClassName.c_str());
-
-	tagByteArray vDataBuff;
-	pPoint->AddAllData2Bytes(vDataBuff);
-	AddData2Bytes(vBuff, vDataBuff);
-	SendData(&vBuff[0], vBuff.size());
+	CSyncClassDataMsgReceiveState msg;
+	msg.strClassName = strClassName;
+	msg.m_pPoint = pPoint;
+	msg.Send(this);
 }
 
 void CScriptConnector::SyncUpClassFunRun(CSyncScriptPointInterface* pPoint, std::string strFunName, CScriptStack& stack)
 {
-	tagByteArray vBuff;
-	AddChar2Bytes(vBuff, E_SYNC_UP_PASSAGE);
-	AddInt642Bytes(vBuff, pPoint->GetScriptPointIndex());
-	AddString2Bytes(vBuff, (char*)strFunName.c_str());
-
-	AddChar2Bytes(m_vBuff, (char)stack.size());
-	for (int i = stack.size() - 1; i >= 0; i--)
-	{
-		AddVar2Bytes(m_vBuff, stack.GetVal(i));
-	}
-	SendData(&vBuff[0], vBuff.size());
+	CSyncUpMsgReceiveState msg;
+	msg.strFunName = strFunName;
+	msg.nClassID = pPoint->GetScriptPointIndex();
+	msg.m_scriptParm = stack;
+	msg.Send(this);
 }
 
 void CScriptConnector::SyncDownClassFunRun(CSyncScriptPointInterface* pPoint, std::string strFunName, CScriptStack& stack)
 {
-	tagByteArray vBuff;
-	AddChar2Bytes(vBuff, E_SYNC_DOWN_PASSAGE);
-	AddInt642Bytes(vBuff, pPoint->GetScriptPointIndex());
-	AddString2Bytes(vBuff, (char*)strFunName.c_str());
 
-	AddChar2Bytes(m_vBuff, (char)stack.size());
-	for (int i = stack.size()-1; i >=0; i--)
-	{
-		AddVar2Bytes(m_vBuff, stack.GetVal(i));
-	}
-	SendData(&vBuff[0], vBuff.size());
+	CSyncDownMsgReceiveState msg;
+	msg.strFunName = strFunName;
+	msg.nClassID = pPoint->GetScriptPointIndex();
+	msg.m_scriptParm = stack;
+	msg.Send(this);
 }
 
 
 
 void CScriptConnector::EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
-
-	m_vBuff.clear();
-
-	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT_RETURN);
-
-	__int64 nEventIndex = ScriptStack_GetInt(ParmInfo);
-	AddInt2Bytes(m_vBuff, nEventIndex);
-	__int64 nStateID = ScriptStack_GetInt(ParmInfo);
-	AddInt642Bytes(m_vBuff, nStateID);
-
-	AddChar2Bytes(m_vBuff, (char)ParmInfo.size());
-	while (ParmInfo.size() > 0)
-	{
-		AddVar2Bytes(m_vBuff, &ParmInfo.top());
-		ParmInfo.pop();
-	}
-	SendData(&m_vBuff[0], m_vBuff.size());
+	CReturnMsgReceiveState msg;
+	msg.nEventListIndex = ScriptStack_GetInt(ParmInfo);
+	msg.nStateID = ScriptStack_GetInt(ParmInfo);
+	msg.m_scriptParm = ParmInfo;
+	msg.Send(this);
 }
 
 void CScriptConnector::EventRunFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	m_vBuff.clear();
+	CScriptMsgReceiveState msg;
+	msg.nEventListIndex = ScriptStack_GetInt(ParmInfo);
+	msg.nStateID = ScriptStack_GetInt(ParmInfo);
+	msg.strScriptFunName = ScriptStack_GetString(ParmInfo);
+	msg.m_scriptParm = ParmInfo;
 
-	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT);
-
-	__int64 nEventIndex = ScriptStack_GetInt(ParmInfo);
-	AddInt2Bytes(m_vBuff, nEventIndex);
-	__int64 nStateID = ScriptStack_GetInt(ParmInfo);
-	AddInt642Bytes(m_vBuff, nStateID);
-	std::string name = ScriptStack_GetString(ParmInfo);
-	AddString2Bytes(m_vBuff, (char*)name.c_str());
-
-	AddChar2Bytes(m_vBuff, (char)ParmInfo.size());
-	while (ParmInfo.size() > 0)
-	{
-		AddVar2Bytes(m_vBuff, &ParmInfo.top());
-		ParmInfo.pop();
-	}
-	SendData(&m_vBuff[0], m_vBuff.size());
+	msg.Send(this);
 }
 
 __int64 CScriptConnector::GetImageIndex(__int64 nID)
