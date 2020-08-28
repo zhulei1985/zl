@@ -1,34 +1,45 @@
 #include "ScriptConnector.h"
 #include "MsgReceive.h"
 #include "zByteArray.h"
-
 #include "TempScriptRunState.h"
+#include "RouteEvent.h"
 
+CBaseMsgReceiveState::~CBaseMsgReceiveState()
+{
+	Clear();
+}
+bool CBaseMsgReceiveState::Send(CBaseScriptConnector* pClient)
+{
+	std::vector<char> m_vBuff;
+	AddAllData2Bytes(pClient,m_vBuff);
+
+	pClient->SendMsg(&m_vBuff[0], m_vBuff.size());
+	return true;
+}
 bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
-	if (nEventListIndex == -1)
-	{
-		if (pClient->GetData(vOut, 8))
-		{
-			nPos = 0;
-			nEventListIndex = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-			ScriptVector_PushVar(m_scriptParm, (__int64)nEventListIndex);
-		}
-		else
-		{
-			return false;
-		}
-	}
+	//if (nEventListIndex == -1)
+	//{
+	//	if (pClient->GetData(vOut, 8))
+	//	{
+	//		nPos = 0;
+	//		nEventListIndex = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+	//		ScriptVector_PushVar(m_scriptParm, (__int64)nEventListIndex);
+	//	}
+	//	else
+	//	{
+	//		return false;
+	//	}
+	//}
 
-	if (nStateID == -1)
+	if (nReturnID == -1)
 	{
 		if (pClient->GetData(vOut, 8))
 		{
 			nPos = 0;
-			nStateID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-			ScriptVector_PushVar(m_scriptParm, nStateID);
+			nReturnID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 		}
 		else
 		{
@@ -54,7 +65,6 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 		{
 			vOut.push_back('\0');
 			strScriptFunName = (const char*)&vOut[0];
-			ScriptVector_PushVar(m_scriptParm, strScriptFunName.c_str());
 		}
 		else
 		{
@@ -68,8 +78,6 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 		{
 			nPos = 0;
 			nScriptParmNum = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-			//前面已经有3个值被压入堆栈
-			nScriptParmNum += 3;
 		}
 		else
 		{
@@ -225,42 +233,27 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 	return true;
 }
 
-bool CScriptMsgReceiveState::Run(CScriptConnector* pClient)
+bool CScriptMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	//对连接可执行的脚本做限制
-	if (pClient->CheckScriptLimit(strScriptFunName))
-	{
-		ScriptVector_PushVar(m_scriptParm, pClient);
-		//读取完成，执行结果
-		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_NETWORK_RUNSCRIPT, pClient->GetScriptEventIndex(), m_scriptParm);
-	}
-	else
-	{
-		CTempScriptRunState tempState;
-		tempState.PushVarToStack(strScriptFunName.c_str());
-		tempState.PushVarToStack("Error_CannotRunScript");
-		tempState.PushVarToStack(0);
-		pClient->RunScript2Script(&tempState);
-	}
+	pClient->RunTo(strScriptFunName, m_scriptParm, nReturnID, 0);
+
 	return true;
 }
 
-bool CScriptMsgReceiveState::Send(CScriptConnector* pClient)
+bool CScriptMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
 {
-	std::vector<char> m_vBuff;
-	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT);
-	AddInt642Bytes(m_vBuff, nEventListIndex);
-	AddInt642Bytes(m_vBuff, nStateID);
-	AddString2Bytes(m_vBuff, (char*)strScriptFunName.c_str());
-	AddChar2Bytes(m_vBuff, (char)m_scriptParm.size());
+	AddChar2Bytes(vBuff, E_RUN_SCRIPT);
+	//AddInt642Bytes(vBuff, nEventListIndex);
+	AddInt642Bytes(vBuff, nReturnID);
+	AddString2Bytes(vBuff, (char*)strScriptFunName.c_str());
+	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
 
-	while (!m_scriptParm.empty())
+	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(m_vBuff, &m_scriptParm.top());
-		m_scriptParm.pop();
+		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
 	}
 
-	pClient->SendData(&m_vBuff[0], m_vBuff.size());
 	return true;
 }
 
@@ -268,27 +261,27 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
-	if (nEventListIndex == -1)
-	{
-		if (pClient->GetData(vOut, 8))
-		{
-			nPos = 0;
-			nEventListIndex = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-			//ScriptVector_PushVar(m_scriptParm, (__int64)nEventListIndex);
-		}
-		else
-		{
-			return false;
-		}
-	}
+	//if (nEventListIndex == -1)
+	//{
+	//	if (pClient->GetData(vOut, 8))
+	//	{
+	//		nPos = 0;
+	//		nEventListIndex = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+	//		//ScriptVector_PushVar(m_scriptParm, (__int64)nEventListIndex);
+	//	}
+	//	else
+	//	{
+	//		return false;
+	//	}
+	//}
 
-	if (nStateID == -1)
+	if (nReturnID == -1)
 	{
 		if (pClient->GetData(vOut, 8))
 		{
 			nPos = 0;
-			nStateID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-			ScriptVector_PushVar(m_scriptParm, nStateID);
+			nReturnID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+			//ScriptVector_PushVar(m_scriptParm, nReturnID);
 		}
 		else
 		{
@@ -303,7 +296,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 			nPos = 0;
 			nScriptParmNum = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 			//前面已经有1个值被压入堆栈
-			nScriptParmNum += 1;
+			//nScriptParmNum += 1;
 		}
 		else
 		{
@@ -456,28 +449,29 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 	return true;
 }
 
-bool CReturnMsgReceiveState::Run(CScriptConnector* pClient)
+bool CReturnMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	//读取完成，执行结果
-	CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN, 0, m_scriptParm, nEventListIndex);
+	if (pClient)
+	{
+		pClient->ResultTo(m_scriptParm, nReturnID,0);
+	}
+	//CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN, 0, m_scriptParm, nEventListIndex);
 	return true;
 }
 
-bool CReturnMsgReceiveState::Send(CScriptConnector* pClient)
+bool CReturnMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
 {
-	std::vector<char> m_vBuff;
-	AddChar2Bytes(m_vBuff, E_RUN_SCRIPT_RETURN);
-	AddInt642Bytes(m_vBuff, nEventListIndex);
-	AddInt642Bytes(m_vBuff, nStateID);
-	AddChar2Bytes(m_vBuff, (char)m_scriptParm.size());
+	AddChar2Bytes(vBuff, E_RUN_SCRIPT_RETURN);
+	//AddInt642Bytes(vBuff, nEventListIndex);
+	AddInt642Bytes(vBuff, nReturnID);
+	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
 
-	while (!m_scriptParm.empty())
+	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(m_vBuff, &m_scriptParm.top());
-		m_scriptParm.pop();
+		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
 	}
 
-	pClient->SendData(&m_vBuff[0], m_vBuff.size());
 	return true;
 }
 
@@ -583,18 +577,18 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 	return true;
 }
 
-bool CSyncClassDataMsgReceiveState::Run(CScriptConnector* pClient)
+bool CSyncClassDataMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	return true;
 }
 
-bool CSyncClassDataMsgReceiveState::Send(CScriptConnector* pClient)
+bool CSyncClassDataMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
 {
 	if (m_pPoint == nullptr)
 	{
 		return false;
 	}
-	tagByteArray vBuff;
+
 	AddChar2Bytes(vBuff, E_SYNC_CLASS_DATA);
 	AddInt642Bytes(vBuff, m_pPoint->GetScriptPointIndex());
 	AddString2Bytes(vBuff, (char*)strClassName.c_str());
@@ -602,7 +596,7 @@ bool CSyncClassDataMsgReceiveState::Send(CScriptConnector* pClient)
 	tagByteArray vDataBuff;
 	m_pPoint->AddAllData2Bytes(vDataBuff);
 	AddData2Bytes(vBuff, vDataBuff);
-	pClient->SendData(&vBuff[0], vBuff.size());
+
 	return true;
 }
 
@@ -810,7 +804,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 	return true;
 }
 
-bool CSyncUpMsgReceiveState::Run(CScriptConnector* pClient)
+bool CSyncUpMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	//将参数放入临时状态中
 	CTempScriptRunState TempState;
@@ -835,20 +829,18 @@ bool CSyncUpMsgReceiveState::Run(CScriptConnector* pClient)
 	return true;
 }
 
-bool CSyncUpMsgReceiveState::Send(CScriptConnector* pClient)
+bool CSyncUpMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
 {
-	tagByteArray vBuff;
 	AddChar2Bytes(vBuff, E_SYNC_UP_PASSAGE);
 	AddInt642Bytes(vBuff, nClassID);
 	AddString2Bytes(vBuff, (char*)strFunName.c_str());
 
 	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
-	while (!m_scriptParm.empty())
+
+	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, &m_scriptParm.top());
-		m_scriptParm.pop();
+		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
 	}
-	pClient->SendData(&vBuff[0], vBuff.size());
 	return true;
 }
 
@@ -1056,7 +1048,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 	return true;
 }
 
-bool CSyncDownMsgReceiveState::Run(CScriptConnector* pClient)
+bool CSyncDownMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	//将参数放入临时状态中
 	CTempScriptRunState TempState;
@@ -1081,23 +1073,149 @@ bool CSyncDownMsgReceiveState::Run(CScriptConnector* pClient)
 	return true;
 }
 
-bool CSyncDownMsgReceiveState::Send(CScriptConnector* pClient)
+bool CSyncDownMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
 {
-	tagByteArray vBuff;
 	AddChar2Bytes(vBuff, E_SYNC_DOWN_PASSAGE);
 	AddInt642Bytes(vBuff, nClassID);
 	AddString2Bytes(vBuff, (char*)strFunName.c_str());
 
 	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
-	while (!m_scriptParm.empty())
+	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, &m_scriptParm.top());
-		m_scriptParm.pop();
+		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
 	}
-	pClient->SendData(&vBuff[0], vBuff.size());
 	return true;
 }
 
+void CRouteFrontMsgReceiveState::Clear()
+{
+	nConnectID = -1;
+	nMsgType = 0;
+	CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pState);
+	pState = nullptr;
+}
+
+bool CRouteFrontMsgReceiveState::Recv(CScriptConnector* pClient)
+{
+	std::vector<char> vOut;
+	int nPos = 0;
+	if (nConnectID == -1)
+	{
+		if (pClient->GetData(vOut, 8))
+		{
+			nPos = 0;
+			nConnectID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if (nMsgType == 0)
+	{
+		if (pClient->GetData(vOut, 1))
+		{
+			nPos = 0;
+			nMsgType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+			pState = CMsgReceiveMgr::GetInstance()->CreateRceiveState(nMsgType);
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	if (pState)
+	{
+		return pState->Recv(pClient);
+	}
+	return false;
+}
+
+bool CRouteFrontMsgReceiveState::Run(CBaseScriptConnector* pClient)
+{
+	if (pClient)
+	{
+		return pClient->RouteMsg(this);
+	}
+	return false;
+}
+
+bool CRouteFrontMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+{
+	AddChar2Bytes(vBuff, E_ROUTE_FRONT);
+	AddInt642Bytes(vBuff, nConnectID);
+	if (pState)
+	{
+		pState->AddAllData2Bytes(pClient, vBuff);
+	}
+	else
+	{
+		AddChar2Bytes(vBuff, 0);
+	}
+	return true;
+}
+
+void CRouteBackMsgReceiveState::Clear()
+{
+	nConnectID = -1;
+	CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pState);
+	pState = nullptr;
+}
+
+bool CRouteBackMsgReceiveState::Recv(CScriptConnector* pClient)
+{
+	std::vector<char> vOut;
+	int nPos = 0;
+	if (nConnectID == -1)
+	{
+		if (pClient->GetData(vOut, 8))
+		{
+			nPos = 0;
+			nConnectID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if (nMsgType == 0)
+	{
+		if (pClient->GetData(vOut, 1))
+		{
+			nPos = 0;
+			nMsgType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+			pState = CMsgReceiveMgr::GetInstance()->CreateRceiveState(nMsgType);
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	if (pState)
+	{
+		return pState->Recv(pClient);
+	}
+	return false;
+}
+
+bool CRouteBackMsgReceiveState::Run(CBaseScriptConnector* pClient)
+{
+	//直接给对应连接转发
+	return CRouteEventMgr::GetInstance()->SendEvent(nConnectID, false, pState);
+}
+
+bool CRouteBackMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+{
+	AddChar2Bytes(vBuff, E_ROUTE_BACK);
+	AddInt642Bytes(vBuff, nConnectID);
+	if (pState)
+	{
+		pState->AddAllData2Bytes(pClient, vBuff);
+	}
+	return true;
+}
 
 CMsgReceiveMgr CMsgReceiveMgr::s_Instance;
 CBaseMsgReceiveState* CMsgReceiveMgr::CreateRceiveState(char cType)
@@ -1118,6 +1236,12 @@ CBaseMsgReceiveState* CMsgReceiveMgr::CreateRceiveState(char cType)
 		break;
 	case E_SYNC_UP_PASSAGE:
 		return new CSyncDownMsgReceiveState;
+		break;
+	case E_ROUTE_FRONT:
+		return new CRouteFrontMsgReceiveState;
+		break;
+	case E_ROUTE_BACK:
+		return new CRouteBackMsgReceiveState;
 		break;
 	}
 	return nullptr;

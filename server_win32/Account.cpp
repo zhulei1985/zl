@@ -3,7 +3,7 @@
 
 CAccount::CAccount()
 {
-	nConnectID = 0;
+	nConnectPointIndex = 0;
 
 	RegisterClassFun(SetAccountName, this, &CAccount::SetAccountName2Script);
 	RegisterClassFun(GetAccountName, this, &CAccount::GetAccountName2Script);
@@ -13,8 +13,8 @@ CAccount::CAccount()
 	RegisterClassFun(GetNickName, this, &CAccount::GetNickName2Script);
 	RegisterSyncClassFun(SetNickName, this, &CAccount::SetNickName2Script);
 
-	RegisterClassFun(SetConnectID, this, &CAccount::SetConnectID2Script);
-	RegisterClassFun(GetConnectID, this, &CAccount::GetConnectID2Script);
+	RegisterClassFun(SetConnect, this, &CAccount::SetConnect2Script);
+	RegisterClassFun(GetConnect, this, &CAccount::GetConnect2Script);
 }
 
 CAccount::~CAccount()
@@ -109,20 +109,20 @@ int CAccount::GetNickName2Script(CScriptRunState* pState)
 	return ECALLBACK_FINISH;
 }
 
-int CAccount::SetConnectID2Script(CScriptRunState* pState)
+int CAccount::SetConnect2Script(CScriptRunState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	nConnectID = pState->PopIntVarFormStack();
+	nConnectPointIndex = pState->PopClassPointFormStack();
 
 	pState->ClearFunParam();
 
 	return ECALLBACK_FINISH;
 }
 
-int CAccount::GetConnectID2Script(CScriptRunState* pState)
+int CAccount::GetConnect2Script(CScriptRunState* pState)
 {
 	if (pState == nullptr)
 	{
@@ -130,7 +130,7 @@ int CAccount::GetConnectID2Script(CScriptRunState* pState)
 	}
 
 	pState->ClearFunParam();
-	pState->PushVarToStack(nConnectID);
+	pState->PushClassPointToStack(nConnectPointIndex);
 	return ECALLBACK_FINISH;
 }
 

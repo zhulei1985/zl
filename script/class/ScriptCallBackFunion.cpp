@@ -56,11 +56,11 @@ namespace zlscript
 		RegisterFun("RunScriptToChannel", (C_CallBackScriptFunion)RunScriptToChannel);
 		RegisterFun("runscripttochannel", (C_CallBackScriptFunion)RunScriptToChannel);
 
-		RegisterFun("StopScript", (C_CallBackScriptFunion)StopScript);
-		RegisterFun("stopscript", (C_CallBackScriptFunion)StopScript);
+		//RegisterFun("StopScript", (C_CallBackScriptFunion)StopScript);
+		//RegisterFun("stopscript", (C_CallBackScriptFunion)StopScript);
 
-		RegisterFun("CheckScriptRun", (C_CallBackScriptFunion)CheckScriptRun);
-		RegisterFun("checkscriptrun", (C_CallBackScriptFunion)CheckScriptRun);
+		//RegisterFun("CheckScriptRun", (C_CallBackScriptFunion)CheckScriptRun);
+		//RegisterFun("checkscriptrun", (C_CallBackScriptFunion)CheckScriptRun);
 
 		RegisterFun("GetMsTime", (C_CallBackScriptFunion)GetMsTime);
 
@@ -154,62 +154,62 @@ namespace zlscript
 		return ECALLBACK_FINISH;
 	}
 
-	int CScriptCallBackFunion::RunScript(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
-	{
-		if (pState == nullptr)
-		{
-			return ECALLBACK_ERROR;
-		}
+	//int CScriptCallBackFunion::RunScript(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
+	//{
+	//	if (pState == nullptr)
+	//	{
+	//		return ECALLBACK_ERROR;
+	//	}
 
-		if (pMachine == nullptr)
-		{
-			return ECALLBACK_ERROR;
-		}
-		int nParmNum = pState->GetParamNum();
+	//	if (pMachine == nullptr)
+	//	{
+	//		return ECALLBACK_ERROR;
+	//	}
+	//	int nParmNum = pState->GetParamNum();
 
-		int nHoldState = pState->PopIntVarFormStack();
-		std::string scriptname = pState->PopCharVarFormStack();
+	//	int nHoldState = pState->PopIntVarFormStack();
+	//	std::string scriptname = pState->PopCharVarFormStack();
 
-		bool bResult = false;
-		CScriptStack ParmStack;
-		nParmNum -= 2;
-		CScriptStack vTemp;
-		for (int i = 0; i < nParmNum; i++)
-		{
-			ScriptVector_PushVar(vTemp, &pState->PopVarFormStack());
-		}
+	//	bool bResult = false;
+	//	CScriptStack ParmStack;
+	//	nParmNum -= 2;
+	//	CScriptStack vTemp;
+	//	for (int i = 0; i < nParmNum; i++)
+	//	{
+	//		ScriptVector_PushVar(vTemp, &pState->PopVarFormStack());
+	//	}
 
-		while (vTemp.size() > 0)
-		{
-			ScriptVector_PushVar(ParmStack, &vTemp.top());
-			vTemp.pop();
-		}
+	//	while (vTemp.size() > 0)
+	//	{
+	//		ScriptVector_PushVar(ParmStack, &vTemp.top());
+	//		vTemp.pop();
+	//	}
 
-		if (nHoldState == 0)
-		{
-			CScriptRunState* m_pScriptState = new CScriptRunState;
-			if (m_pScriptState)
-			{
-				bResult = pMachine->RunFun(m_pScriptState, scriptname, ParmStack);
-			}
-			pState->ClearFunParam();
-			pState->PushVarToStack((int)m_pScriptState->GetId());
-		}
-		else
-		{
-			//TODO 此处有问题
-			bResult = pMachine->RunFun(pState, scriptname, ParmStack,true);
-			//pState->ClearFunParam();
-			if (bResult)
-				return ECALLBACK_NEXTCONTINUE;
-			else
-				return ECALLBACK_ERROR;
-		}
-		if (bResult)
-			return ECALLBACK_FINISH;
-		else
-			return ECALLBACK_ERROR;
-	}
+	//	if (nHoldState == 0)
+	//	{
+	//		CScriptRunState* m_pScriptState = new CScriptRunState;
+	//		if (m_pScriptState)
+	//		{
+	//			bResult = pMachine->RunFun(m_pScriptState, scriptname, ParmStack);
+	//		}
+	//		pState->ClearFunParam();
+	//		pState->PushVarToStack((int)m_pScriptState->GetId());
+	//	}
+	//	else
+	//	{
+	//		//TODO 此处有问题
+	//		bResult = pMachine->RunFun(pState, scriptname, ParmStack,true);
+	//		//pState->ClearFunParam();
+	//		if (bResult)
+	//			return ECALLBACK_NEXTCONTINUE;
+	//		else
+	//			return ECALLBACK_ERROR;
+	//	}
+	//	if (bResult)
+	//		return ECALLBACK_FINISH;
+	//	else
+	//		return ECALLBACK_ERROR;
+	//}
 	int CScriptCallBackFunion::RunScriptToChannel(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
 	{
 		if (pState == nullptr)
@@ -224,27 +224,18 @@ namespace zlscript
 		int nParmNum = pState->GetParamNum();
 		CScriptStack vRetrunVars;
 		int nIsWaiting = pState->PopIntVarFormStack();//是否等待调用函数完成
-		//ScriptVector_PushVar(vRetrunVars, (__int64)E_SCRIPT_EVENT_RUNSCRIPT);
-		if (nIsWaiting > 0)
-			ScriptVector_PushVar(vRetrunVars, (__int64)pState->GetId());
-		else
-			ScriptVector_PushVar(vRetrunVars, (__int64)0);
-		ScriptVector_PushVar(vRetrunVars, pState->PopCharVarFormStack());
-		//ScriptVector_PushVar(vRetrunVars, this);
+		std::string name = pState->PopCharVarFormStack();
+
 		nParmNum -= 2;
-		//CScriptStack vTemp;
+		CScriptStack scriptParm;
 		for (int i = 0; i < nParmNum; i++)
 		{
-			//ScriptVector_PushVar(vTemp, &pState->PopVarFormStack());
+
 			ScriptVector_PushVar(vRetrunVars, &pState->PopVarFormStack());
 		}
 
-		//while (vTemp.size() > 0)
-		//{
-		//	ScriptVector_PushVar(vRetrunVars, &vTemp.top());
-		//	vTemp.pop();
-		//}
-		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT,pMachine->m_nEventListIndex, vRetrunVars);
+		pMachine->RunTo(name, scriptParm, nIsWaiting>0? pState->GetId():0, 0);
+		
 
 		pState->ClearFunParam();
 		if (nIsWaiting)
@@ -254,39 +245,39 @@ namespace zlscript
 		else
 			return ECALLBACK_FINISH;
 	}
-	int CScriptCallBackFunion::StopScript(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
-	{
-		if (pState == nullptr)
-		{
-			return ECALLBACK_ERROR;
-		}
+	//int CScriptCallBackFunion::StopScript(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
+	//{
+	//	if (pState == nullptr)
+	//	{
+	//		return ECALLBACK_ERROR;
+	//	}
 
-		if (pMachine == nullptr)
-		{
-			return ECALLBACK_ERROR;
-		}
-		int nId = pState->PopIntVarFormStack();
-		pMachine->RemoveRunState(nId);
-		pState->ClearFunParam();
-		return ECALLBACK_FINISH;
-	}
-	int CScriptCallBackFunion::CheckScriptRun(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
-	{
-		if (pState == nullptr)
-		{
-			return ECALLBACK_ERROR;
-		}
+	//	if (pMachine == nullptr)
+	//	{
+	//		return ECALLBACK_ERROR;
+	//	}
+	//	int nId = pState->PopIntVarFormStack();
+	//	pMachine->RemoveRunState(nId);
+	//	pState->ClearFunParam();
+	//	return ECALLBACK_FINISH;
+	//}
+	//int CScriptCallBackFunion::CheckScriptRun(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
+	//{
+	//	if (pState == nullptr)
+	//	{
+	//		return ECALLBACK_ERROR;
+	//	}
 
-		if (pMachine == nullptr)
-		{
-			return ECALLBACK_ERROR;
-		}
-		int nId = pState->PopIntVarFormStack();
-		int nResult = pMachine->CheckRun(nId) ? 1 : 0;
-		pState->ClearFunParam();
-		pState->PushVarToStack(nResult);
-		return ECALLBACK_FINISH;
-	}
+	//	if (pMachine == nullptr)
+	//	{
+	//		return ECALLBACK_ERROR;
+	//	}
+	//	int nId = pState->PopIntVarFormStack();
+	//	int nResult = pMachine->CheckRun(nId) ? 1 : 0;
+	//	pState->ClearFunParam();
+	//	pState->PushVarToStack(nResult);
+	//	return ECALLBACK_FINISH;
+	//}
 	int CScriptCallBackFunion::GetMsTime(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
 	{
 		if (pState == nullptr)
@@ -401,7 +392,7 @@ namespace zlscript
 		}
 		if (pState->GetParamNum() >= 1)
 		{
-			pState->m_WatingTime = /*CMyTime::GetTime() + */pState->PopIntVarFormStack();
+			pState->SetWatingTime(pState->PopIntVarFormStack());
 		}
 		pState->ClearFunParam();
 		return ECALLBACK_NEXTCONTINUE;
@@ -459,7 +450,7 @@ namespace zlscript
 		{
 			ScriptVector_PushVar(vParmVars, &pState->PopVarFormStack());
 		}
-		CScriptTriggerMgr::GetInstance()->SetEventTrigger(strEvent, nClassPoint, strFlag, pMachine->m_nEventListIndex, strScript, vParmVars);
+		CScriptTriggerMgr::GetInstance()->SetEventTrigger(strEvent, nClassPoint, strFlag, pMachine->GetEventIndex(), strScript, vParmVars);
 		pState->ClearFunParam();
 		return ECALLBACK_FINISH;
 	}

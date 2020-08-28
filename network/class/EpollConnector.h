@@ -51,7 +51,7 @@ inline bool FinalSocket()
 namespace zlnetwork
 {
 	class CSocketConnector;
-	typedef std::function<CBaseConnector * (SOCKET, const char*)> CreateConnectorFun;
+	typedef std::function<CBaseConnector * (SOCKET, const char*, int)> CreateConnectorFun;
 #define INVALID_SOCKET -1
 #define	SOCKET_ERROR -1
 	class CEpollConnector

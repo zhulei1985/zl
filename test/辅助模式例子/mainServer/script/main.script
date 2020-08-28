@@ -1,14 +1,12 @@
 void InitConnector(Connector pConnector)
 {
-	if (pConnector->GetPort() == 9999)
-	{
 
-	}
-	else if (pConnector->GetPort() == 10000)
-	{
-		print("辅助服务器连接");
-		pConnector->SetScriptLimit("SetRemoteFun",1);
-	}
+}
+void InitAssistConnector(Connector pConnector)
+{
+
+	print("辅助服务器连接");
+	pConnector->SetScriptLimit("SetRemoteFun",1);
 }
 void SetRemoteFun(string FunName, Connector pConnector)
 {
@@ -21,9 +19,9 @@ void main()
 	CData pData = GetData("Data");
 
 	//9999给客户端用
-	SetListenPort(9999);
+	SetListenPort(9999,"InitConnector");
 	//10000端口给辅助服务器用
-	SetListenPort(10000);
+	SetListenPort(10000,"InitAssistConnector");
 	print("启动完成");
 
 	while(1)

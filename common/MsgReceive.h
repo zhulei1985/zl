@@ -6,9 +6,13 @@ enum E_MSG_TYPE
 	E_SYNC_CLASS_DATA,//同步一个类的数据
 	E_SYNC_DOWN_PASSAGE,//下行同步通道
 	E_SYNC_UP_PASSAGE,//上行同步通道
+
+	E_ROUTE_FRONT,//用于客户端发给服务器
+	E_ROUTE_BACK,//用于服务器发给客户端
 };
 
 class CScriptConnector;
+class CBaseScriptConnector;
 #include "ZLScript.h"
 #include "SyncScriptPointInterface.h"
 using namespace zlscript;
@@ -16,28 +20,53 @@ using namespace zlscript;
 class CBaseMsgReceiveState
 {
 public:
+	~CBaseMsgReceiveState();
+
+	virtual int GetType() = 0;
+public:
+	virtual void Clear() {}
 	virtual bool Recv(CScriptConnector*) = 0;
-	virtual bool Run(CScriptConnector* pClient) = 0;
-	virtual bool Send(CScriptConnector*) = 0;
+	virtual bool Send(CBaseScriptConnector*);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient,std::vector<char>& vBuff) = 0;
+	//网络的连接和路由连接都有可能使用run
+	virtual bool Run(CBaseScriptConnector* pClient) = 0;
 };
 class CScriptMsgReceiveState : public CBaseMsgReceiveState
 {
 public:
 	CScriptMsgReceiveState()
 	{
-		nEventListIndex = -1;
-		nStateID = -1;
+		//nEventListIndex = -1;
+		nReturnID = -1;
 		nScriptFunNameLen = -1;
 		nScriptParmNum = -1;
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
+	int GetType()
+	{
+		return E_RUN_SCRIPT;
+	}
+	virtual void Clear()
+	{
+		//nEventListIndex = -1;
+		nReturnID = -1;
+		nScriptFunNameLen = -1;
+		nScriptParmNum = -1;
+		nCurParmType = -1;
+		nStringLen = -1;
+
+		strScriptFunName.clear();
+		strClassName.clear();
+		while (m_scriptParm.size())
+			m_scriptParm.pop();
+	}
 	virtual bool Recv(CScriptConnector*);
-	virtual bool Run(CScriptConnector* pClient);
-	virtual bool Send(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	__int64 nEventListIndex;//脚本执行器的ID
-	__int64 nStateID;//脚本执行状态的ID
+	//__int64 nEventListIndex;//脚本执行器的ID
+	__int64 nReturnID;//脚本执行返回用的ID
 
 	std::string strScriptFunName;//脚本名
 	CScriptStack m_scriptParm;
@@ -55,19 +84,33 @@ class CReturnMsgReceiveState : public CBaseMsgReceiveState
 public:
 	CReturnMsgReceiveState()
 	{
-		nEventListIndex = -1;
-		nStateID = -1;
+		//nEventListIndex = -1;
+		nReturnID = -1;
 		nScriptParmNum = -1;
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
-
+	int GetType()
+	{
+		return E_RUN_SCRIPT_RETURN;
+	}
+	virtual void Clear()
+	{
+		//nEventListIndex = -1;
+		nReturnID = -1;
+		nScriptParmNum = -1;
+		nCurParmType = -1;
+		nStringLen = -1;
+		strClassName.clear();
+		while (m_scriptParm.size())
+			m_scriptParm.pop();
+	}
 	virtual bool Recv(CScriptConnector*);
-	virtual bool Run(CScriptConnector* pClient);
-	virtual bool Send(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	int nEventListIndex;//脚本执行器的ID
-	__int64 nStateID;//脚本执行状态的ID
+	//int nEventListIndex;//脚本执行器的ID
+	__int64 nReturnID;//脚本执行状态的ID
 	CScriptStack m_scriptParm;
 protected:
 	//以下是读取时的临时变量
@@ -89,9 +132,23 @@ public:
 		nDataLen = -1;
 		m_pPoint = nullptr;
 	}
+	int GetType()
+	{
+		return E_SYNC_CLASS_DATA;
+	}
+	virtual void Clear()
+	{
+		nClassID = -1;
+
+		nClassNameStringLen = -1;
+		nDataLen = -1;
+		m_pPoint = nullptr;
+
+		strClassName.clear();
+	}
 	virtual bool Recv(CScriptConnector*);
-	virtual bool Run(CScriptConnector* pClient);
-	virtual bool Send(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
 	std::string strClassName;
 	CSyncScriptPointInterface* m_pPoint;
@@ -114,9 +171,27 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
+	int GetType()
+	{
+		return E_SYNC_UP_PASSAGE;
+	}
+	virtual void Clear()
+	{
+		nClassID = -1;
+
+		nFunNameStringLen = -1;
+
+		nScriptParmNum = -1;
+		nCurParmType = -1;
+		nStringLen = -1;
+		strFunName.clear();
+		strClassName.clear();
+		while (m_scriptParm.size())
+			m_scriptParm.pop();
+	}
 	virtual bool Recv(CScriptConnector*);
-	virtual bool Run(CScriptConnector* pClient);
-	virtual bool Send(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
 	__int64 nClassID;//涉及到的类ID
 
@@ -143,9 +218,27 @@ public:
 		nCurParmType = -1;
 		nStringLen = -1;
 	}
+	int GetType()
+	{
+		return E_SYNC_DOWN_PASSAGE;
+	}
+	virtual void Clear()
+	{
+		nClassID = -1;
+
+		nFunNameStringLen = -1;
+
+		nScriptParmNum = -1;
+		nCurParmType = -1;
+		nStringLen = -1;
+		strFunName.clear();
+		strClassName.clear();
+		while (m_scriptParm.size())
+			m_scriptParm.pop();
+	}
 	virtual bool Recv(CScriptConnector*);
-	virtual bool Run(CScriptConnector* pClient);
-	virtual bool Send(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
 	__int64 nClassID;//涉及到的类ID
 	std::string strFunName;
@@ -158,6 +251,60 @@ protected:
 	int nCurParmType;
 	int nStringLen;
 	std::string strClassName;
+};
+
+class CRouteFrontMsgReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CRouteFrontMsgReceiveState()
+	{
+		nConnectID = -1;
+		nMsgType = 0;
+		pState = nullptr;
+	}
+	int GetType()
+	{
+		return E_ROUTE_FRONT;
+	}
+	virtual void Clear();
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+
+public:
+	__int64 nConnectID;
+	CBaseMsgReceiveState* pState;
+
+protected:
+	//以下是读取时的临时变量
+	int nMsgType;
+};
+
+class CRouteBackMsgReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CRouteBackMsgReceiveState()
+	{
+		nConnectID = -1;
+		nMsgType = 0;
+		pState = nullptr;
+	}
+	int GetType()
+	{
+		return E_ROUTE_BACK;
+	}
+	virtual void Clear();
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+
+public:
+	__int64 nConnectID;
+	CBaseMsgReceiveState* pState;
+
+protected:
+	//以下是读取时的临时变量
+	int nMsgType;
 };
 
 class CMsgReceiveMgr

@@ -20,7 +20,9 @@ int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CS
 		return ECALLBACK_ERROR;
 	}
 	int nPort = pState->PopIntVarFormStack();
+	std::string strScript = pState->PopCharVarFormStack();
 	CScriptConnectMgr::GetInstance()->SetListen(nPort, CScriptConnectMgr::CreateNew);
+	CScriptConnectMgr::SetInitConnectScript(nPort, strScript);
 	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
@@ -84,6 +86,7 @@ int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CSc
 
 
 CScriptConnectMgr CScriptConnectMgr::s_Instance;
+std::map<int, std::string> CScriptConnectMgr::m_mapInitConnectScript;
 
 CScriptConnectMgr::CScriptConnectMgr()
 {
@@ -94,7 +97,7 @@ CScriptConnectMgr::~CScriptConnectMgr()
 {
 }
 
-CSocketConnector* CScriptConnectMgr::CreateNew(SOCKET sRemote, const char* pIP)
+CSocketConnector* CScriptConnectMgr::CreateNew(SOCKET sRemote, const char* pIP, int nPort)
 {
 	CScriptConnector* pConnector = new CScriptConnector;
 	if (pConnector == NULL)
@@ -109,12 +112,15 @@ CSocketConnector* CScriptConnectMgr::CreateNew(SOCKET sRemote, const char* pIP)
 	printf("new connect: %s; all connect count: %d \n", pIP, CScriptConnectMgr::GetInstance()->GetConnectSize());
 
 	//执行初始化脚本
-	CScriptStack m_scriptParm;
-	ScriptVector_PushVar(m_scriptParm, (__int64)0);
-	ScriptVector_PushVar(m_scriptParm, "InitConnector");
-	ScriptVector_PushVar(m_scriptParm, pConnector);
-	//读取完成，执行结果
-	CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, pConnector->GetScriptEventIndex(), m_scriptParm);
+	auto itScript = m_mapInitConnectScript.find(nPort);
+	if (itScript != m_mapInitConnectScript.end())
+	{
+		CScriptStack m_scriptParm;
+		ScriptVector_PushVar(m_scriptParm, pConnector);
+		zlscript::CScriptVirtualMachine machine;
+		machine.RunFunImmediately(itScript->second, m_scriptParm);
+	}
+
 	return pConnector;
 }
 
@@ -136,7 +142,7 @@ CScriptConnector* CScriptConnectMgr::NewConnector(const char* pIP, int Port)
 	}
 	tagConnecter tagInfo;
 
-	CScriptConnector *pClient = new CScriptConnector;
+	CScriptConnector* pClient = new CScriptConnector;
 	if (pClient)
 	{
 		pClient->SetIP(pIP);
@@ -145,7 +151,7 @@ CScriptConnector* CScriptConnectMgr::NewConnector(const char* pIP, int Port)
 		pClient->OnInit();
 
 		m_ConnecterLock.lock();
-		tagConnecter &tagInfo = m_mapConnector[pClient->GetID()];
+		tagConnecter& tagInfo = m_mapConnector[pClient->CBaseConnector::GetID()];
 		tagInfo.nType = 1;
 		tagInfo.pConnector = pClient;
 		m_ConnecterLock.unlock();
@@ -154,6 +160,11 @@ CScriptConnector* CScriptConnectMgr::NewConnector(const char* pIP, int Port)
 	}
 
 	return pClient;
+}
+
+void CScriptConnectMgr::SetInitConnectScript(int nPort, std::string strScript)
+{
+	m_mapInitConnectScript[nPort] = strScript;
 }
 
 void CScriptConnectMgr::OnProcess()
@@ -165,7 +176,7 @@ void CScriptConnectMgr::OnProcess()
 	if (duration.count() >= 1000)
 	{
 		m_LastSendMsgTime = curTime;
-		
+
 
 	}
 }

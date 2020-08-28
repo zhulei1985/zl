@@ -1,0 +1,17 @@
+void InitConnector(Connector pConnector)
+{
+	Connector pServerConnector = GetVal4Data("Data","ServerConnector");
+	pConnector->SetRoute(pServerConnector);
+}
+
+void main()
+{
+	//初始化数据
+	CData pData = GetData("Data");
+
+	SetListenPort(9998,"InitConnector");
+
+	Connector pClient = NewConnector("127.0.0.1",9999);
+	SetVal2Data("Data","ServerConnector",pClient);
+	print("启动完成");
+}

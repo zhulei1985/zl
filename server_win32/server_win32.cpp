@@ -19,8 +19,8 @@ void BackGroundThreadFun()
 		std::bind(&zlscript::CScriptVirtualMachine::EventReturnFun, &Machine, std::placeholders::_1, std::placeholders::_2));
 	Machine.InitEvent(zlscript::E_SCRIPT_EVENT_RUNSCRIPT,
 		std::bind(&zlscript::CScriptVirtualMachine::EventRunScriptFun, &Machine, std::placeholders::_1, std::placeholders::_2));
-	Machine.InitEvent(zlscript::E_SCRIPT_EVENT_NETWORK_RUNSCRIPT,
-		std::bind(&zlscript::CScriptVirtualMachine::EventNetworkRunScriptFun, &Machine, std::placeholders::_1, std::placeholders::_2));
+	//Machine.InitEvent(zlscript::E_SCRIPT_EVENT_NETWORK_RUNSCRIPT,
+	//	std::bind(&zlscript::CScriptVirtualMachine::EventNetworkRunScriptFun, &Machine, std::placeholders::_1, std::placeholders::_2));
 	auto oldtime = std::chrono::steady_clock::now();
 	while (g_nThreadRunState > 0)
 	{
@@ -127,17 +127,27 @@ int main()
 	//zlscript::LoadFile("script/main.script");
 	g_nThreadRunState = 1;
 
-	for (int i = 0; i < 10; i++)
-	{
-		std::thread tbg(BackGroundThreadFun);
-		tbg.detach();
-	}
+	//for (int i = 0; i < 10; i++)
+	//{
+	//	std::thread tbg(BackGroundThreadFun);
+	//	tbg.detach();
+	//}
+	zlscript::CScriptVirtualMachine Machine(10);
+	Machine.InitEvent(zlscript::E_SCRIPT_EVENT_RETURN,
+		std::bind(&zlscript::CScriptVirtualMachine::EventReturnFun, &Machine, std::placeholders::_1, std::placeholders::_2));
+	Machine.InitEvent(zlscript::E_SCRIPT_EVENT_RUNSCRIPT,
+		std::bind(&zlscript::CScriptVirtualMachine::EventRunScriptFun, &Machine, std::placeholders::_1, std::placeholders::_2));
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	auto oldtime = std::chrono::steady_clock::now();
 	zlscript::RunScript("main");
 	while (1)
 	{
 		CScriptConnectMgr::GetInstance()->OnProcess();
+		auto nowTime = std::chrono::steady_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(nowTime - oldtime);
+		oldtime = nowTime;
+		Machine.Exec(duration.count(), 9999);
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	g_nThreadRunState = 0;

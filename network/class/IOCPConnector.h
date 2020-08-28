@@ -37,7 +37,7 @@
 namespace zlnetwork
 {
 	class CSocketConnector;
-	typedef std::function<CBaseConnector * (SOCKET, const char*)> CreateConnectorFun;
+	typedef std::function<CBaseConnector * (SOCKET, const char*, int)> CreateConnectorFun;
 
 	void ProcessOverlappedFunc(HANDLE hIoCompletionPort);
 

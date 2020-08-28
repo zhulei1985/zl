@@ -171,7 +171,7 @@ namespace zlnetwork
 				{
 					char strbuff[16] = { 0 };
 					strcpy_s(strbuff, sizeof(strbuff), inet_ntoa(saRemote.sin_addr));
-					auto pConnector = taglisten.m_Fun(sRemote, strbuff);
+					auto pConnector = taglisten.m_Fun(sRemote, strbuff, taglisten.m_nPort);
 					if (pConnector)
 					{
 						pConnector->SetPort(taglisten.m_nPort);

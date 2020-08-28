@@ -20,11 +20,10 @@
 #include <list>
 #include <map>
 #include <mutex>
-#include <functional>
+//#include <functional>
 
 #include "ScriptStack.h"
 
-typedef std::function<void(int, zlscript::CScriptStack&)> EventProcessFun;
 
 namespace zlscript
 {
@@ -32,7 +31,14 @@ namespace zlscript
 	{
 		E_SCRIPT_EVENT_CHANNEL_ASSIGN,
 	};
-
+	enum E_SCRIPT_EVENT_TYPE
+	{
+		E_SCRIPT_EVENT_NONE,
+		E_SCRIPT_EVENT_RETURN,//本地返回值
+		//E_SCRIPT_EVENT_NEWTWORK_RETURN,//网络返回值
+		E_SCRIPT_EVENT_RUNSCRIPT,//本地运行脚本
+		//E_SCRIPT_EVENT_NETWORK_RUNSCRIPT,//网络运行脚本
+	};
 
 	class tagScriptEvent
 	{
