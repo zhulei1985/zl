@@ -6,9 +6,9 @@
 
 ###### 我对这个框架的目标：
 
-   				1. 实现c++封装各种方法，逻辑，由脚本调用。
+      				1. 实现c++封装各种方法，逻辑，由脚本调用。
       				2. 通过脚本的调用特性，方便的实现多线程，远程调用，热更新等特性。
-         				3. 希望能通过简单修改脚本，就可以实现多服务器，分布式服务器的部署。
+      				3. 希望能通过简单修改脚本，就可以实现多服务器，分布式服务器的部署。
 
 ### 对脚本系统的扩展：
 
@@ -55,7 +55,7 @@
 ​		原本为脚本注册C++类时，需要让C++类继承CScriptPointInterface，现在同步类需要改为集成CSyncScriptPointInterface。需要重载虚函数(序列化)AddAllData2Bytes和(反序列化)DecodeData4Bytes，以便作为创建镜像时，数据的传递。例：
 
 ```c++
-class CTest : public CSyncScriptPointInterface
+		class CTest : public CSyncScriptPointInterface
         {
         };
 ```
@@ -63,7 +63,7 @@ class CTest : public CSyncScriptPointInterface
 ​		镜像实例建立起来后，想要实时更新某些修改到镜像上，只能通过特殊的宏将脚本可用的类函数注册成同步类函数，同步类函数在执行时，会通知镜像实例也执行一次，达到数据同步的效果，例：
 
 ```c++
-class CTest : public CSyncScriptPointInterface
+		class CTest : public CSyncScriptPointInterface
     	{
             public:
             CTest()
