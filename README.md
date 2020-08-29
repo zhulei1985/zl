@@ -2,13 +2,13 @@
 
 ### 简述：
 
-​		因为工作原因，陆续接触过一些服务器框架，但要么是本身就有脚本特性的高级语言写的框架，要么是c/c++为辅脚本为主的框架。于是我产生了一个想法，想要做一个以c++为主，脚本为辅的服务器框架。选择自制脚本系统(https://github.com/zhulei1985/zlscript)，是因为自己写的最熟悉，方便修改，虽然执行效率不佳，但计划中脚本仅用于流程控制，暂时影响不大。
+​		因为工作原因，陆续接触过一些服务器框架，但要么是本身就有脚本特性的高级语言写的框架，要么是c/c++为辅脚本为主的框架。于是我产生了一个想法，想要做一个以c++为主，脚本为辅的服务器框架。选择自制脚本系统([https://github.com/zhulei1985/zlscript](https://github.com/zhulei1985/zlscript))，是因为自己写的最熟悉，方便修改，虽然执行效率不佳，但计划中脚本仅用于流程控制，暂时影响不大。
 
 ###### 我对这个框架的目标：
 
    				1. 实现c++封装各种方法，逻辑，由脚本调用。
-   				2. 通过脚本的调用特性，方便的实现多线程，远程调用，热更新等特性。
-   				3. 希望能通过简单修改脚本，就可以实现多服务器，分布式服务器的部署。
+      				2. 通过脚本的调用特性，方便的实现多线程，远程调用，热更新等特性。
+         				3. 希望能通过简单修改脚本，就可以实现多服务器，分布式服务器的部署。
 
 ### 对脚本系统的扩展：
 
@@ -55,7 +55,7 @@
 ​		原本为脚本注册C++类时，需要让C++类继承CScriptPointInterface，现在同步类需要改为集成CSyncScriptPointInterface。需要重载虚函数(序列化)AddAllData2Bytes和(反序列化)DecodeData4Bytes，以便作为创建镜像时，数据的传递。例：
 
 ```c++
-		class CTest : public CSyncScriptPointInterface
+class CTest : public CSyncScriptPointInterface
         {
         };
 ```
@@ -63,7 +63,7 @@
 ​		镜像实例建立起来后，想要实时更新某些修改到镜像上，只能通过特殊的宏将脚本可用的类函数注册成同步类函数，同步类函数在执行时，会通知镜像实例也执行一次，达到数据同步的效果，例：
 
 ```c++
-		class CTest : public CSyncScriptPointInterface
+class CTest : public CSyncScriptPointInterface
     	{
             public:
             CTest()
