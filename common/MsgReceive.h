@@ -15,6 +15,7 @@ class CScriptConnector;
 class CBaseScriptConnector;
 #include "ZLScript.h"
 #include "SyncScriptPointInterface.h"
+#include <functional>
 using namespace zlscript;
 
 class CBaseMsgReceiveState
@@ -30,6 +31,12 @@ public:
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient,std::vector<char>& vBuff) = 0;
 	//网络的连接和路由连接都有可能使用run
 	virtual bool Run(CBaseScriptConnector* pClient) = 0;
+
+public:
+	void SetGetDataFun(std::function<bool(std::vector<char>&, unsigned int)> fun);
+protected:
+	//bool CBaseConnector::GetData(std::vector<char>& vOut, unsigned int nSize)
+	std::function<bool(std::vector<char>&, unsigned int)> m_GetData;
 };
 class CScriptMsgReceiveState : public CBaseMsgReceiveState
 {

@@ -59,18 +59,6 @@
     <ClCompile Include="..\script\class\zStringBuffer.cpp">
       <Filter>script</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\getFileNameFromPath.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\MsgReceive.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\SyncScriptPointInterface.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\TempScriptRunState.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="TestClass.cpp">
       <Filter>class</Filter>
     </ClCompile>
@@ -83,20 +71,44 @@
     <ClCompile Include="..\script\class\ScriptExecCodeMgr.cpp">
       <Filter>script</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\ScriptConnector.cpp">
+    <ClCompile Include="..\script\class\ScriptExecFrame.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\script\class\ScriptRunState.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\base64.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\getFileNameFromPath.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\md5.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\MsgHeadProtocol.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\MsgReceive.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\RouteEvent.cpp">
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\ScriptConnectMgr.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\script\class\ScriptExecFrame.cpp">
-      <Filter>script</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\RouteEvent.cpp">
+    <ClCompile Include="..\common\ScriptConnector.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\script\class\ScriptRunState.cpp">
-      <Filter>script</Filter>
+    <ClCompile Include="..\common\sha1.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SyncScriptPointInterface.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\TempScriptRunState.cpp">
+      <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -195,18 +207,6 @@
     <ClInclude Include="..\script\class\zStringBuffer.h">
       <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\getFileNameFromPath.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\MsgReceive.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\SyncScriptPointInterface.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\TempScriptRunState.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="TestClass.h">
       <Filter>class</Filter>
     </ClInclude>
@@ -219,20 +219,44 @@
     <ClInclude Include="..\script\class\ScriptExecCodeMgr.h">
       <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\ScriptConnector.h">
+    <ClInclude Include="..\script\class\ScriptExecFrame.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\script\class\ScriptRunState.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\base64.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\getFileNameFromPath.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\md5.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\MsgHeadProtocol.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\MsgReceive.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\RouteEvent.h">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\ScriptConnectMgr.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\script\class\ScriptExecFrame.h">
-      <Filter>script</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\RouteEvent.h">
+    <ClInclude Include="..\common\ScriptConnector.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\script\class\ScriptRunState.h">
-      <Filter>script</Filter>
+    <ClInclude Include="..\common\sha1.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SyncScriptPointInterface.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\TempScriptRunState.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

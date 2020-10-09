@@ -17,6 +17,15 @@
 #include<string.h>
 #include "RingBuffer.h"
 
+CByteRingBuffer::CByteRingBuffer()
+{
+	m_vBuffer.resize(4);
+	nHeadPos = 0;
+	nLastPos = 0;
+
+	m_nSize = 0;
+}
+
 CByteRingBuffer::CByteRingBuffer(unsigned int nSize)
 {
 	m_vBuffer.resize(nSize);
@@ -29,6 +38,12 @@ CByteRingBuffer::CByteRingBuffer(unsigned int nSize)
 
 CByteRingBuffer::~CByteRingBuffer()
 {
+}
+
+void CByteRingBuffer::SetMaxSize(unsigned int nSize)
+{
+	if (nSize > m_vBuffer.size())
+		m_vBuffer.resize(nSize);
 }
 
 bool CByteRingBuffer::Push(const char* pBuff, unsigned int nSize)
@@ -146,6 +161,14 @@ bool CByteRingBuffer::Get2(std::vector<char>& vOut, unsigned int nSize)
 //	}
 //	return true;
 //}
+
+void CByteRingBuffer::Clear()
+{
+	nHeadPos = 0;
+	nLastPos = 0;
+
+	m_nSize = 0;
+}
 
 unsigned int CByteRingBuffer::GetSize()
 {

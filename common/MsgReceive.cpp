@@ -16,13 +16,17 @@ bool CBaseMsgReceiveState::Send(CBaseScriptConnector* pClient)
 	pClient->SendMsg(&m_vBuff[0], m_vBuff.size());
 	return true;
 }
+void CBaseMsgReceiveState::SetGetDataFun(std::function<bool(std::vector<char>&, unsigned int)> fun)
+{
+	m_GetData = std::move(fun);
+}
 bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
 	//if (nEventListIndex == -1)
 	//{
-	//	if (pClient->GetData(vOut, 8))
+	//	if (m_GetData(vOut, 8))
 	//	{
 	//		nPos = 0;
 	//		nEventListIndex = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -36,7 +40,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nReturnID == -1)
 	{
-		if (pClient->GetData(vOut, 8))
+		if (m_GetData(vOut, 8))
 		{
 			nPos = 0;
 			nReturnID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -49,7 +53,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nScriptFunNameLen == -1)
 	{
-		if (pClient->GetData(vOut, 4))
+		if (m_GetData(vOut, 4))
 		{
 			nPos = 0;
 			nScriptFunNameLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
@@ -61,7 +65,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 	}
 	if (nScriptFunNameLen > 0 && strScriptFunName.empty())
 	{
-		if (pClient->GetData(vOut, nScriptFunNameLen))
+		if (m_GetData(vOut, nScriptFunNameLen))
 		{
 			vOut.push_back('\0');
 			strScriptFunName = (const char*)&vOut[0];
@@ -74,7 +78,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nScriptParmNum == -1)
 	{
-		if (pClient->GetData(vOut, 1))
+		if (m_GetData(vOut, 1))
 		{
 			nPos = 0;
 			nScriptParmNum = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -90,7 +94,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 		if (nCurParmType == -1)
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 1))
+			if (m_GetData(vOut, 1))
 			{
 				nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 			}
@@ -105,7 +109,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 		case EScriptVal_Int:
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 8))
+			if (m_GetData(vOut, 8))
 			{
 				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 				ScriptVector_PushVar(m_scriptParm, nVal);
@@ -119,7 +123,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 		case EScriptVal_Double:
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 8))
+			if (m_GetData(vOut, 8))
 			{
 				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
 				ScriptVector_PushVar(m_scriptParm, fVal);
@@ -135,7 +139,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 			nPos = 0;
 			if (nStringLen == -1)
 			{
-				if (pClient->GetData(vOut, 4))
+				if (m_GetData(vOut, 4))
 				{
 					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
 				}
@@ -146,7 +150,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 			}
 			if (nStringLen > 0)
 			{
-				if (pClient->GetData(vOut, nStringLen))
+				if (m_GetData(vOut, nStringLen))
 				{
 					vOut.push_back('\0');
 					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
@@ -165,7 +169,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 			if (nStringLen == -1)
 			{
 				nPos = 0;
-				if (pClient->GetData(vOut, 4))
+				if (m_GetData(vOut, 4))
 				{
 					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
 				}
@@ -176,7 +180,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 			}
 			if (nStringLen > 0 && strClassName.empty())
 			{
-				if (pClient->GetData(vOut, nStringLen))
+				if (m_GetData(vOut, nStringLen))
 				{
 					vOut.push_back('\0');
 					strClassName = &vOut[0];
@@ -187,7 +191,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 				}
 			}
 
-			if (pClient->GetData(vOut, 9))
+			if (m_GetData(vOut, 9))
 			{
 				nPos = 0;
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -263,7 +267,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 	int nPos = 0;
 	//if (nEventListIndex == -1)
 	//{
-	//	if (pClient->GetData(vOut, 8))
+	//	if (m_GetData(vOut, 8))
 	//	{
 	//		nPos = 0;
 	//		nEventListIndex = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -277,7 +281,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nReturnID == -1)
 	{
-		if (pClient->GetData(vOut, 8))
+		if (m_GetData(vOut, 8))
 		{
 			nPos = 0;
 			nReturnID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -291,7 +295,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nScriptParmNum == -1)
 	{
-		if (pClient->GetData(vOut, 1))
+		if (m_GetData(vOut, 1))
 		{
 			nPos = 0;
 			nScriptParmNum = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -309,7 +313,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 		if (nCurParmType == -1)
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 1))
+			if (m_GetData(vOut, 1))
 			{
 				nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 			}
@@ -324,7 +328,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 		case EScriptVal_Int:
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 8))
+			if (m_GetData(vOut, 8))
 			{
 				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 				ScriptVector_PushVar(m_scriptParm, nVal);
@@ -338,7 +342,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 		case EScriptVal_Double:
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 8))
+			if (m_GetData(vOut, 8))
 			{
 				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
 				ScriptVector_PushVar(m_scriptParm, fVal);
@@ -354,7 +358,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 			nPos = 0;
 			if (nStringLen == -1)
 			{
-				if (pClient->GetData(vOut, 4))
+				if (m_GetData(vOut, 4))
 				{
 					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
 				}
@@ -365,7 +369,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 			}
 			if (nStringLen > 0)
 			{
-				if (pClient->GetData(vOut, nStringLen))
+				if (m_GetData(vOut, nStringLen))
 				{
 					vOut.push_back('\0');
 					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
@@ -382,7 +386,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 		{
 			if (nStringLen == -1)
 			{
-				if (pClient->GetData(vOut, 4))
+				if (m_GetData(vOut, 4))
 				{
 					nPos = 0;
 					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
@@ -394,7 +398,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 			}
 			if (nStringLen > 0 && strClassName.empty())
 			{
-				if (pClient->GetData(vOut, nStringLen))
+				if (m_GetData(vOut, nStringLen))
 				{
 					vOut.push_back('\0');
 					strClassName = &vOut[0];
@@ -405,7 +409,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 				}
 			}
 
-			if (pClient->GetData(vOut, 9))
+			if (m_GetData(vOut, 9))
 			{
 				nPos = 0;
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -482,7 +486,7 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 	int nPos = 0;
 	if (nClassID == -1)
 	{
-		if (pClient->GetData(vOut, 8))
+		if (m_GetData(vOut, 8))
 		{
 			nPos = 0;
 			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -495,7 +499,7 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nClassNameStringLen == -1)
 	{
-		if (pClient->GetData(vOut, 4))
+		if (m_GetData(vOut, 4))
 		{
 			nPos = 0;
 			nClassNameStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
@@ -507,7 +511,7 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 	}
 	if (nClassNameStringLen > 0 && strClassName.empty())
 	{
-		if (pClient->GetData(vOut, nClassNameStringLen))
+		if (m_GetData(vOut, nClassNameStringLen))
 		{
 			vOut.push_back('\0');
 			strClassName = (const char*)&vOut[0];
@@ -519,7 +523,7 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 	}
 	if (nDataLen == -1)
 	{
-		if (pClient->GetData(vOut, 4))
+		if (m_GetData(vOut, 4))
 		{
 			nPos = 0;
 			nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
@@ -532,7 +536,7 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nDataLen > 0)
 	{
-		if (pClient->GetData(vOut, nDataLen))
+		if (m_GetData(vOut, nDataLen))
 		{
 			if (m_pPoint == nullptr)
 			{
@@ -606,7 +610,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 	int nPos = 0;
 	if (nClassID == -1)
 	{
-		if (pClient->GetData(vOut, 8))
+		if (m_GetData(vOut, 8))
 		{
 			nPos = 0;
 			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -619,7 +623,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nFunNameStringLen == -1)
 	{
-		if (pClient->GetData(vOut, 4))
+		if (m_GetData(vOut, 4))
 		{
 			nPos = 0;
 			nFunNameStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
@@ -631,7 +635,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 	}
 	if (nFunNameStringLen > 0 && strFunName.empty())
 	{
-		if (pClient->GetData(vOut, nFunNameStringLen))
+		if (m_GetData(vOut, nFunNameStringLen))
 		{
 			vOut.push_back('\0');
 			strFunName = (const char*)&vOut[0];
@@ -645,7 +649,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nScriptParmNum == -1)
 	{
-		if (pClient->GetData(vOut, 1))
+		if (m_GetData(vOut, 1))
 		{
 			nPos = 0;
 			nScriptParmNum = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -661,7 +665,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 		if (nCurParmType == -1)
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 1))
+			if (m_GetData(vOut, 1))
 			{
 				nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 			}
@@ -676,7 +680,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 		case EScriptVal_Int:
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 8))
+			if (m_GetData(vOut, 8))
 			{
 				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 				ScriptVector_PushVar(m_scriptParm, nVal);
@@ -690,7 +694,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 		case EScriptVal_Double:
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 8))
+			if (m_GetData(vOut, 8))
 			{
 				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
 				ScriptVector_PushVar(m_scriptParm, fVal);
@@ -706,7 +710,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 			nPos = 0;
 			if (nStringLen == -1)
 			{
-				if (pClient->GetData(vOut, 4))
+				if (m_GetData(vOut, 4))
 				{
 					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
 				}
@@ -717,7 +721,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 			}
 			if (nStringLen > 0)
 			{
-				if (pClient->GetData(vOut, nStringLen))
+				if (m_GetData(vOut, nStringLen))
 				{
 					vOut.push_back('\0');
 					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
@@ -736,7 +740,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 			if (nStringLen == -1)
 			{
 				nPos = 0;
-				if (pClient->GetData(vOut, 4))
+				if (m_GetData(vOut, 4))
 				{
 					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
 				}
@@ -747,7 +751,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 			}
 			if (nStringLen > 0 && strClassName.empty())
 			{
-				if (pClient->GetData(vOut, nStringLen))
+				if (m_GetData(vOut, nStringLen))
 				{
 					vOut.push_back('\0');
 					strClassName = &vOut[0];
@@ -758,7 +762,7 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 				}
 			}
 
-			if (pClient->GetData(vOut, 9))
+			if (m_GetData(vOut, 9))
 			{
 				nPos = 0;
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -850,7 +854,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 	int nPos = 0;
 	if (nClassID == -1)
 	{
-		if (pClient->GetData(vOut, 8))
+		if (m_GetData(vOut, 8))
 		{
 			nPos = 0;
 			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -863,7 +867,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nFunNameStringLen == -1)
 	{
-		if (pClient->GetData(vOut, 4))
+		if (m_GetData(vOut, 4))
 		{
 			nPos = 0;
 			nFunNameStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
@@ -875,7 +879,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 	}
 	if (nFunNameStringLen > 0 && strFunName.empty())
 	{
-		if (pClient->GetData(vOut, nFunNameStringLen))
+		if (m_GetData(vOut, nFunNameStringLen))
 		{
 			vOut.push_back('\0');
 			strFunName = (const char*)&vOut[0];
@@ -889,7 +893,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	if (nScriptParmNum == -1)
 	{
-		if (pClient->GetData(vOut, 1))
+		if (m_GetData(vOut, 1))
 		{
 			nPos = 0;
 			nScriptParmNum = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -906,7 +910,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 		if (nCurParmType == -1)
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 1))
+			if (m_GetData(vOut, 1))
 			{
 				nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 			}
@@ -921,7 +925,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 		case EScriptVal_Int:
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 8))
+			if (m_GetData(vOut, 8))
 			{
 				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 				ScriptVector_PushVar(m_scriptParm, nVal);
@@ -935,7 +939,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 		case EScriptVal_Double:
 		{
 			nPos = 0;
-			if (pClient->GetData(vOut, 8))
+			if (m_GetData(vOut, 8))
 			{
 				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
 				ScriptVector_PushVar(m_scriptParm, fVal);
@@ -951,7 +955,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 			nPos = 0;
 			if (nStringLen == -1)
 			{
-				if (pClient->GetData(vOut, 4))
+				if (m_GetData(vOut, 4))
 				{
 					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
 				}
@@ -962,7 +966,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 			}
 			if (nStringLen > 0)
 			{
-				if (pClient->GetData(vOut, nStringLen))
+				if (m_GetData(vOut, nStringLen))
 				{
 					vOut.push_back('\0');
 					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
@@ -981,7 +985,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 			if (nStringLen == -1)
 			{
 				nPos = 0;
-				if (pClient->GetData(vOut, 4))
+				if (m_GetData(vOut, 4))
 				{
 					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
 				}
@@ -992,7 +996,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 			}
 			if (nStringLen > 0 && strClassName.empty())
 			{
-				if (pClient->GetData(vOut, nStringLen))
+				if (m_GetData(vOut, nStringLen))
 				{
 					vOut.push_back('\0');
 					strClassName = &vOut[0];
@@ -1003,7 +1007,7 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 				}
 			}
 
-			if (pClient->GetData(vOut, 9))
+			if (m_GetData(vOut, 9))
 			{
 				nPos = 0;
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -1101,7 +1105,7 @@ bool CRouteFrontMsgReceiveState::Recv(CScriptConnector* pClient)
 	int nPos = 0;
 	if (nConnectID == -1)
 	{
-		if (pClient->GetData(vOut, 8))
+		if (m_GetData(vOut, 8))
 		{
 			nPos = 0;
 			nConnectID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -1113,7 +1117,7 @@ bool CRouteFrontMsgReceiveState::Recv(CScriptConnector* pClient)
 	}
 	if (nMsgType == 0)
 	{
-		if (pClient->GetData(vOut, 1))
+		if (m_GetData(vOut, 1))
 		{
 			nPos = 0;
 			nMsgType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
@@ -1169,7 +1173,7 @@ bool CRouteBackMsgReceiveState::Recv(CScriptConnector* pClient)
 	int nPos = 0;
 	if (nConnectID == -1)
 	{
-		if (pClient->GetData(vOut, 8))
+		if (m_GetData(vOut, 8))
 		{
 			nPos = 0;
 			nConnectID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
@@ -1181,7 +1185,7 @@ bool CRouteBackMsgReceiveState::Recv(CScriptConnector* pClient)
 	}
 	if (nMsgType == 0)
 	{
-		if (pClient->GetData(vOut, 1))
+		if (m_GetData(vOut, 1))
 		{
 			nPos = 0;
 			nMsgType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());

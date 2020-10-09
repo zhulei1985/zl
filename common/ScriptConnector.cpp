@@ -217,6 +217,51 @@ int CBaseScriptConnector::SetRouteInitScript2Script(CScriptRunState* pState)
 	return ECALLBACK_FINISH;
 }
 
+int CBaseScriptConnector::SetHeadProtocol2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	CBaseHeadProtocol* pProtocol = nullptr;
+	std::string strName = pState->PopCharVarFormStack();
+	std::string strFlag = pState->PopCharVarFormStack();
+	std::string strPassword = pState->PopCharVarFormStack();
+	if (strName == "websocket")
+	{
+		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_WEBSOCKET);
+	}
+	else if (strName == "inner")
+	{
+		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_INNER);
+	}
+	else
+	{
+		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_NONE);
+	}
+
+	if (pProtocol)
+	{
+		if (strFlag == "server")
+		{
+			pProtocol->SetServer(true);
+		}
+		else
+		{
+			pProtocol->SetServer(false);
+		}
+	}
+
+	if (strPassword.size() > 0)
+	{
+		pProtocol->SetPassword(strPassword.c_str());
+	}
+
+	SetHeadProtocol(pProtocol);
+	pState->ClearFunParam();
+	return ECALLBACK_FINISH;
+}
+
 void CBaseScriptConnector::OnInit()
 {
 	CScriptExecFrame::OnInit();
@@ -435,7 +480,9 @@ void CBaseScriptConnector::RemoveReturnState(__int64 nID)
 CScriptConnector::CScriptConnector()
 {
 	//m_nCurMsgLen = 0;
+
 	pCurMsgReceive = nullptr;
+	m_pHeadProtocol = nullptr;
 }
 
 
@@ -456,7 +503,6 @@ void CScriptConnector::OnInit()
 {
 	CSocketConnector::OnInit();
 	CBaseScriptConnector::OnInit();
-
 }
 bool CScriptConnector::OnProcess()
 {
@@ -468,22 +514,57 @@ bool CScriptConnector::OnProcess()
 	//从接收队列里取出消息处理
 	std::vector<char> vOut;
 
-	//TODO 要为新连接做验证
-
-	if (pCurMsgReceive == nullptr)
+	while (m_pHeadProtocol)
 	{
-		if (GetData(vOut, 1))
+		int nResult = m_pHeadProtocol->OnProcess();
+		switch (nResult)
 		{
-			int nPos = 0;
-			char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-
-			pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
-			if (pCurMsgReceive == nullptr)
+		case CBaseHeadProtocol::E_RETURN_COMPLETE:
 			{
-				//TODO 错误数据，关闭链接
+				if (m_pHeadProtocol->GetDataLen() > 0)
+				{
+					if (m_pHeadProtocol->GetData(vOut, 1))
+					{
+						int nPos = 0;
+						char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+
+						pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
+						if (pCurMsgReceive == nullptr)
+						{
+							//TODO 错误数据，关闭链接
+						}
+						pCurMsgReceive->SetGetDataFun(std::bind(&CBaseHeadProtocol::GetData,m_pHeadProtocol,  std::placeholders::_1, std::placeholders::_2));
+					}
+				}
 			}
+			break;
+		case CBaseHeadProtocol::E_RETURN_ERROR:
+		default:
+			//错误，中断连接
+			Close();
+			break;
+		}
+		if (nResult != CBaseHeadProtocol::E_RETURN_CONTINUE)
+		{
+			break;
 		}
 	}
+
+
+	//if (pCurMsgReceive == nullptr)
+	//{
+	//	if (GetData(vOut, 1))
+	//	{
+	//		int nPos = 0;
+	//		char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+
+	//		pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
+	//		if (pCurMsgReceive == nullptr)
+	//		{
+	//			//TODO 错误数据，关闭链接
+	//		}
+	//	}
+	//}
 	if (pCurMsgReceive)
 	{
 		if (pCurMsgReceive->Recv(this) == true)
@@ -498,8 +579,8 @@ bool CScriptConnector::OnProcess()
 		}
 		else
 		{
-			//等待读完
-			return true;
+			//TODO 错误数据，关闭链接
+			return false;
 		}
 	}
 	CBaseScriptConnector::OnProcess();
@@ -635,6 +716,15 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 	break;
 	}
 	return true;
+}
+
+void CScriptConnector::SetHeadProtocol(CBaseHeadProtocol* pProtocol)
+{
+	if (m_pHeadProtocol)
+	{
+		CHeadProtocolMgr::GetInstance()->Remove(m_pHeadProtocol);
+	}
+	m_pHeadProtocol = pProtocol;
 }
 
 

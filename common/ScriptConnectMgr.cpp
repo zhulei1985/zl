@@ -27,6 +27,11 @@ int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CS
 	return ECALLBACK_FINISH;
 }
 
+int SetListenWebSocket2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState)
+{
+	return 0;
+}
+
 int NewConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState)
 {
 	if (pState == nullptr)

@@ -3,6 +3,7 @@
 #include "ZLScript.h"
 #include "SyncScriptPointInterface.h"
 #include "MsgReceive.h"
+#include "MsgHeadProtocol.h"
 #include <atomic>
 #include <set>
 #include <unordered_map>
@@ -17,6 +18,7 @@ public:
 
 	static void Init2Script();
 
+	//这个GetID现在发现有些多余，脚本中直接就以脚本指针索引即可
 	int GetID2Script(CScriptRunState* pState);
 
 	int GetPort2Script(CScriptRunState* pState);
@@ -34,6 +36,8 @@ public:
 
 	int SetRoute2Script(CScriptRunState* pState);
 	int SetRouteInitScript2Script(CScriptRunState* pState);
+
+	int SetHeadProtocol2Script(CScriptRunState* pState);
 public:
 	//virtual __int64 GetID()
 	//{
@@ -59,6 +63,7 @@ public:
 	virtual void EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventRunFun(__int64 nSendID, CScriptStack& ParmInfo);
 
+	virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
 public:
 	//"我"是指本连接对应的进程
 
@@ -127,10 +132,19 @@ public:
 
 	bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
 
+	void SetHeadProtocol(CBaseHeadProtocol* pProtocol);
+
 	//virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
 	//virtual void SyncUpClassFunRun(CSyncScriptPointInterface* pPoint, std::string strFunName, CScriptStack& stack);
 	//virtual void SyncDownClassFunRun(CSyncScriptPointInterface* pPoint,std::string strFunName, CScriptStack& stack);
 protected:
+
+	typedef std::function< int(CSocketConnector* pConnector)> StateFun;
+	std::map<int, StateFun> m_mapStateFun;
+
+	bool m_bIsWebSocket;
+
+	CBaseHeadProtocol* m_pHeadProtocol;
 	//当前正在处理的消息
 	CBaseMsgReceiveState* pCurMsgReceive;
 	

@@ -85,9 +85,9 @@ namespace zlnetwork
 		//发送消息
 		virtual void SendData(const char *pData,unsigned int nSize);
 
-		//处理消息接收
+		//处理消息接收,如果实际缓存里数据小于nSize，返回错误并且不会动缓存里的数据
 		bool GetData(std::vector<char>& vOut, unsigned int nSize);
-		//处理消息接收
+		//处理消息接收，能取多少数据取多少，最大值不会大于nSize
 		bool GetData2(std::vector<char>& vOut, unsigned int nSize);
 	protected:
 		//正在等待接收的消息长度
