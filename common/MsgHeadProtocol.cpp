@@ -23,7 +23,7 @@
 #include <sstream>
 namespace zlnetwork
 {
-	CBaseHeadProtocol::CBaseHeadProtocol()
+	CBaseHeadProtocol::CBaseHeadProtocol() : m_curMsgData(MAX_MSG_LEN)
 	{
 
 	}
@@ -400,12 +400,13 @@ namespace zlnetwork
 
 	int CNoneHeadProtocol::OnState_Get_Len()
 	{
-		int nResult = E_RETURN_CONTINUE;
+		int nResult = E_RETURN_NEXT;
 		if (m_pConnector->GetData(m_vReadTempBuf, 4))
 		{
 			int nPos = 0;
 			m_nDataLen = DecodeBytes2Int(&m_vReadTempBuf[0], nPos, m_vReadTempBuf.size());
-			nResult = E_RETURN_NEXT;
+			m_nCurLoadedDataLen = 0;
+			nResult = E_RETURN_CONTINUE;
 			m_nState = E_CONNECT_GET_MSG_BODY;
 		}
 		return nResult;
@@ -416,7 +417,8 @@ namespace zlnetwork
 		m_pConnector->GetData2(m_vReadTempBuf, m_nDataLen - m_nCurLoadedDataLen);
 		m_nCurLoadedDataLen += m_vReadTempBuf.size();
 
-		m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
+		if (m_vReadTempBuf.size() > 0)
+			m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
 
 		if (m_nCurLoadedDataLen >= m_nDataLen)
 		{
@@ -447,6 +449,7 @@ namespace zlnetwork
 
 	CInnerHeadProtocol::CInnerHeadProtocol()
 	{
+		m_nState = E_CONNECT_INIT;
 	}
 
 	int CInnerHeadProtocol::OnProcess()
@@ -480,25 +483,31 @@ namespace zlnetwork
 		if (bServer)
 		{
 			tagByteArray vBuff;
-			AddString2Bytes(vBuff, headword.c_str());
+			for (unsigned int i = 0; i < headword.size(); i++)
+			{
+				vBuff.push_back(headword.c_str()[i]);
+			}
+			//AddString2Bytes(vBuff, headword.c_str());
 			AddInt2Bytes(vBuff, 1);//°æ±¾ºÅ
 			AddInt642Bytes(vBuff, time(nullptr));
 			m_pConnector->SendData(&vBuff[0], vBuff.size());
 
 			AddString2Bytes(vBuff, m_strPassword.c_str());
-			MD5 md5(&vBuff[0], vBuff.size());
+			MD5 md5(&vBuff[headword.size()], vBuff.size() - headword.size());
 			strMD5String.clear();
 			strMD5String = md5.toString();
 		}
 		else
 		{
 			tagByteArray vBuff;
-			if (GetData(vBuff, 9))
+			if (m_pConnector->GetData(vBuff, headword.size()))
 			{
-				vBuff.push_back(0);
-				if (headword != (const char*)vBuff[0]);
+				for (unsigned int i = 0; i < headword.size(); i++)
 				{
-					return E_RETURN_ERROR;
+					if (vBuff[i] != headword.c_str()[i])
+					{
+						return E_RETURN_ERROR;
+					}
 				}
 			}
 			else
@@ -517,7 +526,7 @@ namespace zlnetwork
 		{
 			if (nMD5StringLen < 0)
 			{
-				if (GetData(vBuff, 4))
+				if (m_pConnector->GetData(vBuff, 4))
 				{
 					int pos = 0;
 					nMD5StringLen = DecodeBytes2Int(&vBuff[0], pos, vBuff.size());
@@ -527,7 +536,7 @@ namespace zlnetwork
 					return E_RETURN_NEXT;
 				}
 			}
-			if (GetData(vBuff, nMD5StringLen))
+			if (m_pConnector->GetData(vBuff, nMD5StringLen))
 			{
 				int pos = 0;
 				std::string strClientMD5String;
@@ -551,7 +560,7 @@ namespace zlnetwork
 		}
 		else
 		{
-			if (GetData(vBuff, 12))
+			if (m_pConnector->GetData(vBuff, 12))
 			{
 				int pos = 0;
 				//int nVer = DecodeBytes2Int(&vBuff[0], pos, vBuff.size());

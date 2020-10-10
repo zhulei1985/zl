@@ -1,5 +1,6 @@
 void InitConnector(Connector pConnector)
 {
+	pConnector->SetHeadProtocol("inner","server","123456");
 	pConnector->SetScriptLimit("Error_CannotRunScript",1);
 	pConnector->SetScriptLimit("RegisterAccount",1);
 	pConnector->SetScriptLimit("LoginAccount",1);

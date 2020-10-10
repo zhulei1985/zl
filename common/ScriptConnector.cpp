@@ -535,11 +535,17 @@ bool CScriptConnector::OnProcess()
 						if (pCurMsgReceive == nullptr)
 						{
 							//TODO 错误数据，关闭链接
+							Close();
+							break;
 						}
 						pCurMsgReceive->SetGetDataFun(std::bind(&CBaseHeadProtocol::GetData,m_pHeadProtocol,  std::placeholders::_1, std::placeholders::_2));
 					}
 				}
 			}
+			break;
+		case CBaseHeadProtocol::E_RETURN_CONTINUE:
+			break;
+		case CBaseHeadProtocol::E_RETURN_NEXT:
 			break;
 		case CBaseHeadProtocol::E_RETURN_ERROR:
 		default:
@@ -639,6 +645,10 @@ void CScriptConnector::OnDestroy()
 }
 bool CScriptConnector::SendMsg(char* pBuff, int len)
 {
+	if (m_pHeadProtocol)
+	{
+		m_pHeadProtocol->SendHead(len);
+	}
 	CSocketConnector::SendData(pBuff, len);
 	return true;
 }
@@ -723,6 +733,7 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 
 void CScriptConnector::SetHeadProtocol(CBaseHeadProtocol* pProtocol)
 {
+	pProtocol->SetConnector(this);
 	if (m_pHeadProtocol)
 	{
 		CHeadProtocolMgr::GetInstance()->Remove(m_pHeadProtocol);

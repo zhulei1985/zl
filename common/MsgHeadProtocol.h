@@ -20,6 +20,7 @@
 
 namespace zlnetwork
 {
+#define MAX_MSG_LEN 32768
 	enum E_HEAD_PROTOCOL_TYPE
 	{
 		E_HEAD_PROTOCOL_WEBSOCKET,
@@ -58,7 +59,7 @@ namespace zlnetwork
 		virtual unsigned __int64 GetDataLen() = 0;
 
 		virtual void SetServer(bool val) { ; }
-		void SetPassword(const char* str){}
+		virtual void SetPassword(const char* str){}
 	protected:
 		CSocketConnector* m_pConnector;
 		int m_nState;

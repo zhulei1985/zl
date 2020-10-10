@@ -37,7 +37,7 @@ void SendMessage(CAccount pAccount, string strContent, Connector pClient )
 void main()
 {
 	Connector pClient = NewConnector("127.0.0.1",9999);
-	pClient-SetHeadProtocol("inner","client","123456");
+	pClient->SetHeadProtocol("inner","client","123456");
 	pClient->SetScriptLimit("Error_CannotRunScript",1);
 	pClient->SetScriptLimit("RegisterFail",1);
 	pClient->SetScriptLimit("LoginFail",1);
