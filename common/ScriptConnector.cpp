@@ -23,6 +23,8 @@ CBaseScriptConnector::CBaseScriptConnector()
 
 	RegisterClassFun(SetRoute, this, &CBaseScriptConnector::SetRoute2Script);
 	RegisterClassFun(SetRouteInitScript, this, &CBaseScriptConnector::SetRouteInitScript2Script);
+
+	RegisterClassFun(SetHeadProtocol, this, &CBaseScriptConnector::SetHeadProtocol2Script);
 }
 
 CBaseScriptConnector::~CBaseScriptConnector()
@@ -48,6 +50,7 @@ void CBaseScriptConnector::Init2Script()
 
 	RegisterClassFun1("SetRoute", CBaseScriptConnector);
 	RegisterClassFun1("SetRouteInitScript", CBaseScriptConnector);
+	RegisterClassFun1("SetHeadProtocol", CBaseScriptConnector);
 }
 
 int CBaseScriptConnector::GetID2Script(CScriptRunState* pState)
