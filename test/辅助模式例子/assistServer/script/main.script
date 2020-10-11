@@ -10,6 +10,7 @@ void Error_CannotRunScript(string strFunName,Connector pConnector)
 void main()
 {
 	Connector pConnector = NewConnector("127.0.0.1",10000);
+	pConnector->SetHeadProtocol("inner","client","123456");
 	pConnector->SetScriptLimit("Error_CannotRunScript",1);
 	pConnector->SetScriptLimit("CalFun1",1);
 	wait(100);

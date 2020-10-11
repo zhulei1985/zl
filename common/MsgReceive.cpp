@@ -1122,6 +1122,7 @@ bool CRouteFrontMsgReceiveState::Recv(CScriptConnector* pClient)
 			nPos = 0;
 			nMsgType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 			pState = CMsgReceiveMgr::GetInstance()->CreateRceiveState(nMsgType);
+			pState->SetGetDataFun(m_GetData);
 		}
 		else
 		{
@@ -1190,6 +1191,7 @@ bool CRouteBackMsgReceiveState::Recv(CScriptConnector* pClient)
 			nPos = 0;
 			nMsgType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 			pState = CMsgReceiveMgr::GetInstance()->CreateRceiveState(nMsgType);
+			pState->SetGetDataFun(m_GetData);
 		}
 		else
 		{

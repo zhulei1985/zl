@@ -1,5 +1,6 @@
 void InitConnector(Connector pConnector)
 {
+	pConnector->SetHeadProtocol("inner","server","123456");
 	//网关链接后，设置路由链接的初始函数
 	pConnector->SetRouteInitScript("InitRouteConnector");
 

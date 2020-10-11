@@ -1,10 +1,10 @@
 void InitConnector(Connector pConnector)
 {
-
+	pConnector->SetHeadProtocol("inner","server","123456");
 }
 void InitAssistConnector(Connector pConnector)
 {
-
+	pConnector->SetHeadProtocol("inner","server","123456");
 	print("辅助服务器连接");
 	pConnector->SetScriptLimit("SetRemoteFun",1);
 }
