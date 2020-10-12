@@ -84,7 +84,7 @@ namespace zlnetwork
 		//处理消息
 		if (m_vReadShakeHandDataBuf.size() >= 3)
 		{
-			if (m_vReadShakeHandDataBuf[0] == 'G' && m_vReadShakeHandDataBuf[1] == 'E' && m_vReadShakeHandDataBuf[3] == 'T')
+			if (m_vReadShakeHandDataBuf[0] == 'G' && m_vReadShakeHandDataBuf[1] == 'E' && m_vReadShakeHandDataBuf[2] == 'T')
 			{
 				m_nState = E_CONNECT_SHAKE_HAND;
 			}
@@ -101,9 +101,12 @@ namespace zlnetwork
 	{
 		m_pConnector->GetData2(m_vReadTempBuf, 512);
 		unsigned int pos = m_vReadShakeHandDataBuf.size();
-		m_vReadShakeHandDataBuf.resize(m_vReadShakeHandDataBuf.size() + m_vReadTempBuf.size());
-		memcpy(&m_vReadShakeHandDataBuf[pos], &m_vReadTempBuf[0], m_vReadTempBuf.size());
-		m_vReadTempBuf.clear();
+		if (m_vReadTempBuf.size() > 0)
+		{
+			m_vReadShakeHandDataBuf.resize(m_vReadShakeHandDataBuf.size() + m_vReadTempBuf.size());
+			memcpy(&m_vReadShakeHandDataBuf[pos], &m_vReadTempBuf[0], m_vReadTempBuf.size());
+			m_vReadTempBuf.clear();
+		}
 
 		pos = 0;
 		std::string strOneSentence;
@@ -114,13 +117,13 @@ namespace zlnetwork
 		unsigned int nFinishPos = 0;
 		for (; pos < m_vReadShakeHandDataBuf.size(); pos++)
 		{
-			if (m_vReadShakeHandDataBuf[pos] == '/n')
+			if (m_vReadShakeHandDataBuf[pos] == '\n')
 			{
 				nFinishPos = pos;
 
 				continue;
 			}
-			else if (m_vReadShakeHandDataBuf[pos] == '/r')
+			else if (m_vReadShakeHandDataBuf[pos] == '\r')
 			{
 				nFinishPos = pos;
 				if (strOneSentence.empty())
@@ -158,6 +161,9 @@ namespace zlnetwork
 					}
 
 					m_HandFlag[strType] = strVal;
+					strOneSentence.clear();
+					strVal.clear();
+					strType.clear();
 				}
 			}
 			else
@@ -203,7 +209,7 @@ namespace zlnetwork
 		if (m_pConnector->GetData(m_vReadTempBuf, 2))
 		{
 			cHeadFlag1 = m_vReadTempBuf[0];
-			cHeadFlag2 = m_vReadTempBuf[2];
+			cHeadFlag2 = m_vReadTempBuf[1];
 
 			m_nCurLoadedDataLen = 0;
 			m_nDataLen = 0;
@@ -296,20 +302,23 @@ namespace zlnetwork
 	{
 
 		m_pConnector->GetData2(m_vReadTempBuf, GetDataLen() - m_nCurLoadedDataLen);
-		m_nCurLoadedDataLen += m_vReadTempBuf.size();
-		//计算掩码
-		if (HasMask())
+		if (m_vReadTempBuf.size() > 0)
 		{
-			for (unsigned int i = 0; i < m_vReadTempBuf.size(); i++)
+			m_nCurLoadedDataLen += m_vReadTempBuf.size();
+			//计算掩码
+			if (HasMask())
 			{
-				m_vReadTempBuf[i] = m_vReadTempBuf[i] ^ m_Mask[(m_nMaskIndex++)%4];
+				for (unsigned int i = 0; i < m_vReadTempBuf.size(); i++)
+				{
+					m_vReadTempBuf[i] = m_vReadTempBuf[i] ^ m_Mask[(m_nMaskIndex++) % 4];
+				}
 			}
-		}
-		m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
-		
-		if (IsFin() && m_nCurLoadedDataLen >= GetDataLen())
-		{
-			return E_RETURN_COMPLETE;
+			m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
+
+			if (IsFin() && m_nCurLoadedDataLen >= GetDataLen())
+			{
+				return E_RETURN_COMPLETE;
+			}
 		}
 		return E_RETURN_NEXT;
 	}
