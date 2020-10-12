@@ -171,8 +171,9 @@ namespace zlnetwork
 				strOneSentence.push_back(m_vReadShakeHandDataBuf[pos]);
 			}
 		}
+		nFinishPos++;
 		//检测握手信息是否接收完毕
-		if (bFinish || (nFinishPos == pos && m_HandFlag.find("Sec-WebSocket-Key") != m_HandFlag.end()))
+		if (bFinish || (nFinishPos >= pos && m_HandFlag.find("Sec-WebSocket-Key") != m_HandFlag.end()))
 		{
 			std::string result = "HTTP/1.1 101 Switching Protocols\r\n";
 			result += "Connection: upgrade\r\n";
