@@ -3,7 +3,11 @@ enum E_MSG_TYPE
 {
 	E_RUN_SCRIPT = 64,
 	E_RUN_SCRIPT_RETURN,
+	//TODO 建立同步和上下行同步还需要思考
+	//同步类数据要分状态，同步所有数据还是只同步改变数据
+	E_SYNC_CLASS_INFO,//同步类状态
 	E_SYNC_CLASS_DATA,//同步一个类的数据
+
 	E_SYNC_DOWN_PASSAGE,//下行同步通道
 	E_SYNC_UP_PASSAGE,//上行同步通道
 
@@ -128,10 +132,10 @@ protected:
 	std::string strClassName;
 };
 
-class CSyncClassDataMsgReceiveState : public CBaseMsgReceiveState
+class CSyncClassInfoMsgReceiveState : public CBaseMsgReceiveState
 {
 public:
-	CSyncClassDataMsgReceiveState()
+	CSyncClassInfoMsgReceiveState()
 	{
 		nClassID = -1;
 
@@ -141,11 +145,15 @@ public:
 	}
 	int GetType()
 	{
-		return E_SYNC_CLASS_DATA;
+		return E_SYNC_CLASS_INFO;
 	}
 	virtual void Clear()
 	{
 		nClassID = -1;
+
+		nRootServerID = -1;
+		nRootClassID = -1;
+		nTier = -1;
 
 		nClassNameStringLen = -1;
 		nDataLen = -1;
@@ -157,6 +165,10 @@ public:
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
+	//2020.10.28 类同步消息需要更多的信息
+	int nRootServerID;
+	__int64 nRootClassID;
+	int nTier;
 	std::string strClassName;
 	CSyncScriptPointInterface* m_pPoint;
 private:
@@ -165,6 +177,37 @@ private:
 	__int64 nClassID;//涉及到的类ID
 	int nDataLen;
 };
+class CSyncClassDataReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CSyncClassDataReceiveState()
+	{
+		nClassID = -1;
+
+		nClassNameStringLen = -1;
+		nDataLen = -1;
+
+		strClassName.clear();
+	}
+	int GetType()
+	{
+		return E_SYNC_CLASS_DATA;
+	}
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+
+public:
+	std::string strClassName;
+	__int64 nClassID;//类ID
+	std::vector<char> vData;//同步数据
+private:
+	//以下是读取时的临时变量
+	int nClassNameStringLen;
+
+	int nDataLen;
+};
+
 class CSyncUpMsgReceiveState : public CBaseMsgReceiveState
 {
 public:

@@ -39,6 +39,14 @@ namespace zlnetwork
 		{
 			m_pConnector = pConnector;
 		}
+
+		virtual void Clear()
+		{
+			m_nState = 0;
+			m_vReadTempBuf.clear();
+			m_vReadShakeHandDataBuf.clear();
+			m_curMsgData.Clear();
+		}
 	public:
 
 		enum E_PROCESS_RETURN

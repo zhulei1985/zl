@@ -51,7 +51,7 @@ namespace zlnetwork
 	{
 	public:
 		CBaseConnector();
-		~CBaseConnector();
+		virtual ~CBaseConnector();
 	public:
 		virtual void OnInit();
 		virtual bool OnProcess() = 0;

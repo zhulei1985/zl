@@ -3,6 +3,7 @@
 #include "zByteArray.h"
 #include "TempScriptRunState.h"
 #include "RouteEvent.h"
+#include "ScriptConnectMgr.h"
 
 CBaseMsgReceiveState::~CBaseMsgReceiveState()
 {
@@ -154,6 +155,34 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 				{
 					vOut.push_back('\0');
 					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
+				}
+				else
+				{
+					return false;
+				}
+			}
+			nStringLen = -1;
+		}
+		break;
+		case EScriptVal_Binary:
+		{
+			nPos = 0;
+			if (nStringLen == -1)
+			{
+				if (m_GetData(vOut, 4))
+				{
+					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+				}
+				else
+				{
+					return false;
+				}
+			}
+			if (nStringLen > 0)
+			{
+				if (m_GetData(vOut, nStringLen))
+				{
+					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
 				}
 				else
 				{
@@ -382,6 +411,34 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 			nStringLen = -1;
 		}
 		break;
+		case EScriptVal_Binary:
+		{
+			nPos = 0;
+			if (nStringLen == -1)
+			{
+				if (m_GetData(vOut, 4))
+				{
+					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+				}
+				else
+				{
+					return false;
+				}
+			}
+			if (nStringLen > 0)
+			{
+				if (m_GetData(vOut, nStringLen))
+				{
+					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
+				}
+				else
+				{
+					return false;
+				}
+			}
+			nStringLen = -1;
+		}
+		break;
 		case EScriptVal_ClassPointIndex:
 		{
 			if (nStringLen == -1)
@@ -480,7 +537,7 @@ bool CReturnMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std
 }
 
 
-bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
+bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
@@ -521,6 +578,54 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 			return false;
 		}
 	}
+	if (nClassID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if (nRootServerID == -1)
+	{
+		if (m_GetData(vOut, 4))
+		{
+			nPos = 0;
+			nRootServerID = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if (nRootClassID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nRootClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if (nTier == -1)
+	{
+		if (m_GetData(vOut, 4))
+		{
+			nPos = 0;
+			nTier = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
 	if (nDataLen == -1)
 	{
 		if (m_GetData(vOut, 4))
@@ -545,33 +650,73 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 				if (pMgr)
 				{
 					CScriptPointInterface* pPoint = nullptr;
-					__int64 nImageIndex = pClient->GetImageIndex(nClassID);
+					__int64 nImageIndex = pClient->GetImageIndex(nClassID);//先检查是不是本链接的镜像类
 					if (nImageIndex != 0)
 					{
 						pPoint = pMgr->Get(nImageIndex);
 					}
 					if (pPoint == nullptr)
 					{
-						pPoint = pMgr->New();
+						//再检查其他连接上有没有这个镜像类
+						nImageIndex = CScriptConnectMgr::GetInstance()->GetSyncIndex(nRootServerID, nRootClassID);
+						if (nImageIndex != 0)
+						{
+							pPoint = pMgr->Get(nImageIndex);
+						}
+						
+						//创建新的镜像类
+						if (pPoint == nullptr)
+						{
+							pPoint = pMgr->New();
+							m_pPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint);
+							if (m_pPoint)
+							{
+								m_pPoint->AddUpSyncProcess(pClient->GetID(), nTier);
+								m_pPoint->SetRootServerID(nRootServerID);
+								m_pPoint->SetRootClassID(nRootClassID);
+								m_pPoint->SetImageTier(nTier);
+							}
+							else
+							{
+								//失败，不是同步类
+								pMgr->Release(pPoint);
+								return true;
+							}
 
-						pClient->SetImageIndex(nClassID, pPoint->GetScriptPointIndex());
-					}
-
-					m_pPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint);
-					if (m_pPoint)
-					{
-						m_pPoint->SetProcessID(pClient->GetID());
+							CScriptConnectMgr::GetInstance()->SetSyncIndex(nRootServerID, nRootClassID, pPoint->GetScriptPointIndex());
+							pClient->SetImageIndex(nClassID, pPoint->GetScriptPointIndex());
+						}
+						else
+						{
+							//通过其他连接已经获得了这个镜像类
+							m_pPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint);
+							if (m_pPoint)
+							{
+								m_pPoint->AddUpSyncProcess(pClient->GetID(), nTier);
+							}
+							else
+							{
+								//失败，不是同步类
+								pMgr->Release(pPoint);
+								return true;
+							}
+						}
 					}
 					else
 					{
-						//失败，不是同步类
-						pMgr->Release(pPoint);
-						return true;
+						m_pPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint);
+						if (m_pPoint == nullptr)
+						{
+							//失败，不是同步类
+							pMgr->Release(pPoint);
+							return true;
+						}
 					}
 				}
 			}
 			nPos = 0;
 			m_pPoint->DecodeData4Bytes(&vOut[0], nPos, vOut.size());
+			//m_pPoint->SyncDownClassData(&vOut[0], nPos, vOut.size());
 		}
 		else
 		{
@@ -581,28 +726,145 @@ bool CSyncClassDataMsgReceiveState::Recv(CScriptConnector* pClient)
 	return true;
 }
 
-bool CSyncClassDataMsgReceiveState::Run(CBaseScriptConnector* pClient)
+bool CSyncClassInfoMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	return true;
 }
 
-bool CSyncClassDataMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+bool CSyncClassInfoMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
 {
 	if (m_pPoint == nullptr)
 	{
 		return false;
 	}
 
-	AddChar2Bytes(vBuff, E_SYNC_CLASS_DATA);
+	AddChar2Bytes(vBuff, E_SYNC_CLASS_INFO);
 	AddInt642Bytes(vBuff, m_pPoint->GetScriptPointIndex());
 	AddString2Bytes(vBuff, (char*)strClassName.c_str());
-
+	AddInt2Bytes(vBuff, m_pPoint->GetRootServerID());
+	if (m_pPoint->GetImageTier() == 0)
+	{
+		AddInt642Bytes(vBuff, m_pPoint->GetScriptPointIndex());
+	}
+	else
+	{
+		AddInt642Bytes(vBuff, m_pPoint->GetRootClassID());
+	}
+	AddInt2Bytes(vBuff, m_pPoint->GetImageTier() + 1);
 	tagByteArray vDataBuff;
 	m_pPoint->AddAllData2Bytes(vDataBuff);
 	AddData2Bytes(vBuff, vDataBuff);
 
 	return true;
 }
+
+bool CSyncClassDataReceiveState::Recv(CScriptConnector* pClient)
+{
+	std::vector<char> vOut;
+	int nPos = 0;
+	if (nClassID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	if (nClassNameStringLen == -1)
+	{
+		if (m_GetData(vOut, 4))
+		{
+			nPos = 0;
+			nClassNameStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if (nClassNameStringLen > 0 && strClassName.empty())
+	{
+		if (m_GetData(vOut, nClassNameStringLen))
+		{
+			vOut.push_back('\0');
+			strClassName = (const char*)&vOut[0];
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if (nClassID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	if (nDataLen == -1)
+	{
+		if (m_GetData(vOut, 4))
+		{
+			nPos = 0;
+			nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	if (nDataLen > 0)
+	{
+		if (m_GetData(vData, nDataLen))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CSyncClassDataReceiveState::Run(CBaseScriptConnector* pClient)
+{
+	int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
+	CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
+	if (pMgr)
+	{
+		//镜像类实例
+		//获取在本地的类实例索引
+		__int64 nImageIndex = pClient->GetImageIndex(nClassID);
+
+		CSyncScriptPointInterface *pPoint = dynamic_cast<CSyncScriptPointInterface*>(pMgr->Get(nImageIndex));
+		if (pPoint)
+		{
+			int pos = 0;
+			pPoint->SyncDownClassData(&vData[0], pos, vData.size());
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CSyncClassDataReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+{
+	AddChar2Bytes(vBuff, E_SYNC_CLASS_DATA);
+	AddInt642Bytes(vBuff, nClassID);
+	AddString2Bytes(vBuff, (char*)strClassName.c_str());
+	AddData2Bytes(vBuff, vData);
+	return true;
+}
+
 
 bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 {
@@ -725,6 +987,34 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 				{
 					vOut.push_back('\0');
 					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
+				}
+				else
+				{
+					return false;
+				}
+			}
+			nStringLen = -1;
+		}
+		break;
+		case EScriptVal_Binary:
+		{
+			nPos = 0;
+			if (nStringLen == -1)
+			{
+				if (m_GetData(vOut, 4))
+				{
+					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+				}
+				else
+				{
+					return false;
+				}
+			}
+			if (nStringLen > 0)
+			{
+				if (m_GetData(vOut, nStringLen))
+				{
+					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
 				}
 				else
 				{
@@ -970,6 +1260,34 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 				{
 					vOut.push_back('\0');
 					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
+				}
+				else
+				{
+					return false;
+				}
+			}
+			nStringLen = -1;
+		}
+		break;
+		case EScriptVal_Binary:
+		{
+			nPos = 0;
+			if (nStringLen == -1)
+			{
+				if (m_GetData(vOut, 4))
+				{
+					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+				}
+				else
+				{
+					return false;
+				}
+			}
+			if (nStringLen > 0)
+			{
+				if (m_GetData(vOut, nStringLen))
+				{
+					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
 				}
 				else
 				{
@@ -1234,8 +1552,11 @@ CBaseMsgReceiveState* CMsgReceiveMgr::CreateRceiveState(char cType)
 	case E_RUN_SCRIPT_RETURN:
 		return new CReturnMsgReceiveState;
 		break;
+	case E_SYNC_CLASS_INFO:
+		return new CSyncClassInfoMsgReceiveState;
+		break;
 	case E_SYNC_CLASS_DATA:
-		return new CSyncClassDataMsgReceiveState;
+		return new CSyncClassDataReceiveState;
 		break;
 	case E_SYNC_DOWN_PASSAGE:
 		return new CSyncUpMsgReceiveState;
@@ -1260,3 +1581,4 @@ void CMsgReceiveMgr::RemoveRceiveState(CBaseMsgReceiveState* pState)
 		delete pState;
 	}
 }
+

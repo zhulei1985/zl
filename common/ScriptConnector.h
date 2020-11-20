@@ -56,12 +56,17 @@ public:
 	virtual bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal) = 0;
 
 	virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
-	virtual void SyncUpClassFunRun(CSyncScriptPointInterface* pPoint, std::string strFunName, CScriptStack& stack);
-	virtual void SyncDownClassFunRun(CSyncScriptPointInterface* pPoint, std::string strFunName, CScriptStack& stack);
-
+	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
+	virtual void SyncDownClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
 
 	virtual void EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventRunFun(__int64 nSendID, CScriptStack& ParmInfo);
+
+	virtual void EventUpSyncFun(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventDownSyncFun(__int64 nSendID, CScriptStack& ParmInfo);
+
+	virtual void EventUpSyncData(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo);
 
 	virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
 public:

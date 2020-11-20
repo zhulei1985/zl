@@ -19,6 +19,7 @@
 #include "SocketConnectorMgr.h"
 #include <chrono>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include "ZLScript.h"
 
@@ -65,5 +66,52 @@ public:
 	static void SetInitConnectScript(int nPort,std::string strScript);
 private:
 	static std::map<int, std::string> m_mapInitConnectScript;
+
+	//同步类的判断，让不同连接创建的同一同步类的镜像不会重复建立
+public:
+	struct stSyncInfo
+	{
+		stSyncInfo(int serverid, __int64 classid)
+		{
+			nRootServerID = serverid;
+			nRootClassID = classid;
+		}
+		bool operator<(const struct stSyncInfo& right)const   //重载<运算符
+		{
+			if (this->nRootServerID == right.nRootServerID && this->nRootClassID == right.nRootClassID)     //根据id去重
+				return false;
+			else
+			{
+				if (this->nRootServerID != right.nRootServerID)
+				{
+					return this->nRootServerID < right.nRootServerID;      //降序
+				}
+				else
+				{
+					return this->nRootClassID < right.nRootClassID;
+				}
+			}
+		}
+		int nRootServerID;
+		__int64 nRootClassID;
+	};
+	__int64 GetSyncIndex(int serverID, __int64 id);
+	void SetSyncIndex(int serverID, __int64 id, __int64 imageId);
+	void RemoveSyncIndex(int serverID, __int64 id);
+
+	__int64 AssginSyncProcessID(__int64 connectid);
+	void SetConnectID2ProcessID(__int64 connectid, __int64 processid);
+	__int64 GetConnectIDFromProcessID(__int64 processid);
+	void removeSyncProcessID(__int64 processid);
+private:
+	//first 同步类根节点数据 second 同步类本节点ID
+	std::map<struct stSyncInfo, __int64> m_mapSyncPointInfo;
+	std::mutex m_lockSyncInfo;
+
+	//同步通道ID分配计数
+	__int64 m_nSyncProcessIDCount;
+	//同步通道ID与连接ID的对应
+	std::unordered_map<__int64, __int64> m_mapSyncProcessID;
+	std::mutex m_lockSyncProcess;
 };
 

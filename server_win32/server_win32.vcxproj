@@ -163,6 +163,7 @@
     <ClCompile Include="..\common\ScriptConnectMgr.cpp" />
     <ClCompile Include="..\common\ScriptConnector.cpp" />
     <ClCompile Include="..\common\sha1.cpp" />
+    <ClCompile Include="..\common\SyncAttributes.cpp" />
     <ClCompile Include="..\common\SyncScriptPointInterface.cpp" />
     <ClCompile Include="..\common\TempScriptRunState.cpp" />
     <ClCompile Include="..\network\class\BaseConnector.cpp" />
@@ -187,6 +188,7 @@
     <ClCompile Include="..\script\class\ScriptSuperPointer.cpp" />
     <ClCompile Include="..\script\class\ScriptTriggerMg.cpp" />
     <ClCompile Include="..\script\class\ScriptVirtualMachine.cpp" />
+    <ClCompile Include="..\script\class\zBinaryBuffer.cpp" />
     <ClCompile Include="..\script\class\zStringBuffer.cpp" />
     <ClCompile Include="Account.cpp" />
     <ClCompile Include="server_win32.cpp" />
@@ -202,6 +204,7 @@
     <ClInclude Include="..\common\ScriptConnectMgr.h" />
     <ClInclude Include="..\common\ScriptConnector.h" />
     <ClInclude Include="..\common\sha1.h" />
+    <ClInclude Include="..\common\SyncAttributes.h" />
     <ClInclude Include="..\common\SyncScriptPointInterface.h" />
     <ClInclude Include="..\common\TempScriptRunState.h" />
     <ClInclude Include="..\network\class\BaseConnector.h" />
@@ -232,6 +235,7 @@
     <ClInclude Include="..\script\class\ScriptSuperPointer.h" />
     <ClInclude Include="..\script\class\ScriptTriggerMgr.h" />
     <ClInclude Include="..\script\class\ScriptVirtualMachine.h" />
+    <ClInclude Include="..\script\class\zBinaryBuffer.h" />
     <ClInclude Include="..\script\class\zByteArray.h" />
     <ClInclude Include="..\script\class\ZLScript.h" />
     <ClInclude Include="..\script\class\zStringBuffer.h" />

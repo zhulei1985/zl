@@ -172,6 +172,68 @@ void CScriptConnectMgr::SetInitConnectScript(int nPort, std::string strScript)
 	m_mapInitConnectScript[nPort] = strScript;
 }
 
+__int64 CScriptConnectMgr::GetSyncIndex(int serverID, __int64 id)
+{
+	std::lock_guard<std::mutex> Lock(m_lockSyncInfo);
+	std::map<struct stSyncInfo, __int64>::iterator it = m_mapSyncPointInfo.find(stSyncInfo(serverID, id));
+	if (it != m_mapSyncPointInfo.end())
+	{
+		return it->second;
+	}
+	return 0;
+}
+
+void CScriptConnectMgr::SetSyncIndex(int serverID, __int64 id, __int64 imageId)
+{
+	std::lock_guard<std::mutex> Lock(m_lockSyncInfo);
+	m_mapSyncPointInfo.insert(std::make_pair(stSyncInfo(serverID, id), imageId));
+}
+
+void CScriptConnectMgr::RemoveSyncIndex(int serverID, __int64 id)
+{
+	std::lock_guard<std::mutex> Lock(m_lockSyncInfo);
+	std::map<struct stSyncInfo, __int64>::iterator it = m_mapSyncPointInfo.find(stSyncInfo(serverID, id));
+	if (it != m_mapSyncPointInfo.end())
+	{
+		m_mapSyncPointInfo.erase(it);
+	}
+}
+
+__int64 CScriptConnectMgr::AssginSyncProcessID(__int64 connectid)
+{
+	std::lock_guard<std::mutex> Lock(m_lockSyncProcess);
+	m_nSyncProcessIDCount++;
+	m_mapSyncProcessID[m_nSyncProcessIDCount] = connectid;
+	return m_nSyncProcessIDCount;
+}
+
+void CScriptConnectMgr::SetConnectID2ProcessID(__int64 connectid, __int64 processid)
+{
+	std::lock_guard<std::mutex> Lock(m_lockSyncProcess);
+	m_mapSyncProcessID[processid] = connectid;
+}
+
+__int64 CScriptConnectMgr::GetConnectIDFromProcessID(__int64 processid)
+{
+	std::lock_guard<std::mutex> Lock(m_lockSyncProcess);
+	auto it = m_mapSyncProcessID.find(processid);
+	if (it != m_mapSyncProcessID.end())
+	{
+		return it->second;
+	}
+	return 0;
+}
+
+void CScriptConnectMgr::removeSyncProcessID(__int64 processid)
+{
+	std::lock_guard<std::mutex> Lock(m_lockSyncProcess);
+	auto it = m_mapSyncProcessID.find(processid);
+	if (it != m_mapSyncProcessID.end())
+	{
+		m_mapSyncProcessID.erase(it);
+	}
+}
+
 void CScriptConnectMgr::OnProcess()
 {
 	CSocketConnectorMgr::OnProcess();

@@ -33,7 +33,7 @@ public:
 
 		m_nSize = 0;
 	}
-	~CharRingBuffer()
+	virtual ~CharRingBuffer()
 	{
 
 	}

@@ -5,13 +5,16 @@ CAccount::CAccount()
 {
 	nConnectPointIndex = 0;
 
+	INIT_SYNC_ATTRIBUTE(1, strNickName);
+	INIT_SYNC_ATTRIBUTE(2, strAccountName);
+
 	RegisterClassFun(SetAccountName, this, &CAccount::SetAccountName2Script);
 	RegisterClassFun(GetAccountName, this, &CAccount::GetAccountName2Script);
 	RegisterClassFun(SetPassword, this, &CAccount::SetPassword2Script);
 	RegisterClassFun(GetPassword, this, &CAccount::GetPassword2Script);
 
 	RegisterClassFun(GetNickName, this, &CAccount::GetNickName2Script);
-	RegisterSyncClassFun(SetNickName, this, &CAccount::SetNickName2Script);
+	RegisterSyncClassFun(SetNickName, this, &CAccount::SetNickName2Script, 0);
 
 	RegisterClassFun(SetConnect, this, &CAccount::SetConnect2Script);
 	RegisterClassFun(GetConnect, this, &CAccount::GetConnect2Script);

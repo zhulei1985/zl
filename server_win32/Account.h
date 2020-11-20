@@ -27,9 +27,11 @@ public:
 	virtual bool DecodeData4Bytes(char* pBuff, int& pos, int len);
 
 private:
-	std::string strNickName;
+	SYNC_STR(strNickName);
+	SYNC_STR(strAccountName);
+	//std::string strNickName;
 
-	std::string strAccountName;
+	//std::string strAccountName;
 	std::string strPassword;
 
 	__int64 nConnectPointIndex;

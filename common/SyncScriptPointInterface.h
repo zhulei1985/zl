@@ -1,21 +1,53 @@
 #pragma once
 #include "ScriptPointInterface.h"
-
+#include "SyncAttributes.h"
+#include <unordered_map>
 namespace zlscript
 {
+	enum E_SCRIPT_EVENT_TYPE_SYNC
+	{
+		E_SCRIPT_EVENT_UP_SYNC_DATA = 10,//
+		E_SCRIPT_EVENT_DOWN_SYNC_DATA,
+
+		E_SCRIPT_EVENT_UP_SYNC_FUN,
+		E_SCRIPT_EVENT_DOWN_SYNC_FUN,
+	};
+#define SYNC_INT(val) CSyncIntAttribute val;
+#define SYNC_STR(val) CSyncStringAttribute val;
+#define INIT_SYNC_ATTRIBUTE(index,val) \
+	m_mapSyncAttributes[index] = &val; \
+	val.init(index,this);
+
+//#define SYNC_ATTRIBUTE(index,type,name) \
+//	type name; \ 
+//	void set_##name##(type val) \
+//	{ \
+//		name = val; \
+//		m_mapSyncAttribute[index] = ; \
+//	} \
+//	type get_##name##() \
+//	{ \
+//		return name; \
+//	}
+
 	class CSyncScriptPointInterface : public CScriptPointInterface
 	{
 	public:
 		CSyncScriptPointInterface();
 		~CSyncScriptPointInterface();
 	public:
-		virtual void SetSyncFun(int id)
+		virtual void SetSyncFun(int id, int type)
 		{
-			m_setSyncFunFlag.insert(id);
+			m_mapSyncFunFlag[id] = type;
 		}
 		virtual int RunFun(int id, CScriptRunState* pState);
 		virtual int SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState);
-		virtual int SyncDownRunFun(int nClassType,std::string strFun, CScriptRunState* pState);
+		virtual int SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState);
+
+		//同步类数据，如果有上层节点，向上层节点发送，没有上层节点，向下层节点发送
+		//void SyncClassData();
+		//解析传来的同步数据，并向下层节点发送
+		void SyncDownClassData(const char* pBuff, int& pos, unsigned int len);
 
 		CSyncScriptPointInterface(const CSyncScriptPointInterface& val);
 		virtual CSyncScriptPointInterface& operator=(const CSyncScriptPointInterface& val);
@@ -26,6 +58,33 @@ namespace zlscript
 			E_TYPE_IMAGE,
 		};
 
+		void SetRootServerID(int val)
+		{
+			m_nRootServerID = val;
+		}
+		int GetRootServerID()
+		{
+			return m_nRootServerID;
+		}
+
+		void SetRootClassID(__int64 val)
+		{
+			m_nRootClassID = val;
+		}
+		__int64 GetRootClassID()
+		{
+			return m_nRootClassID;
+		}
+
+		void SetImageTier(int val)
+		{
+			m_nImageTier = val;
+		}
+		int GetImageTier()
+		{
+			return m_nImageTier;
+		}
+
 		void SetProcessID(__int64 val)
 		{
 			m_nProcessID = val;
@@ -35,26 +94,36 @@ namespace zlscript
 			return m_nProcessID;
 		}
 
-		void AddSyncProcess(__int64);
-		bool CheckSyncProcess(__int64);
+		void AddUpSyncProcess(__int64 processId, int tier);
 
-		virtual bool AddAllData2Bytes(std::vector<char>& vBuff) {
-			return true;
-		}
-		virtual bool DecodeData4Bytes(char* pBuff, int& pos, int len) {
-			return true;
-		}
+		void AddDownSyncProcess(__int64);
+		bool CheckDownSyncProcess(__int64);
 
+		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, bool bAll = true);
+		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);
+
+		void ChangeSyncAttibute(CBaseSyncAttribute*);
 	protected:
-		__int64 m_nProcessID;//如果网络镜像，所属进程ID，（同步父节点）
+		int m_nRootServerID;//根节点所在服务器ID
+		__int64 m_nRootClassID;//本实例在根节点上的ID
+		unsigned int m_nImageTier;//镜像的层数
 
-		std::set<__int64> m_listSyncProcessID;//需要同步的线程 （同步子节点）
+		__int64 m_nProcessID;//如果网络镜像，所属进程ID，（上行节点对应的连接ID）
+		//std::set<stUpSyncInfo> m_listUpSyncProcess;
+		std::map<__int64, unsigned int> m_mapUpSyncProcess;
+		//有些下行节点会通知不要给它同步
+		std::map<__int64,bool> m_mapDownSyncProcess;//需要同步的线程 （下行节点对应的连接ID）
 
-		std::set<int> m_setSyncFunFlag;
+		std::unordered_map<int,int> m_mapSyncFunFlag;
+
+		std::map<unsigned short, CBaseSyncAttribute*> m_mapSyncAttributes;
+		std::set<unsigned short> m_setUpdateSyncAttibute;
+
+		std::mutex m_SyncProcessLock;
 	};
 
 
-#define RegisterSyncClassFun(name, p, fun) \
+#define RegisterSyncClassFun(name, p, fun, type) \
 	{ \
 		struct CScript_##name##_ClassFunInfo :public CScriptBaseClassFunInfo \
 		{ \
@@ -82,6 +151,6 @@ namespace zlscript
 		int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(p); \
 		int index = CScriptSuperPointerMgr::GetInstance()->GetClassFunIndex(nClassType,#name); \
 		p->SetFun(index,pInfo); \
-		p->SetSyncFun(index); \
+		p->SetSyncFun(index,type); \
 	}
 }

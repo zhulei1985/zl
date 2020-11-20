@@ -522,7 +522,7 @@ inline bool AddDouble2Bytes(tagByteArray& vBuff, double Val)
 	vBuff.push_back(result.c1);
 	return true;
 }
-inline bool AddData2Bytes(tagByteArray& vBuff, const char* pVal, int charlen)
+inline bool AddData2Bytes(tagByteArray& vBuff, char* pVal, int charlen)
 {
 	if (vBuff.size() + charlen >= vBuff.max_size())
 	{
@@ -572,16 +572,7 @@ inline bool AddString2Bytes(tagByteArray& vBuff, char* pStr)
 	//memcpy(&pBuff[pos],pStr,nStrLen);
 	//pos+=nStrLen;
 }
-inline bool AddString2Bytes(tagByteArray& vBuff, const char* pStr)
-{
-	if (pStr == nullptr)
-	{
-		return false;
-	}
 
-	int nStrLen = strlen(pStr);
-	return AddData2Bytes(vBuff, pStr, nStrLen);
-}
 inline char DecodeBytes2Char(char* pBuff, int& pos, int len)
 {
 	if (pBuff == nullptr)
