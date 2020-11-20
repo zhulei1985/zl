@@ -139,6 +139,10 @@ public:
 	{
 		nClassID = -1;
 
+		nRootServerID = -1;
+		nRootClassID = -1;
+		nTier = -1;
+
 		nClassNameStringLen = -1;
 		nDataLen = -1;
 		m_pPoint = nullptr;

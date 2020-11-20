@@ -578,18 +578,6 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 			return false;
 		}
 	}
-	if (nClassID == -1)
-	{
-		if (m_GetData(vOut, 8))
-		{
-			nPos = 0;
-			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-		}
-		else
-		{
-			return false;
-		}
-	}
 	if (nRootServerID == -1)
 	{
 		if (m_GetData(vOut, 4))
