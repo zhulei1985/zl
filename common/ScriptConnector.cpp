@@ -540,10 +540,6 @@ void CScriptConnector::OnInit()
 {
 	CSocketConnector::OnInit();
 	CBaseScriptConnector::OnInit();
-	if (m_pHeadProtocol)
-	{
-		m_pHeadProtocol->Clear();
-	}
 }
 bool CScriptConnector::OnProcess()
 {
@@ -749,6 +745,8 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 				{
 					//如果这个类实例是本连接对应的镜像
 					AddChar2Bytes(vBuff, 0);
+					__int64 nImageIndex = GetImage4Index(pPoint->GetPoint()->GetScriptPointIndex());
+					AddInt642Bytes(vBuff, nImageIndex);
 				}
 				else
 				{
@@ -760,8 +758,9 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 						//发送消息
 						SendSyncClassMsg(pPoint->GetClassName(), pSyncPoint);
 					}
+					AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
 				}
-				AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+				//AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
 			}
 			pPoint->Unlock();
 		}
@@ -787,19 +786,30 @@ void CScriptConnector::SetHeadProtocol(CBaseHeadProtocol* pProtocol)
 }
 
 
-__int64 CScriptConnector::GetImageIndex(__int64 nID)
+__int64 CScriptConnector::GetImage4Index(__int64 nID)
 {
-	auto it = m_mapClassImageIndex.find(nID);
-	if (it != m_mapClassImageIndex.end())
+	auto it = m_mapClassIndex2Image.find(nID);
+	if (it != m_mapClassIndex2Image.end())
 	{
 		return it->second;
 	}
 	return 0;
 }
 
-void CScriptConnector::SetImageIndex(__int64 nImageID, __int64 nLoaclID)
+__int64 CScriptConnector::GetIndex4Image(__int64 nImageID)
 {
-	m_mapClassImageIndex[nImageID] = nLoaclID;
+	auto it = m_mapClassImage2Index.find(nImageID);
+	if (it != m_mapClassImage2Index.end())
+	{
+		return it->second;
+	}
+	return 0;
+}
+
+void CScriptConnector::SetImageAndIndex(__int64 nImageID, __int64 nLoaclID)
+{
+	m_mapClassImage2Index[nImageID] = nLoaclID;
+	m_mapClassIndex2Image[nLoaclID] = nImageID;
 }
 
 
@@ -1004,20 +1014,29 @@ bool CScriptRouteConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo*
 	return false;
 }
 
-__int64 CScriptRouteConnector::GetImageIndex(__int64 id)
+__int64 CScriptRouteConnector::GetImage4Index(__int64 id)
 {
 	if (m_pMaster)
 	{
-		return m_pMaster->GetImageIndex(id);
+		return m_pMaster->GetImage4Index(id);
 	}
 	return 0;
 }
 
-void CScriptRouteConnector::SetImageIndex(__int64 nImageID, __int64 nLoaclID)
+__int64 CScriptRouteConnector::GetIndex4Image(__int64 id)
 {
 	if (m_pMaster)
 	{
-		m_pMaster->SetImageIndex(nImageID, nLoaclID);
+		return m_pMaster->GetIndex4Image(id);
+	}
+	return 0;
+}
+
+void CScriptRouteConnector::SetImageAndIndex(__int64 nImageID, __int64 nLoaclID)
+{
+	if (m_pMaster)
+	{
+		m_pMaster->SetImageAndIndex(nImageID, nLoaclID);
 	}
 }
 

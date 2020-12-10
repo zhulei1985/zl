@@ -240,9 +240,9 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 					{
 						//镜像类实例
 						//获取在本地的类实例索引
-						__int64 nImageIndex = pClient->GetImageIndex(nClassID);
+						__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
-						pPoint = pMgr->Get(nImageIndex);
+						pPoint = pMgr->Get(nIndex);
 
 					}
 
@@ -486,8 +486,8 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 					{
 						//镜像类实例
 						//获取在本地的类实例索引
-						__int64 nImageIndex = pClient->GetImageIndex(nClassID);
-						pPoint = pMgr->Get(nImageIndex);
+						__int64 nIndex = pClient->GetIndex4Image(nClassID);
+						pPoint = pMgr->Get(nIndex);
 					}
 
 
@@ -578,18 +578,6 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 			return false;
 		}
 	}
-	if (nClassID == -1)
-	{
-		if (m_GetData(vOut, 8))
-		{
-			nPos = 0;
-			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-		}
-		else
-		{
-			return false;
-		}
-	}
 	if (nRootServerID == -1)
 	{
 		if (m_GetData(vOut, 4))
@@ -650,18 +638,18 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 				if (pMgr)
 				{
 					CScriptPointInterface* pPoint = nullptr;
-					__int64 nImageIndex = pClient->GetImageIndex(nClassID);//先检查是不是本链接的镜像类
-					if (nImageIndex != 0)
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);//先检查是不是本链接的镜像类
+					if (nIndex != 0)
 					{
-						pPoint = pMgr->Get(nImageIndex);
+						pPoint = pMgr->Get(nIndex);
 					}
 					if (pPoint == nullptr)
 					{
 						//再检查其他连接上有没有这个镜像类
-						nImageIndex = CScriptConnectMgr::GetInstance()->GetSyncIndex(nRootServerID, nRootClassID);
-						if (nImageIndex != 0)
+						nIndex = CScriptConnectMgr::GetInstance()->GetSyncIndex(nRootServerID, nRootClassID);
+						if (nIndex != 0)
 						{
-							pPoint = pMgr->Get(nImageIndex);
+							pPoint = pMgr->Get(nIndex);
 						}
 						
 						//创建新的镜像类
@@ -684,7 +672,7 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 							}
 
 							CScriptConnectMgr::GetInstance()->SetSyncIndex(nRootServerID, nRootClassID, pPoint->GetScriptPointIndex());
-							pClient->SetImageIndex(nClassID, pPoint->GetScriptPointIndex());
+							pClient->SetImageAndIndex(nClassID, pPoint->GetScriptPointIndex());
 						}
 						else
 						{
@@ -843,9 +831,9 @@ bool CSyncClassDataReceiveState::Run(CBaseScriptConnector* pClient)
 	{
 		//镜像类实例
 		//获取在本地的类实例索引
-		__int64 nImageIndex = pClient->GetImageIndex(nClassID);
+		__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
-		CSyncScriptPointInterface *pPoint = dynamic_cast<CSyncScriptPointInterface*>(pMgr->Get(nImageIndex));
+		CSyncScriptPointInterface *pPoint = dynamic_cast<CSyncScriptPointInterface*>(pMgr->Get(nIndex));
 		if (pPoint)
 		{
 			int pos = 0;
@@ -1072,9 +1060,9 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 					{
 						//镜像类实例
 						//获取在本地的类实例索引
-						__int64 nImageIndex = pClient->GetImageIndex(nClassID);
+						__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
-						pPoint = pMgr->Get(nImageIndex);
+						pPoint = pMgr->Get(nIndex);
 
 					}
 
@@ -1104,10 +1092,10 @@ bool CSyncUpMsgReceiveState::Run(CBaseScriptConnector* pClient)
 	CTempScriptRunState TempState;
 	TempState.CopyFromStack(&m_scriptParm);
 	//下传过来的数据，说明接收方只是镜像
-	__int64 nImageIndex = pClient->GetImageIndex(nClassID);
-	if (nImageIndex)
+	__int64 nIndex = pClient->GetIndex4Image(nClassID);
+	if (nIndex)
 	{
-		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nImageIndex);
+		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nIndex);
 		if (pPoint)
 		{
 			pPoint->Lock();
@@ -1345,9 +1333,9 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 					{
 						//镜像类实例
 						//获取在本地的类实例索引
-						__int64 nImageIndex = pClient->GetImageIndex(nClassID);
+						__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
-						pPoint = pMgr->Get(nImageIndex);
+						pPoint = pMgr->Get(nIndex);
 
 					}
 
@@ -1376,10 +1364,10 @@ bool CSyncDownMsgReceiveState::Run(CBaseScriptConnector* pClient)
 	CTempScriptRunState TempState;
 	TempState.CopyFromStack(&m_scriptParm);
 	//下传过来的数据，说明接收方只是镜像
-	__int64 nImageIndex = pClient->GetImageIndex(nClassID);
-	if (nImageIndex)
+	__int64 nIndex = pClient->GetIndex4Image(nClassID);
+	if (nIndex)
 	{
-		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nImageIndex);
+		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nIndex);
 		if (pPoint)
 		{
 			pPoint->Lock();

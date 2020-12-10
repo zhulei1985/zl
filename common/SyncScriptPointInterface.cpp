@@ -285,6 +285,28 @@ namespace zlscript
 			m_nProcessID = processId;
 		}
 	}
+	void CSyncScriptPointInterface::RemoveUpSyncProcess(__int64 processId)
+	{
+		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+		auto itOld = m_mapUpSyncProcess.find(m_nProcessID);
+		if (itOld != m_mapUpSyncProcess.end())
+		{
+			m_mapUpSyncProcess.erase(itOld);
+		}
+		if (m_nProcessID == processId)
+		{
+			int nTier = 0x7fffffff;
+			auto itOld = m_mapUpSyncProcess.begin();
+			for (;itOld != m_mapUpSyncProcess.end();itOld++)
+			{
+				if (itOld->second < nTier)
+				{
+					nTier = itOld->second;
+					m_nProcessID = itOld->first;
+				}
+			}
+		}
+	}
 	void CSyncScriptPointInterface::AddDownSyncProcess(__int64 nID)
 	{
 		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);

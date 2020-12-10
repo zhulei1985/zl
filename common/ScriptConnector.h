@@ -88,9 +88,9 @@ protected:
 
 	//这个链接处理的镜像类
 public:
-	virtual __int64 GetImageIndex(__int64) = 0;
-	virtual void SetImageIndex(__int64, __int64) = 0;
-
+	virtual __int64 GetImage4Index(__int64) = 0;
+	virtual __int64 GetIndex4Image(__int64) = 0;
+	virtual void SetImageAndIndex(__int64 nImageID, __int64 nLoaclID) = 0;
 public:
 	void SetScriptLimit(std::string strName);
 	bool CheckScriptLimit(std::string strName);
@@ -154,10 +154,12 @@ protected:
 	CBaseMsgReceiveState* pCurMsgReceive;
 	
 public://同步类的镜像索引
-	__int64 GetImageIndex(__int64);
-	void SetImageIndex(__int64, __int64);
+	__int64 GetImage4Index(__int64);
+	__int64 GetIndex4Image(__int64);
+	void SetImageAndIndex(__int64 nImageID, __int64 nLoaclID);
 protected:
-	std::map<__int64, __int64> m_mapClassImageIndex;
+	std::map<__int64, __int64> m_mapClassImage2Index;
+	std::map<__int64, __int64> m_mapClassIndex2Image;
 public:
 	//"我"是指本连接对应的进程
 	//"我"要求"别人"执行脚本
@@ -192,8 +194,10 @@ public:
 	bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
 
 public://同步类的镜像索引
-	__int64 GetImageIndex(__int64);
-	void SetImageIndex(__int64, __int64);
+
+	__int64 GetImage4Index(__int64);
+	__int64 GetIndex4Image(__int64);
+	void SetImageAndIndex(__int64 nImageID, __int64 nLoaclID);
 public:
 	void SetMaster(CScriptConnector* pConnect);
 	void SetRouteID(__int64 nID);

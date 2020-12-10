@@ -95,6 +95,7 @@ namespace zlscript
 		}
 
 		void AddUpSyncProcess(__int64 processId, int tier);
+		void RemoveUpSyncProcess(__int64 processId);
 
 		void AddDownSyncProcess(__int64);
 		bool CheckDownSyncProcess(__int64);

@@ -86,11 +86,22 @@ int ExecuteCommand(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
 		vStrings.push_back(strTemp);
 		strTemp.clear();
 	}
+	std::vector<StackVarInfo> vOtherVar;
+	int nParmNum = pState->GetParamNum();
+	for (int i = 1; i < nParmNum; i++)
+	{
+		vOtherVar.push_back(pState->PopVarFormStack());
+	}
 	pState->ClearFunParam();
+	for (auto it = vOtherVar.rbegin(); it != vOtherVar.rend(); it++)
+	{
+		pState->PushVarToStack(*it);
+	}
 	for (auto it = vStrings.rbegin(); it != vStrings.rend(); it++)
 	{
 		pState->PushVarToStack((*it).c_str());
 	}
+
 	return ECALLBACK_FINISH;
 }
 
