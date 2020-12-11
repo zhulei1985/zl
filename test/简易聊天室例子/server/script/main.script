@@ -7,6 +7,7 @@ void InitConnector(Connector pConnector)
 }
 void RegisterAccount(string strAccount, string password, Connector pConnector)
 {
+	print("≥¢ ‘◊¢≤·’À∫≈:"+strAccount+" "+password);
 	CArray AccountArray = GetVal4Data("Data","Account");
 	if (CheckClassPoint(AccountArray) == 0)
 	{
@@ -34,6 +35,7 @@ void RegisterAccount(string strAccount, string password, Connector pConnector)
 }
 void LoginAccount(string strAccount, string password, Connector pConnector)
 {
+	print("≥¢ ‘µ«¬º’À∫≈:"+strAccount+" "+password);
 	CArray AccountArray = GetVal4Data("Data","Account");
 	if (0 == CheckClassPoint(AccountArray))
 	{
