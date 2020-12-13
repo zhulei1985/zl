@@ -58,6 +58,7 @@ public:
 	virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
 	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
 	virtual void SyncDownClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
+	virtual void SendSyncClassData(__int64 classID, std::vector<char>& data);
 
 	virtual void EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventRunFun(__int64 nSendID, CScriptStack& ParmInfo);

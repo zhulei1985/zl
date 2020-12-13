@@ -382,6 +382,16 @@ void CBaseScriptConnector::SyncDownClassFunRun(__int64 classID, std::string strF
 	SendMsg(&msg);
 }
 
+void CBaseScriptConnector::SendSyncClassData(__int64 classID, std::vector<char>&data)
+{
+	CSyncClassDataReceiveState msg;
+	msg.nClassID = classID;
+
+	msg.vData = data;
+	
+	SendMsg(&msg);
+}
+
 
 void CBaseScriptConnector::EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
@@ -418,6 +428,10 @@ void CBaseScriptConnector::EventUpSyncData(__int64 nSendID, CScriptStack& ParmIn
 
 void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo)
 {
+	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
+	tagByteArray data;
+	ScriptStack_GetBinary(ParmInfo, data);
+	SendSyncClassData(nClassID, data);
 }
 
 
@@ -618,7 +632,12 @@ bool CScriptConnector::OnProcess()
 				CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
 				pCurMsgReceive = nullptr;
 			}
-
+			else
+			{
+				//错误,断开连接
+				CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
+				pCurMsgReceive = nullptr;
+			}
 		}
 		else
 		{
@@ -751,10 +770,10 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 				else
 				{
 					AddChar2Bytes(vBuff, 1);
-					if (!pSyncPoint->CheckDownSyncProcess(GetID()))
+					if (!pSyncPoint->CheckDownSyncProcess(this->GetEventIndex()))
 					{
 						//新同步
-						pSyncPoint->AddDownSyncProcess(GetID());
+						pSyncPoint->AddDownSyncProcess(this->GetEventIndex());
 						//发送消息
 						SendSyncClassMsg(pPoint->GetClassName(), pSyncPoint);
 					}

@@ -31,7 +31,7 @@ namespace zlscript
 			{
 				std::string funName;
 				CScriptStack tempStack;
-				pState->CopyToStack(&tempStack, pState->GetParamNum());
+
 
 				//获取函数名
 				int nResult = 0;
@@ -47,7 +47,9 @@ namespace zlscript
 					}
 				}
 				m_FunLock.unlock();
-
+				ScriptVector_PushVar(tempStack, this);
+				ScriptVector_PushVar(tempStack, funName.c_str());
+				pState->CopyToStack(&tempStack, pState->GetParamNum());
 				std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 				if (!CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, pState->m_pMachine->GetEventIndex(), tempStack, GetProcessID()))
 				{
@@ -155,7 +157,9 @@ namespace zlscript
 		int nResult = 0;
 		//std::lock_guard<std::mutex> _lock{ *m_FunLock };
 		int index = CScriptSuperPointerMgr::GetInstance()->GetClassFunIndex(nClassType, strFun);
+		bool bNeedSyncDown = false;
 		m_FunLock.lock();
+
 		std::map<int, CScriptBaseClassFunInfo*>::iterator it = m_mapScriptClassFun.find(index);
 		if (it != m_mapScriptClassFun.end())
 		{
@@ -168,29 +172,50 @@ namespace zlscript
 		}
 		m_FunLock.unlock();
 
-		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
-		//然后再同步给子节点
-		auto Syncit = m_mapDownSyncProcess.begin();
-		for (; Syncit != m_mapDownSyncProcess.end(); )
+		auto itSyncFlag = m_mapSyncFunFlag.find(index);
+		if (itSyncFlag != m_mapSyncFunFlag.end())
 		{
-			if (Syncit->second == false)
+			if (itSyncFlag->second >= 1)
 			{
-				Syncit++;
-				continue;
-			}
-			std::vector<char> vBuff;
-			CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(Syncit->first);
-			if (pClient)
-			{
-				pClient->SyncDownClassFunRun(this->GetScriptPointIndex(), funName, tempStack);
-				Syncit++;
+				std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+				//然后再同步给子节点
+				auto Syncit = m_mapDownSyncProcess.begin();
+				for (; Syncit != m_mapDownSyncProcess.end(); )
+				{
+					if (Syncit->second == false)
+					{
+						Syncit++;
+						continue;
+					}
+					std::vector<char> vBuff;
+					CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(Syncit->first);
+					if (pClient)
+					{
+						pClient->SyncDownClassFunRun(this->GetScriptPointIndex(), funName, tempStack);
+						Syncit++;
+					}
+					else
+					{
+						Syncit = m_mapDownSyncProcess.erase(Syncit);
+					}
+
+				}
 			}
 			else
 			{
-				Syncit = m_mapDownSyncProcess.erase(Syncit);
+				if (m_setUpdateSyncAttibute.size() > 0)
+				{
+					//同步属性有更新
+					std::vector<char> vBuff;
+					AddAllData2Bytes(vBuff, false);
+					int pos = 0;
+					SyncDownClassData(&vBuff[0], pos, vBuff.size());
+					m_setUpdateSyncAttibute.clear();
+				}
 			}
-
+			
 		}
+
 		return nResult;
 	}
 	//void CSyncScriptPointInterface::SyncClassData()
@@ -233,7 +258,7 @@ namespace zlscript
 	{
 		int startPos = pos;
 		//解码数据
-
+		DecodeData4Bytes((char*)pBuff, pos, len);
 		//发送同步消息给下层节点
 		CScriptStack tempStack;
 		ScriptVector_PushVar(tempStack, this);
