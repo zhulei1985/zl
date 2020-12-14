@@ -460,7 +460,7 @@ namespace zlnetwork
 	CInnerHeadProtocol::CInnerHeadProtocol()
 	{
 		m_nState = E_CONNECT_INIT;
-		nConnectIndex = 0;
+		nLastConnectID = 0;
 	}
 
 	int CInnerHeadProtocol::OnProcess()
