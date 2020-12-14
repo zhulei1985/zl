@@ -143,6 +143,7 @@ public:
 	//virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
 	//virtual void SyncUpClassFunRun(CSyncScriptPointInterface* pPoint, std::string strFunName, CScriptStack& stack);
 	//virtual void SyncDownClassFunRun(CSyncScriptPointInterface* pPoint,std::string strFunName, CScriptStack& stack);
+	void Merge(CScriptConnector* pOldConnect);
 protected:
 
 	typedef std::function< int(CSocketConnector* pConnector)> StateFun;

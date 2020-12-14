@@ -595,6 +595,14 @@ bool CScriptConnector::OnProcess()
 			break;
 		case CBaseHeadProtocol::E_RETURN_NEXT:
 			break;
+		case CBaseHeadProtocol::E_RETURN_SHAKE_HAND_COMPLETE:
+			if (m_pHeadProtocol->GetLastConnectID() != 0)
+			{
+				//合并连接信息
+				auto pOldConnect = CScriptConnectMgr::GetInstance()->GetConnector(m_pHeadProtocol->GetLastConnectID());
+				Merge(pOldConnect);
+			}
+			break;
 		case CBaseHeadProtocol::E_RETURN_ERROR:
 		default:
 			//错误，中断连接
@@ -760,7 +768,7 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 			AddString2Bytes(vBuff, (char*)pPoint->GetClassName());
 			if (pPoint->GetPoint())
 			{
-				if (pSyncPoint->GetProcessID() == GetID())
+				if (pSyncPoint->GetProcessID() == GetEventIndex())
 				{
 					//如果这个类实例是本连接对应的镜像
 					AddChar2Bytes(vBuff, 0);
@@ -802,6 +810,10 @@ void CScriptConnector::SetHeadProtocol(CBaseHeadProtocol* pProtocol)
 		CHeadProtocolMgr::GetInstance()->Remove(m_pHeadProtocol);
 	}
 	m_pHeadProtocol = pProtocol;
+}
+
+void CScriptConnector::Merge(CScriptConnector* pOldConnect)
+{
 }
 
 

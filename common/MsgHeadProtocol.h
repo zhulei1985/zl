@@ -47,6 +47,7 @@ namespace zlnetwork
 			E_RETURN_NEXT,//下个轮询再处理
 			E_RETURN_COMPLETE,
 			E_RETURN_ERROR,
+			E_RETURN_SHAKE_HAND_COMPLETE,//握手完成
 		};
 		virtual int OnProcess() = 0;
 
@@ -60,6 +61,8 @@ namespace zlnetwork
 
 		virtual void SetServer(bool val) { ; }
 		virtual void SetPassword(const char* str){}
+
+		virtual __int64 GetLastConnectID() { return 0; }
 	protected:
 		CSocketConnector* m_pConnector;
 		int m_nState;
@@ -183,6 +186,8 @@ namespace zlnetwork
 
 		int nMD5StringLen;
 		std::string strMD5String;
+
+		__int64 nLastConnectID;
 	};
 
 	class CHeadProtocolMgr

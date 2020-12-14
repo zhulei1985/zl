@@ -460,6 +460,7 @@ namespace zlnetwork
 	CInnerHeadProtocol::CInnerHeadProtocol()
 	{
 		m_nState = E_CONNECT_INIT;
+		nConnectIndex = 0;
 	}
 
 	int CInnerHeadProtocol::OnProcess()
@@ -493,37 +494,44 @@ namespace zlnetwork
 		if (bServer)
 		{
 			tagByteArray vBuff;
-			for (unsigned int i = 0; i < headword.size(); i++)
+			if (m_pConnector->GetData(vBuff, headword.size()+8))
 			{
-				vBuff.push_back(headword.c_str()[i]);
-			}
-			//AddString2Bytes(vBuff, headword.c_str());
-			AddInt2Bytes(vBuff, 1);//版本号
-			AddInt642Bytes(vBuff, time(nullptr));
-			m_pConnector->SendData(&vBuff[0], vBuff.size());
-
-			AddString2Bytes(vBuff, m_strPassword.c_str());
-			MD5 md5(&vBuff[headword.size()], vBuff.size() - headword.size());
-			strMD5String.clear();
-			strMD5String = md5.toString();
-		}
-		else
-		{
-			tagByteArray vBuff;
-			if (m_pConnector->GetData(vBuff, headword.size()))
-			{
-				for (unsigned int i = 0; i < headword.size(); i++)
+				int i = 0;
+				for (; i < (int)headword.size(); i++)
 				{
 					if (vBuff[i] != headword.c_str()[i])
 					{
 						return E_RETURN_ERROR;
 					}
 				}
+				nLastConnectID = DecodeBytes2Int64(&vBuff[0], i, vBuff.size());
+				vBuff.clear();
+				AddInt2Bytes(vBuff, 1);//版本号
+				AddInt642Bytes(vBuff, time(nullptr));
+				AddInt642Bytes(vBuff, m_pConnector->GetID());
+				m_pConnector->SendData(&vBuff[0], vBuff.size());
+
+				AddString2Bytes(vBuff, m_strPassword.c_str());
+				MD5 md5(&vBuff[headword.size()], vBuff.size() - headword.size());
+				strMD5String.clear();
+				strMD5String = md5.toString();
 			}
 			else
 			{
 				return E_RETURN_NEXT;
 			}
+		}
+		else
+		{
+			tagByteArray vBuff;
+			for (unsigned int i = 0; i < headword.size(); i++)
+			{
+				vBuff.push_back(headword.c_str()[i]);
+			}
+			AddInt642Bytes(vBuff, nLastConnectID);
+
+			m_pConnector->SendData(&vBuff[0], vBuff.size());
+
 		}
 		m_nState = E_CONNECT_SHAKE_HAND;
 		return E_RETURN_CONTINUE;
@@ -557,6 +565,8 @@ namespace zlnetwork
 				if (strClientMD5String == strMD5String)
 				{
 					m_nState = E_CONNECT_GET_MSG_LEN;
+					//验证成功
+					return E_RETURN_SHAKE_HAND_COMPLETE;
 				}
 				else
 				{
@@ -570,7 +580,7 @@ namespace zlnetwork
 		}
 		else
 		{
-			if (m_pConnector->GetData(vBuff, 12))
+			if (m_pConnector->GetData(vBuff, 17))
 			{
 				int pos = 0;
 				//int nVer = DecodeBytes2Int(&vBuff[0], pos, vBuff.size());
@@ -589,7 +599,7 @@ namespace zlnetwork
 				return E_RETURN_NEXT;
 			}
 		}
-		return E_RETURN_COMPLETE;
+		return E_RETURN_CONTINUE;
 	}
 
 	void CInnerHeadProtocol::SetPassword(const char* str)
