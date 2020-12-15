@@ -512,7 +512,7 @@ namespace zlnetwork
 				m_pConnector->SendData(&vBuff[0], vBuff.size());
 
 				AddString2Bytes(vBuff, m_strPassword.c_str());
-				MD5 md5(&vBuff[headword.size()], vBuff.size() - headword.size());
+				MD5 md5(&vBuff[0], vBuff.size());
 				strMD5String.clear();
 				strMD5String = md5.toString();
 			}
@@ -580,11 +580,12 @@ namespace zlnetwork
 		}
 		else
 		{
-			if (m_pConnector->GetData(vBuff, 17))
+			if (m_pConnector->GetData(vBuff, 20))
 			{
 				int pos = 0;
-				//int nVer = DecodeBytes2Int(&vBuff[0], pos, vBuff.size());
-				//__int64 time = DecodeBytes2Int64(&vBuff[0], pos, vBuff.size());
+				int nVer = DecodeBytes2Int(&vBuff[0], pos, vBuff.size());
+				__int64 time = DecodeBytes2Int64(&vBuff[0], pos, vBuff.size());
+				nLastConnectID = DecodeBytes2Int64(&vBuff[0], pos, vBuff.size());
 				AddString2Bytes(vBuff, m_strPassword.c_str());
 				MD5 md5(&vBuff[0], vBuff.size());
 

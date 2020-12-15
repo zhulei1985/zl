@@ -56,12 +56,12 @@ namespace zlscript
 	class CScriptStack
 	{
 	public:
-		CScriptStack();
+		CScriptStack(unsigned int Size = 16);
 		CScriptStack(const CScriptStack& info);
 		~CScriptStack();
 	public:
-		void pop();
-		void push(StackVarInfo& val);
+		bool pop();
+		bool push(StackVarInfo& val);
 		StackVarInfo& top();
 		unsigned int size();
 		bool empty();
@@ -69,9 +69,9 @@ namespace zlscript
 		CScriptStack& operator =(const CScriptStack& info);
 		StackVarInfo* GetVal(int index);
 	private:
-		std::vector<StackVarInfo*> m_vData;
+		std::vector<StackVarInfo> m_vData;
 
-		std::list<StackVarInfo*> m_Pool;
+		//std::list<StackVarInfo*> m_Pool;
 		unsigned int nIndex;
 
 		StackVarInfo emptyinfo;
@@ -309,35 +309,6 @@ namespace zlscript
 
 		Stack.pop();
 		return nReturn;
-	}
-
-	inline bool ScriptStack_GetBinary(CScriptStack& Stack, std::vector<char> &out)
-	{
-		if (Stack.empty())
-		{
-			return false;
-		}
-		bool bResult = false;
-		StackVarInfo& var = Stack.top();
-		const char * pReturn = nullptr;
-		switch (var.cType)
-		{
-		case EScriptVal_Binary:
-			unsigned int nSize = 0;
-			const char* pData = StackVarInfo::s_binPool.GetBinary(var.Int64, nSize);
-			if (pData)
-			{
-				for (unsigned int i = 0; i < nSize; i++)
-				{
-					out.push_back(pData[i]);
-				}
-				bResult = true;
-			}
-			break;
-		}
-
-		Stack.pop();
-		return bResult;
 	}
 
 	inline StackVarInfo ScriptStack_GetVar(CScriptStack& Stack)
