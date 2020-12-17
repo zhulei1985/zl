@@ -814,6 +814,15 @@ void CScriptConnector::SetHeadProtocol(CBaseHeadProtocol* pProtocol)
 
 void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 {
+	if (pOldConnect == nullptr)
+	{
+		return;
+	}
+	m_vecEventIndexs.push_back(pOldConnect->GetEventIndex());
+	for (unsigned int i = 0; i < pOldConnect->m_vecEventIndexs.size(); i++)
+	{
+		m_vecEventIndexs.push_back(pOldConnect->m_vecEventIndexs[i]);
+	}
 }
 
 
