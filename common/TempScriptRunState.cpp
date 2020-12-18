@@ -200,19 +200,14 @@ namespace zlscript
 		{
 			return;
 		}
-		if (m_BlockStack.size() > 0)
+
+		for (unsigned int i = m_varRegister.size() - nNum; i < m_varRegister.size(); i++)
 		{
-			CScriptExecBlock* pBlock = m_BlockStack.top();
-			if (pBlock)
-			{
-				for (unsigned int i = m_varRegister.size() - nNum; i < m_varRegister.size(); i++)
-				{
-					auto pVar = m_varRegister.GetVal(i);
-					if (pVar)
-						pStack->push(*pVar);
-				}
-			}
+			auto pVar = m_varRegister.GetVal(i);
+			if (pVar)
+				pStack->push(*pVar);
 		}
+
 	}
 	void CTempScriptRunState::CopyFromStack(CScriptStack* pStack)
 	{
@@ -220,19 +215,22 @@ namespace zlscript
 		{
 			return;
 		}
-		std::vector<StackVarInfo> vVars;
-		while (!pStack->empty())
+		//std::vector<StackVarInfo> vVars;
+		//while (!pStack->empty())
+		//{
+		//	vVars.push_back(pStack->top());
+		//	pStack->pop();
+		//}
+
+		for (unsigned int i = 0; i < pStack->size(); i++)
 		{
-			vVars.push_back(pStack->top());
-			pStack->pop();
+			m_varRegister.push(*pStack->GetVal(i));
 		}
 
-		for (unsigned int i = 0; i < vVars.size(); i++)
+		while (!pStack->empty())
 		{
-			m_varRegister.push(vVars[i]);
+			pStack->pop();
 		}
-			
-		
 	}
 
 	//获取函数变量

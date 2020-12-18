@@ -298,36 +298,42 @@ void CBaseScriptConnector::OnDestroy()
 		CScriptExecCodeMgr::GetInstance()->RemoveRemoteFunction(*it, GetEventIndex());
 	}
 
+	for (auto it = m_mapReturnState.begin(); it != m_mapReturnState.end(); it++)
+	{
+		CScriptStack scriptParm;
+		ScriptVector_PushVar(scriptParm, it->second.nReturnID);
+		ScriptVector_PushEmptyVar(scriptParm);
+		//scriptParm.push();
+		
+		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN, GetEventIndex(), scriptParm, it->second.nEventIndex);
+
+	}
+	m_mapReturnState.clear();
 	RemoveClassObject(this->GetScriptPointIndex());
 	CRouteEventMgr::GetInstance()->Unregister(GetEventIndex());
 	CScriptExecFrame::Clear();
+
 
 }
 
 bool CBaseScriptConnector::RunMsg(CBaseMsgReceiveState* pMsg)
 {
 	bool bResult = false;
-	if (nRouteMode_ConnectID != 0 && pMsg->GetType() != E_RUN_SCRIPT)
+	if (nRouteMode_ConnectID != 0)
 	{
-		//路由状态其余消息直接转发
-		//auto pRoute = CScriptConnectMgr::GetInstance()->GetConnector(nRouteMode_ConnectID);
-		//if (pRoute)
-		//{
-		//	CRouteFrontMsgReceiveState msg;
-		//	msg.nConnectID = GetEventIndex();
-		//	msg.pState = pMsg;
-		//	msg.Send(pRoute);
-		//}
-		//else
-		//{
-		//	nRouteMode_ConnectID = 0;
-		//	bResult = pMsg->Run(this);
-		//}
-		if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
+		switch (pMsg->GetType())
 		{
-			//转发失败，需要转发的目标不存在，取消路由状态
-			nRouteMode_ConnectID = 0;
+		case E_RUN_SCRIPT_RETURN://看起来只有这一条消息需要无条件转发
+			if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
+			{
+				//转发失败，需要转发的目标不存在，取消路由状态
+				nRouteMode_ConnectID = 0;
+				bResult = true;// pMsg->Run(this);
+			}
+			break;
+		default:
 			bResult = pMsg->Run(this);
+			break;
 		}
 	}
 	else
@@ -823,6 +829,11 @@ void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 	{
 		m_vecEventIndexs.push_back(pOldConnect->m_vecEventIndexs[i]);
 	}
+
+	m_mapReturnState = pOldConnect->m_mapReturnState;
+	m_nReturnCount = pOldConnect->m_nReturnCount;
+
+	pOldConnect->m_mapReturnState.clear();
 }
 
 
@@ -950,9 +961,9 @@ void CScriptConnector::SetRouteInitScript(const char* pStr)
 	strRouteInitScript = pStr;
 }
 
-bool CScriptConnector::RouteMsg(CBaseMsgReceiveState* pMsg)
+bool CScriptConnector::RouteMsg(CRouteFrontMsgReceiveState* pState)
 {
-	CRouteFrontMsgReceiveState* pState = dynamic_cast<CRouteFrontMsgReceiveState*>(pMsg);
+	//CRouteFrontMsgReceiveState* pState = dynamic_cast<CRouteFrontMsgReceiveState*>(pMsg);
 	if (pState == nullptr)
 	{
 		return false;

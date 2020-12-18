@@ -80,7 +80,7 @@ public:
 
 public:
 	virtual void SetRouteInitScript(const char*) {}
-	virtual bool RouteMsg(CBaseMsgReceiveState* pMsg) { return false; }
+	virtual bool RouteMsg(CRouteFrontMsgReceiveState* pMsg) { return false; }
 protected:
 	//当前登录的账号
 	std::string strAccountName;
@@ -173,7 +173,7 @@ public:
 	//路由模式
 public:
 	void SetRouteInitScript(const char* pStr);
-	bool RouteMsg(CBaseMsgReceiveState* pMsg);
+	bool RouteMsg(CRouteFrontMsgReceiveState* pMsg);
 
 protected:
 	std::string strRouteInitScript;

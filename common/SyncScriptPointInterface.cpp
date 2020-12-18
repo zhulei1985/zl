@@ -66,8 +66,8 @@ namespace zlscript
 			else
 			{
 				std::string funName;
-				CScriptStack tempStack;
-				pState->CopyToStack(&tempStack, pState->GetParamNum());
+				CScriptStack parmStack;
+				pState->CopyToStack(&parmStack, pState->GetParamNum());
 
 				//先执行本地数据
 				int nResult = 0;
@@ -87,6 +87,13 @@ namespace zlscript
 
 				if (itSyncFlag->second >= 1)
 				{
+					CScriptStack tempStack;
+					ScriptVector_PushVar(tempStack, this);
+					ScriptVector_PushVar(tempStack, funName.c_str());
+					for (unsigned int i = 0; i < parmStack.size(); i++)
+					{
+						tempStack.push(*parmStack.GetVal(i));
+					}
 					std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 					//然后再同步给子节点
 					auto Syncit = m_mapDownSyncProcess.begin();
@@ -98,7 +105,7 @@ namespace zlscript
 							continue;
 						}
 						//std::vector<char> vBuff;
-						if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, pState->m_pMachine->GetEventIndex(), tempStack, Syncit->first))
+						if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_DOWN_SYNC_FUN, pState->m_pMachine->GetEventIndex(), tempStack, Syncit->first))
 						{
 							Syncit++;
 						}
@@ -110,7 +117,7 @@ namespace zlscript
 					}
 				}
 
-				if (m_setUpdateSyncAttibute.size() > 0)
+				else if (m_setUpdateSyncAttibute.size() > 0)
 				{
 					//同步属性有更新
 					std::vector<char> vBuff;
@@ -133,13 +140,20 @@ namespace zlscript
 		if (GetProcessID() > 0)//不是根节点，继续往上发送
 		{
 			CScriptStack tempStack;
+			ScriptVector_PushVar(tempStack, this);
+			ScriptVector_PushVar(tempStack, strFun.c_str());
 			pState->CopyToStack(&tempStack, pState->GetParamNum());
 
-			CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(GetProcessID());
-			if (pClient)
+			std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+			if (!CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, 0, tempStack, GetProcessID()))
 			{
-				pClient->SyncUpClassFunRun(this->GetScriptPointIndex(), strFun, tempStack);
+
 			}
+			//CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(GetProcessID());
+			//if (pClient)
+			//{
+			//	pClient->SyncUpClassFunRun(this->GetScriptPointIndex(), strFun, tempStack);
+			//}
 			pState->ClearFunParam();
 
 			return ECALLBACK_FINISH;
@@ -150,8 +164,8 @@ namespace zlscript
 	int CSyncScriptPointInterface::SyncDownRunFun(int nClassType,std::string strFun, CScriptRunState* pState)
 	{
 		std::string funName;
-		CScriptStack tempStack;
-		pState->CopyToStack(&tempStack, pState->GetParamNum());
+		CScriptStack parmStack;
+		pState->CopyToStack(&parmStack, pState->GetParamNum());
 
 		//先执行本地数据
 		int nResult = 0;
@@ -172,6 +186,13 @@ namespace zlscript
 		}
 		m_FunLock.unlock();
 
+		CScriptStack tempStack;
+		ScriptVector_PushVar(tempStack, this);
+		ScriptVector_PushVar(tempStack, funName.c_str());
+		for (unsigned int i = 0; i < parmStack.size(); i++)
+		{
+			tempStack.push(*parmStack.GetVal(i));
+		}
 		auto itSyncFlag = m_mapSyncFunFlag.find(index);
 		if (itSyncFlag != m_mapSyncFunFlag.end())
 		{
@@ -187,13 +208,17 @@ namespace zlscript
 						Syncit++;
 						continue;
 					}
-					std::vector<char> vBuff;
-					CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(Syncit->first);
-					if (pClient)
+					if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_DOWN_SYNC_FUN, 0, tempStack, Syncit->first))
 					{
-						pClient->SyncDownClassFunRun(this->GetScriptPointIndex(), funName, tempStack);
 						Syncit++;
 					}
+					//std::vector<char> vBuff;
+					//CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(Syncit->first);
+					//if (pClient)
+					//{
+					//	pClient->SyncDownClassFunRun(this->GetScriptPointIndex(), funName, tempStack);
+					//	Syncit++;
+					//}
 					else
 					{
 						Syncit = m_mapDownSyncProcess.erase(Syncit);
