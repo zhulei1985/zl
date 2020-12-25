@@ -76,6 +76,10 @@ namespace zlnetwork
 	int CWebSocketHeadProtocol::OnState_Init()
 	{
 		m_pConnector->GetData2(m_vReadTempBuf,512);
+		if (m_vReadTempBuf.size() == 0)
+		{
+			return E_RETURN_NEXT;
+		}
 		unsigned int pos = m_vReadShakeHandDataBuf.size();
 		m_vReadShakeHandDataBuf.resize(m_vReadShakeHandDataBuf.size() + m_vReadTempBuf.size());
 		memcpy(&m_vReadShakeHandDataBuf[pos], &m_vReadTempBuf[0], m_vReadTempBuf.size());
@@ -214,18 +218,18 @@ namespace zlnetwork
 
 			m_nCurLoadedDataLen = 0;
 			m_nDataLen = 0;
-			if (GetDataLenMode() > 0)
-			{
+			//if (GetDataLenMode() > 0)
+			//{
 				m_nState = E_CONNECT_GET_MSG_LEN;
-			}
-			else if (HasMask())
-			{
-				m_nState = E_CONNECT_GET_MSG_MASK;
-			}
-			else
-			{
-				m_nState = E_CONNECT_GET_MSG_BODY;
-			}
+			//}
+			//else if (HasMask())
+			//{
+			//	m_nState = E_CONNECT_GET_MSG_MASK;
+			//}
+			//else
+			//{
+			//	m_nState = E_CONNECT_GET_MSG_BODY;
+			//}
 
 		}
 		return E_RETURN_CONTINUE;
@@ -336,7 +340,7 @@ namespace zlnetwork
 	int CWebSocketHeadProtocol::SendHead(unsigned int len)
 	{
 		tagByteArray vBuff;
-		vBuff.push_back(0x80);
+		vBuff.push_back(0x82);
 		//按搜到的文档说，服务器发送给客户端的数据不能有掩码
 		if (len > 0xff)
 		{

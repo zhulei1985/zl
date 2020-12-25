@@ -804,6 +804,9 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
 	break;
+	default:
+		AddChar2Bytes(vBuff, EScriptVal_None);
+		break;
 	}
 	return true;
 }
