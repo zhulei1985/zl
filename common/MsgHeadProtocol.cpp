@@ -320,9 +320,16 @@ namespace zlnetwork
 			}
 			m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
 
-			if (IsFin() && m_nCurLoadedDataLen >= GetDataLen())
+			if (m_nCurLoadedDataLen >= GetDataLen())
 			{
-				return E_RETURN_COMPLETE;
+				m_nState = E_CONNECT_GET_MSG_HEAD;
+				if (IsFin())
+					return E_RETURN_COMPLETE;
+				else
+				{
+					//TODO 消息合并
+					return E_RETURN_COMPLETE;
+				}
 			}
 		}
 		return E_RETURN_NEXT;
