@@ -8,7 +8,7 @@ class CNetWorkFunMgr
     {
         var call = Laya.Handler.create(point,Fun,null,false);
         this.FunCache[name] = call;
-        call.runWith()
+        //call.runWith()
     }
     GetFun(name)
     {

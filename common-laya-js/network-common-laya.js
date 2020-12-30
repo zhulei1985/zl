@@ -136,8 +136,10 @@ export default class Connector
             msg = this.Recv_ScriptReturn();
             break;
         case this.E_SYNC_CLASS_INFO://同步类的状态
+            msg = this.Recv_SyncClassInfo();
             break;
         case this.E_SYNC_CLASS_DATA://同步类数据
+            msg = this.Recv_SyncClassData();
             break;
         case this.E_SYNC_DOWN_PASSAGE://下行同步通道
             break;
@@ -268,15 +270,17 @@ export default class Connector
                 var classname = this.GetString(data);
                 var classtype = data.getByte();
                 var classindex = this.GetInt64(data);
+                console.log("class name="+classname+",type="+classtype+",index="+classindex);
                 if (classtype == 0)
                 {
-                    parm = classCache.GetClass(classname,classindex);
+                    parm = classCache.GetClass(classindex);
                 }
                 else
                 {
-                    var Index = connector.GetIndex4Image(classindex);
-                    parm = classCache.GetClass(classname,Index);
+                    var Index = this.GetIndex4Image(classindex);
+                    parm = classCache.GetClass(Index);
                 }
+                console.log(parm);
             }
             msg.parm.push(parm);
         }
@@ -329,8 +333,8 @@ export default class Connector
                 }
                 else
                 {
-                    var Index = connector.GetIndex4Image(classindex);
-                    parm = classCache.GetClass(classname,Index);
+                    var Index = this.GetIndex4Image(classindex);
+                    parm = classCache.GetClass(Index);
                 }
             }
             msg.parm.push(parm);
@@ -345,19 +349,20 @@ export default class Connector
         }
         return msg;
     }
-    Recv_SyncClassInfo(connector)
+    Recv_SyncClassInfo()
     {
+        console.log("Recv_SyncClassInfo,begin:");
         //上行通道传来同步类数据
-        var data = connector.Recvbyte;
+        var data = this.Recvbyte;
         var msg = {};
         msg.nClassID = this.GetInt64(data);
         msg.strClassName = this.GetString(data);
         msg.nRootServerID = data.getInt32();
         msg.nRootClassID = this.GetInt64(data);
-        msg.nTier = this.getInt32();
+        msg.nTier = data.getInt32();
 
         msg.classPoint = null;
-        var Index = connector.GetIndex4Image(msg.nClassID);
+        var Index = this.GetIndex4Image(msg.nClassID);
         if (Index != 0)
         {
             msg.classPoint = classCache.GetClass(Index);
@@ -372,35 +377,43 @@ export default class Connector
             if (msg.classPoint == null)
             {
                 msg.classPoint = classCache.NewClass(msg.strClassName);
+ 
                 if (msg.classPoint != null)
                 {
-                    connector.SetImageAndIndex(msg.nClassID,msg.classPoint.GetIndex());
+                    this.SetImageAndIndex(msg.nClassID,msg.classPoint.GetIndex());
                     msg.classPoint.connectID = data.connectID;
                     msg.classPoint.syncID = msg.nClassID;
                     msg.classPoint.nRootServerID = msg.nRootServerID;
                     msg.classPoint.nRootClassID = msg.nRootClassID;
-                    msg.classPoint.AddUnSync(connector.connectID,msg.nTier);
+                    msg.classPoint.AddUnSync(this.connectID,msg.nTier);
                     classCache.SetSyncIndex(msg.nRootServerID, msg.nRootClassID,msg.classPoint.GetIndex());
                 }
             }
         }
-
+        console.log(msg.classPoint);        
+        var datalen = data.getInt32();
         if (msg.classPoint != null)
         {
             if ( msg.classPoint.DecodeData4Bytes instanceof Function ){
-                msg.classPoint.DecodeData4Bytes(connector.Recvbyte);
+                msg.classPoint.DecodeData4Bytes(this.Recvbyte);
             }
         }
-
+        console.log("Recv_SyncClassInfo,end:");
         return msg;
     }
 
-    Recv_SyncClassData(connector)
+    Recv_SyncClassData()
     {
-        var data = connector.Recvbyte;
+        console.log("Recv_SyncClassData,begin:");
+        var data = this.Recvbyte;
         var msg = {};
         msg.nClassID = this.GetInt64(data);
         msg.strClassName = this.GetString(data);
+        var Index = this.GetIndex4Image(msg.nClassID);
+        if (Index != 0)
+        {
+            msg.classPoint = classCache.GetClass(Index);
+        }
         if (msg.classPoint == null)
         {
             imageIndex = classCache.GetSyncIndex(msg.nRootServerID, msg.nRootClassID);
@@ -412,9 +425,10 @@ export default class Connector
         if (msg.classPoint != null)
         {
             if ( msg.classPoint.DecodeData4Bytes instanceof Function ){
-                msg.classPoint.DecodeData4Bytes(connector.Recvbyte);
+                msg.classPoint.DecodeData4Bytes(this.Recvbyte);
             }
         }
+        console.log("Recv_SyncClassData,end:");
         return msg;
     }
 
@@ -484,16 +498,16 @@ export default class Connector
         //this.byte.writeArrayBuffer(retrunVal.toBuffer());
         this.socket.send(byte.buffer);
     }
-    Send_SyncClassInfo(obj)
-    {
-        //向下行通道发送类数据
-        var byte = new Laya.Byte();
-        byte.endian = Laya.Byte.BIG_ENDIAN;
-        byte.writeByte(this.E_SYNC_CLASS_INFO);
-        this.AddInt64(obj.GetIndex());
-        this.AddString(byte,obj.ClassName);
-        byte.writeInt32(obj.rootserverID);
-        
-        this.socket.send(byte.buffer);
-    }
+    //Send_SyncClassInfo(obj)
+    //{
+    //    //向下行通道发送类数据
+    //    var byte = new Laya.Byte();
+    //    byte.endian = Laya.Byte.BIG_ENDIAN;
+    //    byte.writeByte(this.E_SYNC_CLASS_INFO);
+    //    this.AddInt64(obj.GetIndex());
+    //    this.AddString(byte,obj.ClassName);
+    //    byte.writeInt32(obj.rootserverID);
+    //    
+    //    this.socket.send(byte.buffer);
+    //}
 }

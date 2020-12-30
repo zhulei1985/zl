@@ -15,10 +15,10 @@ class SyncClassCache
     }
     NewClass(classname)
     {
-        var classTYpe = this.mapClassType[classname];
-        if (classTYpe != undefined)
+        var classType = this.mapClassType[classname];
+        if (classType != undefined)
         {
-            var point = new classTYpe();
+            var point = new classType();
             this.mapClassPoint[point.GetIndex()] = point;
             point.ClassName = classname;
             return point;
