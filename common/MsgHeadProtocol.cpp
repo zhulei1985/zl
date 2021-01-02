@@ -230,9 +230,9 @@ namespace zlnetwork
 			//{
 			//	m_nState = E_CONNECT_GET_MSG_BODY;
 			//}
-
+			return E_RETURN_CONTINUE;
 		}
-		return E_RETURN_CONTINUE;
+		return E_RETURN_NEXT;
 	}
 
 	int CWebSocketHeadProtocol::OnState_Get_Len()
