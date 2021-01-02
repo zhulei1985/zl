@@ -408,7 +408,6 @@ export default class Connector
         var data = this.Recvbyte;
         var msg = {};
         msg.nClassID = this.GetInt64(data);
-        msg.strClassName = this.GetString(data);
         var Index = this.GetIndex4Image(msg.nClassID);
         if (Index != 0)
         {
@@ -416,12 +415,14 @@ export default class Connector
         }
         if (msg.classPoint == null)
         {
-            imageIndex = classCache.GetSyncIndex(msg.nRootServerID, msg.nRootClassID);
-            if (imageIndex != 0)
+            Index = classCache.GetSyncIndex(msg.nRootServerID, msg.nRootClassID);
+            if (Index != 0)
             {
-                msg.classPoint = classCache.GetClass(imageIndex);
+                msg.classPoint = classCache.GetClass(Index);
             }
         }
+        console.log(msg.classPoint);
+        var datalen = data.getInt32();
         if (msg.classPoint != null)
         {
             if ( msg.classPoint.DecodeData4Bytes instanceof Function ){
