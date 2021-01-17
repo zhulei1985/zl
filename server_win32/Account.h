@@ -20,8 +20,8 @@ public:
 	int SetNickName2Script(CScriptRunState* pState);
 	int GetNickName2Script(CScriptRunState* pState);
 
-	int SetConnect2Script(CScriptRunState* pState);
-	int GetConnect2Script(CScriptRunState* pState);
+	int GetVal2Script(CScriptRunState* pState);
+	int SetVal2Script(CScriptRunState* pState);
 public:
 	virtual bool AddAllData2Bytes(std::vector<char>& vBuff);
 	virtual bool DecodeData4Bytes(char* pBuff, int& pos, int len);
@@ -34,5 +34,6 @@ private:
 	//std::string strAccountName;
 	std::string strPassword;
 
-	__int64 nConnectPointIndex;
+private:
+	std::unordered_map<std::string, StackVarInfo> m_mapData;
 };

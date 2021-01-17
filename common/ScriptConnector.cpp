@@ -13,8 +13,8 @@ CBaseScriptConnector::CBaseScriptConnector()
 
 	RegisterClassFun(IsConnect, this, &CBaseScriptConnector::IsConnect2Script);
 	RegisterClassFun(RunScript, this, &CBaseScriptConnector::RunScript2Script);
-	RegisterClassFun(SetAccount, this, &CBaseScriptConnector::SetAccount2Script);
-	RegisterClassFun(GetAccount, this, &CBaseScriptConnector::GetAccount2Script);
+	RegisterClassFun(SetVal, this, &CBaseScriptConnector::SetVal2Script);
+	RegisterClassFun(GetVal, this, &CBaseScriptConnector::GetVal2Script);
 
 	RegisterClassFun(SetScriptLimit, this, &CBaseScriptConnector::SetScriptLimit2Script);
 	RegisterClassFun(CheckScriptLimit, this, &CBaseScriptConnector::CheckScriptLimit2Script);
@@ -40,8 +40,8 @@ void CBaseScriptConnector::Init2Script()
 
 	RegisterClassFun1("IsConnect", CBaseScriptConnector);
 	RegisterClassFun1("RunScript", CBaseScriptConnector);
-	RegisterClassFun1("SetAccount", CBaseScriptConnector);
-	RegisterClassFun1("GetAccount", CBaseScriptConnector);
+	RegisterClassFun1("SetVal", CBaseScriptConnector);
+	RegisterClassFun1("GetVal", CBaseScriptConnector);
 
 	RegisterClassFun1("SetScriptLimit", CBaseScriptConnector);
 	RegisterClassFun1("CheckScriptLimit", CBaseScriptConnector);
@@ -115,28 +115,7 @@ int CBaseScriptConnector::RunScript2Script(CScriptRunState* pState)
 		return ECALLBACK_FINISH;
 	return ECALLBACK_FINISH;
 }
-int CBaseScriptConnector::SetAccount2Script(CScriptRunState* pState)
-{
-	if (pState == nullptr)
-	{
-		return ECALLBACK_ERROR;
-	}
-	strAccountName = pState->PopCharVarFormStack();
-	pState->ClearFunParam();
 
-	return ECALLBACK_FINISH;
-}
-int CBaseScriptConnector::GetAccount2Script(CScriptRunState* pState)
-{
-	if (pState == nullptr)
-	{
-		return ECALLBACK_ERROR;
-	}
-
-	pState->ClearFunParam();
-	pState->PushVarToStack(strAccountName.c_str());
-	return ECALLBACK_FINISH;
-}
 int CBaseScriptConnector::SetScriptLimit2Script(CScriptRunState* pState)
 {
 	if (pState == nullptr)
@@ -261,6 +240,38 @@ int CBaseScriptConnector::SetHeadProtocol2Script(CScriptRunState* pState)
 	}
 
 	SetHeadProtocol(pProtocol);
+	pState->ClearFunParam();
+	return ECALLBACK_FINISH;
+}
+
+int CBaseScriptConnector::GetVal2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	std::string str = pState->PopCharVarFormStack();
+
+	pState->ClearFunParam();
+	auto it = m_mapData.find(str);
+	if (it != m_mapData.end())
+	{
+		pState->PushVarToStack(it->second);
+		return ECALLBACK_FINISH;
+	}
+	pState->PushEmptyVarToStack();
+	return ECALLBACK_FINISH;
+}
+
+int CBaseScriptConnector::SetVal2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	std::string str = pState->PopCharVarFormStack();
+	m_mapData[str] = pState->PopVarFormStack();
+
 	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }

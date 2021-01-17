@@ -26,9 +26,6 @@ public:
 	int IsConnect2Script(CScriptRunState* pState);
 	int RunScript2Script(CScriptRunState* pState);
 
-	int SetAccount2Script(CScriptRunState* pState);
-	int GetAccount2Script(CScriptRunState* pState);
-
 	int SetScriptLimit2Script(CScriptRunState* pState);
 	int CheckScriptLimit2Script(CScriptRunState* pState);
 
@@ -38,6 +35,9 @@ public:
 	int SetRouteInitScript2Script(CScriptRunState* pState);
 
 	int SetHeadProtocol2Script(CScriptRunState* pState);
+
+	int GetVal2Script(CScriptRunState* pState);
+	int SetVal2Script(CScriptRunState* pState);
 public:
 	//virtual __int64 GetID()
 	//{
@@ -70,6 +70,8 @@ public:
 	virtual void EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo);
 
 	virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
+
+
 public:
 	//"我"是指本连接对应的进程
 
@@ -82,8 +84,7 @@ public:
 	virtual void SetRouteInitScript(const char*) {}
 	virtual bool RouteMsg(CRouteFrontMsgReceiveState* pMsg) { return false; }
 protected:
-	//当前登录的账号
-	std::string strAccountName;
+	std::unordered_map<std::string, StackVarInfo> m_mapData;
 
 	__int64 nRouteMode_ConnectID;
 
@@ -114,6 +115,8 @@ protected:
 	__int64 AddReturnState(__int64 nEventIndex, __int64 nReturnID);
 	tagReturnState* GetReturnState(__int64 nID);
 	void RemoveReturnState(__int64 nID);
+
+
 };
 class CScriptRouteConnector;
 class CScriptConnector : public CSocketConnector, public CBaseScriptConnector

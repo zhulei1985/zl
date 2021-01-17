@@ -3,8 +3,6 @@
 
 CAccount::CAccount()
 {
-	nConnectPointIndex = 0;
-
 	INIT_SYNC_ATTRIBUTE(1, strNickName);
 	INIT_SYNC_ATTRIBUTE(2, strAccountName);
 
@@ -16,8 +14,8 @@ CAccount::CAccount()
 	RegisterClassFun(GetNickName, this, &CAccount::GetNickName2Script);
 	RegisterSyncClassFun(SetNickName, this, &CAccount::SetNickName2Script, 0);
 
-	RegisterClassFun(SetConnect, this, &CAccount::SetConnect2Script);
-	RegisterClassFun(GetConnect, this, &CAccount::GetConnect2Script);
+	RegisterClassFun(GetVal, this, &CAccount::GetVal2Script);
+	RegisterClassFun(SetVal, this, &CAccount::SetVal2Script);
 }
 
 CAccount::~CAccount()
@@ -36,8 +34,8 @@ void CAccount::Init2Script()
 	RegisterClassFun1("SetNickName", CAccount);
 	RegisterClassFun1("GetNickName", CAccount);
 
-	RegisterClassFun1("SetConnectID", CAccount);
-	RegisterClassFun1("GetConnectID", CAccount);
+	RegisterClassFun1("GetVal", CAccount);
+	RegisterClassFun1("SetVal", CAccount);
 }
 
 int CAccount::SetAccountName2Script(CScriptRunState* pState)
@@ -112,31 +110,37 @@ int CAccount::GetNickName2Script(CScriptRunState* pState)
 	return ECALLBACK_FINISH;
 }
 
-int CAccount::SetConnect2Script(CScriptRunState* pState)
+int CAccount::GetVal2Script(CScriptRunState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	nConnectPointIndex = pState->PopClassPointFormStack();
+	std::string str = pState->PopCharVarFormStack();
 
 	pState->ClearFunParam();
-
+	auto it = m_mapData.find(str);
+	if (it != m_mapData.end())
+	{
+		pState->PushVarToStack(it->second);
+		return ECALLBACK_FINISH;
+	}
+	pState->PushEmptyVarToStack();
 	return ECALLBACK_FINISH;
 }
 
-int CAccount::GetConnect2Script(CScriptRunState* pState)
+int CAccount::SetVal2Script(CScriptRunState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
+	std::string str = pState->PopCharVarFormStack();
+	m_mapData[str] = pState->PopVarFormStack();
 
 	pState->ClearFunParam();
-	pState->PushClassPointToStack(nConnectPointIndex);
 	return ECALLBACK_FINISH;
 }
-
 bool CAccount::AddAllData2Bytes(std::vector<char>& vBuff)
 {
 	AddString2Bytes(vBuff, (char*)strAccountName.c_str());
