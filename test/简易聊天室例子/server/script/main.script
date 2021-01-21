@@ -1,3 +1,4 @@
+CArray AccountArray = nullptr;
 void InitConnector(Connector pConnector)
 {
 	pConnector->SetHeadProtocol("inner","server","123456");
@@ -8,11 +9,9 @@ void InitConnector(Connector pConnector)
 void RegisterAccount(string strAccount, string password, Connector pConnector)
 {
 	print("尝试注册账号:"+strAccount+" "+password);
-	CArray AccountArray = GetVal4Data("Data","Account");
 	if (CheckClassPoint(AccountArray) == 0)
 	{
-		AccountArray = NewArray();
-		SetVal2Data("Data","Account",AccountArray);
+		AccountArray = new CArray;
 	}
 	CAccount pAccount = AccountArray->GetVal(strAccount);
 	if (CheckClassPoint(pAccount))
@@ -26,8 +25,8 @@ void RegisterAccount(string strAccount, string password, Connector pConnector)
 	pAccount->SetPassword(password);
 	pAccount->SetNickName(strAccount);
 
-	pAccount->SetConnect(pConnector);
-	pConnector->SetAccount(strAccount);
+	pAccount->SetVal("connect",pConnector);
+	pConnector->SetVal("account",pAccount);
 	AccountArray->SetVal(strAccount,pAccount);
 	//发送注册成功，登录成功
 	pConnector->RunScript(0,"LoginSuccess",pAccount);
@@ -36,11 +35,9 @@ void RegisterAccount(string strAccount, string password, Connector pConnector)
 void LoginAccount(string strAccount, string password, Connector pConnector)
 {
 	print("尝试登录账号:"+strAccount+" "+password);
-	CArray AccountArray = GetVal4Data("Data","Account");
 	if (0 == CheckClassPoint(AccountArray))
 	{
-		AccountArray = NewArray();
-		SetVal2Data("Data","Account",AccountArray);
+		AccountArray = new CArray;
 	}
 	CAccount pAccount = AccountArray->GetVal(strAccount);
 	if (0 == CheckClassPoint(pAccount))
@@ -56,8 +53,8 @@ void LoginAccount(string strAccount, string password, Connector pConnector)
 		return;
 	}
 
-	pAccount->SetConnect(pConnector);
-	pConnector->SetAccount(strAccount);
+	pAccount->SetVal("connect",pConnector);
+	pConnector->SetVal("account",pAccount);
 	pConnector->RunScript(0,"LoginSuccess",pAccount);
 	pConnector->SetScriptLimit("Talk",1);
 }
@@ -67,10 +64,9 @@ void Talk(string strContent, Connector pConnector)
 
 	if (strContent != "")
 	{
-		CArray AccountArray = GetVal4Data("Data","Account");
 		if (CheckClassPoint(AccountArray))
 		{
-			CAccount pMainAccount = AccountArray->GetVal(pConnector->GetAccount());
+			CAccount pMainAccount = pConnector->GetVal("account");
 			int i = 0;
 			while (i < AccountArray->GetSize())
 			{
@@ -91,7 +87,7 @@ void Talk(string strContent, Connector pConnector)
 void main()
 {
 	//初始化数据
-	CData pData = GetData("Data");
+	InitData("Data");
 
 	SetListenPort(9999,"InitConnector");
 	print("启动完成");
