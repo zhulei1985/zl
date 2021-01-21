@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "ZLScript.h"
 #include "SyncScriptPointInterface.h"
@@ -22,17 +22,20 @@ public:
 
 	int GetVal2Script(CScriptRunState* pState);
 	int SetVal2Script(CScriptRunState* pState);
+
+	int MakeConnectString2Script(CScriptRunState* pState);
 public:
-	virtual bool AddAllData2Bytes(std::vector<char>& vBuff);
-	virtual bool DecodeData4Bytes(char* pBuff, int& pos, int len);
+	////virtual bool AddAllData2Bytes(std::vector<char>& vBuff);
+	////virtual bool DecodeData4Bytes(char* pBuff, int& pos, int len);
 
 private:
+	SYNC_INT64(Id);
 	SYNC_STR(strNickName);
 	SYNC_STR(strAccountName);
 	//std::string strNickName;
 
 	//std::string strAccountName;
-	std::string strPassword;
+	SYNC_STR(strPassword);
 
 private:
 	std::unordered_map<std::string, StackVarInfo> m_mapData;
