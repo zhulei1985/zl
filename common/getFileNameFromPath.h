@@ -1,7 +1,7 @@
-#pragma once
+ï»¿#pragma once
 
 #include <vector>
 #include <string>
 
-//²»ÄÜÔÚÖĞÎÄÄ¿Â¼ÏÂ
+//ä¸èƒ½åœ¨ä¸­æ–‡ç›®å½•ä¸‹
 std::vector<std::string> GetFileNameFromPath(const char* pPathName);

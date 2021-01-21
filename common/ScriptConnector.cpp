@@ -1,4 +1,4 @@
-#include "ScriptConnector.h"
+ï»¿#include "ScriptConnector.h"
 #include "zByteArray.h"
 #include "ScriptExecCodeMgr.h"
 #include "ScriptConnectMgr.h"
@@ -98,7 +98,7 @@ int CBaseScriptConnector::RunScript2Script(CScriptRunState* pState)
 	__int64 nReturnID = 0;
 	if (pState->m_pMachine)
 		nEventIndex = pState->m_pMachine->GetEventIndex();
-	int nIsWaiting = pState->PopIntVarFormStack();//ÊÇ·ñµÈ´ıµ÷ÓÃº¯ÊıÍê³É
+	int nIsWaiting = pState->PopIntVarFormStack();//æ˜¯å¦ç­‰å¾…è°ƒç”¨å‡½æ•°å®Œæˆ
 	if (nIsWaiting > 0)
 		nReturnID = (__int64)pState->GetId();
 	std::string strScriptFunName = pState->PopCharVarFormStack();
@@ -334,10 +334,10 @@ bool CBaseScriptConnector::RunMsg(CBaseMsgReceiveState* pMsg)
 	{
 		switch (pMsg->GetType())
 		{
-		case E_RUN_SCRIPT_RETURN://¿´ÆğÀ´Ö»ÓĞÕâÒ»ÌõÏûÏ¢ĞèÒªÎŞÌõ¼ş×ª·¢
+		case E_RUN_SCRIPT_RETURN://çœ‹èµ·æ¥åªæœ‰è¿™ä¸€æ¡æ¶ˆæ¯éœ€è¦æ— æ¡ä»¶è½¬å‘
 			if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
 			{
-				//×ª·¢Ê§°Ü£¬ĞèÒª×ª·¢µÄÄ¿±ê²»´æÔÚ£¬È¡ÏûÂ·ÓÉ×´Ì¬
+				//è½¬å‘å¤±è´¥ï¼Œéœ€è¦è½¬å‘çš„ç›®æ ‡ä¸å­˜åœ¨ï¼Œå–æ¶ˆè·¯ç”±çŠ¶æ€
 				nRouteMode_ConnectID = 0;
 				bResult = true;// pMsg->Run(this);
 			}
@@ -372,7 +372,7 @@ void CBaseScriptConnector::SyncUpClassFunRun(__int64 classID, std::string strFun
 	CSyncUpMsgReceiveState msg;
 	msg.strFunName = strFunName;
 	msg.nClassID = classID;
-	//µ¹¹ıÀ´Ñ¹Õ»
+	//å€’è¿‡æ¥å‹æ ˆ
 	for (int i = stack.size() - 1; i >= 0; i--)
 	{
 		auto pVal = stack.GetVal(i);
@@ -389,7 +389,7 @@ void CBaseScriptConnector::SyncDownClassFunRun(__int64 classID, std::string strF
 	CSyncDownMsgReceiveState msg;
 	msg.strFunName = strFunName;
 	msg.nClassID = classID;
-	//µ¹¹ıÀ´Ñ¹Õ»
+	//å€’è¿‡æ¥å‹æ ˆ
 	for (int i = stack.size() - 1; i >= 0; i--)
 	{
 		auto pVal = stack.GetVal(i);
@@ -456,7 +456,7 @@ void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, CScriptStack& Parm
 
 void CBaseScriptConnector::RunFrom(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
-	//¸ù¾İnReturnIDºÍnEventIndexÉú³ÉÒ»¸ö·µ»ØID
+	//æ ¹æ®nReturnIDå’ŒnEventIndexç”Ÿæˆä¸€ä¸ªè¿”å›ID
 
 	CScriptMsgReceiveState msg;
 	if (nReturnID > 0)
@@ -469,7 +469,7 @@ void CBaseScriptConnector::RunFrom(std::string funName, CScriptStack& pram, __in
 	}
 	msg.strScriptFunName = funName;
 
-	//µ¹¹ıÀ´Ñ¹Õ»
+	//å€’è¿‡æ¥å‹æ ˆ
 	int nParmNum = (int)pram.size();
 	for (int i = nParmNum-1; i >= 0; i--)
 	{
@@ -486,7 +486,7 @@ void CBaseScriptConnector::ResultFrom(CScriptStack& pram, __int64 nReturnID)
 	CReturnMsgReceiveState msg;
 	msg.nReturnID = nReturnID;
 
-	//µ¹¹ıÀ´Ñ¹Õ»
+	//å€’è¿‡æ¥å‹æ ˆ
 	for (int i = pram.size() - 1; i >= 0; i--)
 	{
 		auto pVal = pram.GetVal(i);
@@ -579,7 +579,7 @@ bool CScriptConnector::OnProcess()
 		return false;
 	}
 
-	//´Ó½ÓÊÕ¶ÓÁĞÀïÈ¡³öÏûÏ¢´¦Àí
+	//ä»æ¥æ”¶é˜Ÿåˆ—é‡Œå–å‡ºæ¶ˆæ¯å¤„ç†
 	std::vector<char> vOut;
 
 	while (m_pHeadProtocol)
@@ -599,7 +599,7 @@ bool CScriptConnector::OnProcess()
 						pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
 						if (pCurMsgReceive == nullptr)
 						{
-							//TODO ´íÎóÊı¾İ£¬¹Ø±ÕÁ´½Ó
+							//TODO é”™è¯¯æ•°æ®ï¼Œå…³é—­é“¾æ¥
 							Close();
 							break;
 						}
@@ -615,14 +615,14 @@ bool CScriptConnector::OnProcess()
 		case CBaseHeadProtocol::E_RETURN_SHAKE_HAND_COMPLETE:
 			if (m_pHeadProtocol->GetLastConnectID() != 0)
 			{
-				//ºÏ²¢Á¬½ÓĞÅÏ¢
+				//åˆå¹¶è¿æ¥ä¿¡æ¯
 				auto pOldConnect = CScriptConnectMgr::GetInstance()->GetConnector(m_pHeadProtocol->GetLastConnectID());
 				Merge(pOldConnect);
 			}
 			break;
 		case CBaseHeadProtocol::E_RETURN_ERROR:
 		default:
-			//´íÎó£¬ÖĞ¶ÏÁ¬½Ó
+			//é”™è¯¯ï¼Œä¸­æ–­è¿æ¥
 			Close();
 			break;
 		}
@@ -643,7 +643,7 @@ bool CScriptConnector::OnProcess()
 	//		pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
 	//		if (pCurMsgReceive == nullptr)
 	//		{
-	//			//TODO ´íÎóÊı¾İ£¬¹Ø±ÕÁ´½Ó
+	//			//TODO é”™è¯¯æ•°æ®ï¼Œå…³é—­é“¾æ¥
 	//		}
 	//	}
 	//}
@@ -651,7 +651,7 @@ bool CScriptConnector::OnProcess()
 	{
 		if (pCurMsgReceive->Recv(this) == true)
 		{
-			//·µ»Øtrue²ÅĞèÒªÊÍ·ÅÏûÏ¢
+			//è¿”å›trueæ‰éœ€è¦é‡Šæ”¾æ¶ˆæ¯
 			if (RunMsg(pCurMsgReceive))
 			{
 				CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
@@ -659,20 +659,20 @@ bool CScriptConnector::OnProcess()
 			}
 			else
 			{
-				//´íÎó,¶Ï¿ªÁ¬½Ó
+				//é”™è¯¯,æ–­å¼€è¿æ¥
 				CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
 				pCurMsgReceive = nullptr;
 			}
 		}
 		else
 		{
-			//TODO ´íÎóÊı¾İ£¬¹Ø±ÕÁ´½Ó
+			//TODO é”™è¯¯æ•°æ®ï¼Œå…³é—­é“¾æ¥
 			return false;
 		}
 	}
 	CBaseScriptConnector::OnProcess();
 
-	//´¦ÀíÂ·ÓÉÏûÏ¢
+	//å¤„ç†è·¯ç”±æ¶ˆæ¯
 	std::vector<stRouteEvent*> vRouteEvent;
 	CRouteEventMgr::GetInstance()->GetEvent(GetEventIndex(), vRouteEvent);
 	for (auto it = vRouteEvent.begin(); it != vRouteEvent.end(); it++)
@@ -787,7 +787,7 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 			{
 				if (pSyncPoint->GetProcessID() == GetEventIndex())
 				{
-					//Èç¹ûÕâ¸öÀàÊµÀıÊÇ±¾Á¬½Ó¶ÔÓ¦µÄ¾µÏñ
+					//å¦‚æœè¿™ä¸ªç±»å®ä¾‹æ˜¯æœ¬è¿æ¥å¯¹åº”çš„é•œåƒ
 					AddChar2Bytes(vBuff, 0);
 					__int64 nImageIndex = GetImage4Index(pPoint->GetPoint()->GetScriptPointIndex());
 					AddInt642Bytes(vBuff, nImageIndex);
@@ -797,9 +797,9 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 					AddChar2Bytes(vBuff, 1);
 					if (!pSyncPoint->CheckDownSyncProcess(this->GetEventIndex()))
 					{
-						//ĞÂÍ¬²½
+						//æ–°åŒæ­¥
 						pSyncPoint->AddDownSyncProcess(this->GetEventIndex());
-						//·¢ËÍÏûÏ¢
+						//å‘é€æ¶ˆæ¯
 						SendSyncClassMsg(pPoint->GetClassName(), pSyncPoint);
 					}
 					AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
@@ -810,7 +810,7 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 		}
 		else
 		{
-			//´íÎó£¬Ã»ÓĞÕÒµ½¶ÔÏó»òÊÇ·ÇÍ¬²½ĞÔ¶ÔÏó
+			//é”™è¯¯ï¼Œæ²¡æœ‰æ‰¾åˆ°å¯¹è±¡æˆ–æ˜¯éåŒæ­¥æ€§å¯¹è±¡
 		}
 		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
@@ -892,12 +892,12 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 				scriptParm.push(*p);
 		}
 		ScriptVector_PushVar(scriptParm, this);
-		//¶ÁÈ¡Íê³É£¬Ö´ĞĞ½á¹û
+		//è¯»å–å®Œæˆï¼Œæ‰§è¡Œç»“æœ
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
 	}
 	else if (nRouteMode_ConnectID > 0)
 	{
-		//Â·ÓÉÄ£Ê½£¬×ª·¢
+		//è·¯ç”±æ¨¡å¼ï¼Œè½¬å‘
 		CScriptMsgReceiveState* pMsg = (CScriptMsgReceiveState*)CMsgReceiveMgr::GetInstance()->CreateRceiveState(E_RUN_SCRIPT);
 		pMsg->nReturnID = nReturnID;
 		pMsg->strScriptFunName = funName;
@@ -909,10 +909,10 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 		}
 		if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
 		{
-			//×ª·¢Ê§°Ü£¬ĞèÒª×ª·¢µÄÄ¿±ê²»´æÔÚ£¬È¡ÏûÂ·ÓÉ×´Ì¬
+			//è½¬å‘å¤±è´¥ï¼Œéœ€è¦è½¬å‘çš„ç›®æ ‡ä¸å­˜åœ¨ï¼Œå–æ¶ˆè·¯ç”±çŠ¶æ€
 			nRouteMode_ConnectID = 0;
 
-			//³õÊ¼»¯
+			//åˆå§‹åŒ–
 			CScriptStack m_scriptParm;
 			ScriptVector_PushVar(m_scriptParm, funName.c_str());
 			zlscript::CScriptVirtualMachine machine;
@@ -985,13 +985,13 @@ bool CScriptConnector::RouteMsg(CRouteFrontMsgReceiveState* pState)
 	auto pRoute = m_mapRouteConnect[pState->nConnectID];
 	if (pRoute == nullptr)
 	{
-		//TODO ÒÔºó¼Ó»º´æ
+		//TODO ä»¥ååŠ ç¼“å­˜
 		m_mapRouteConnect[pState->nConnectID] = pRoute = new CScriptRouteConnector;
 
 		pRoute->SetMaster(this);
 		pRoute->SetRouteID(pState->nConnectID);
 		pRoute->OnInit();
-		//³õÊ¼»¯
+		//åˆå§‹åŒ–
 		CScriptStack m_scriptParm;
 		ScriptVector_PushVar(m_scriptParm, pRoute);
 		zlscript::CScriptVirtualMachine machine;
@@ -1019,7 +1019,7 @@ bool CScriptRouteConnector::OnProcess()
 {
 	CBaseScriptConnector::OnProcess();
 
-	//´¦ÀíÂ·ÓÉÏûÏ¢
+	//å¤„ç†è·¯ç”±æ¶ˆæ¯
 	std::vector<stRouteEvent*> vRouteEvent;
 	CRouteEventMgr::GetInstance()->GetEvent(GetEventIndex(), vRouteEvent);
 	for (auto it = vRouteEvent.begin(); it != vRouteEvent.end(); it++)
@@ -1029,7 +1029,7 @@ bool CScriptRouteConnector::OnProcess()
 		{
 			if (pEvent->bFront)
 			{
-				//ÀíÂÛÉÏÒÑ¾­ÊÇÂ·ÓÉĞéÄâÁ¬½ÓÁË£¬²»»áÊÕµ½ROUTE_FRONTÏûÏ¢
+				//ç†è®ºä¸Šå·²ç»æ˜¯è·¯ç”±è™šæ‹Ÿè¿æ¥äº†ï¼Œä¸ä¼šæ”¶åˆ°ROUTE_FRONTæ¶ˆæ¯
 				//CRouteFrontMsgReceiveState msg;
 				//msg.nConnectID = pEvent->nIndex;
 				//msg.pState = pEvent->pMsg;
@@ -1037,7 +1037,7 @@ bool CScriptRouteConnector::OnProcess()
 			}
 			else
 			{
-				//¼ÌĞø×ª·¢
+				//ç»§ç»­è½¬å‘
 				SendMsg(pEvent->pMsg);
 			}
 			CRouteEventMgr::GetInstance()->ReleaseEvent(pEvent);
@@ -1130,12 +1130,12 @@ void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int
 				scriptParm.push(*p);
 		}
 		ScriptVector_PushVar(scriptParm, this);
-		//¶ÁÈ¡Íê³É£¬Ö´ĞĞ½á¹û
+		//è¯»å–å®Œæˆï¼Œæ‰§è¡Œç»“æœ
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
 	}
 	else if (nRouteMode_ConnectID > 0)
 	{
-		//Â·ÓÉÄ£Ê½£¬×ª·¢
+		//è·¯ç”±æ¨¡å¼ï¼Œè½¬å‘
 		CScriptMsgReceiveState* pMsg = (CScriptMsgReceiveState*)CMsgReceiveMgr::GetInstance()->CreateRceiveState(E_RUN_SCRIPT);
 		pMsg->nReturnID = nReturnID;
 		pMsg->strScriptFunName = funName;
@@ -1147,7 +1147,7 @@ void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int
 		}
 		if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
 		{
-			//×ª·¢Ê§°Ü£¬ĞèÒª×ª·¢µÄÄ¿±ê²»´æÔÚ£¬È¡ÏûÂ·ÓÉ×´Ì¬
+			//è½¬å‘å¤±è´¥ï¼Œéœ€è¦è½¬å‘çš„ç›®æ ‡ä¸å­˜åœ¨ï¼Œå–æ¶ˆè·¯ç”±çŠ¶æ€
 			nRouteMode_ConnectID = 0;
 			CTempScriptRunState tempState;
 			tempState.PushVarToStack(funName.c_str());

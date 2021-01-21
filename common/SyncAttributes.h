@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <string>
 #include "nowin.h"
@@ -9,6 +9,7 @@ namespace zlscript
 	{
 		CBaseSyncAttribute()
 		{
+			m_flag = 0;
 			m_index = 0;
 			m_master = nullptr;
 		}
@@ -16,12 +17,21 @@ namespace zlscript
 		{
 
 		}
-		void init(unsigned short index,CSyncScriptPointInterface* master);
+		enum
+		{
+			E_FLAG_SYNC = 1,
+			E_FLAG_DB = 2,
+			E_FLAG_DB_PRIMARY = 4,
+			E_FLAG_DB_UNIQUE = 8,
+		};
+		void init(unsigned short flag, unsigned short index,CSyncScriptPointInterface* master);
 		virtual void AddData2Bytes(std::vector<char>& vBuff) = 0;
 		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len) = 0;
 
-		unsigned int m_index;
+		unsigned short m_flag;
+		unsigned short m_index;
 		CSyncScriptPointInterface* m_master;
+	
 	};
 	struct CSyncCharAttribute : public CBaseSyncAttribute
 	{

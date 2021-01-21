@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 /****************************************************************************
 	Copyright (c) 2020 ZhuLei
 	Email:zhulei1985@foxmail.com
@@ -61,13 +61,13 @@ public:
 private:
 	static CScriptConnectMgr s_Instance;
 
-	//Í¨¹ı¼àÌı¶Ë¿Ú½¨Á¢µÄÁ¬½ÓµÄ³õÊ¼»¯½Å±¾
+	//é€šè¿‡ç›‘å¬ç«¯å£å»ºç«‹çš„è¿æ¥çš„åˆå§‹åŒ–è„šæœ¬
 public:
 	static void SetInitConnectScript(int nPort,std::string strScript);
 private:
 	static std::map<int, std::string> m_mapInitConnectScript;
 
-	//Í¬²½ÀàµÄÅĞ¶Ï£¬ÈÃ²»Í¬Á¬½Ó´´½¨µÄÍ¬Ò»Í¬²½ÀàµÄ¾µÏñ²»»áÖØ¸´½¨Á¢
+	//åŒæ­¥ç±»çš„åˆ¤æ–­ï¼Œè®©ä¸åŒè¿æ¥åˆ›å»ºçš„åŒä¸€åŒæ­¥ç±»çš„é•œåƒä¸ä¼šé‡å¤å»ºç«‹
 public:
 	struct stSyncInfo
 	{
@@ -76,15 +76,15 @@ public:
 			nRootServerID = serverid;
 			nRootClassID = classid;
 		}
-		bool operator<(const struct stSyncInfo& right)const   //ÖØÔØ<ÔËËã·û
+		bool operator<(const struct stSyncInfo& right)const   //é‡è½½<è¿ç®—ç¬¦
 		{
-			if (this->nRootServerID == right.nRootServerID && this->nRootClassID == right.nRootClassID)     //¸ù¾İidÈ¥ÖØ
+			if (this->nRootServerID == right.nRootServerID && this->nRootClassID == right.nRootClassID)     //æ ¹æ®idå»é‡
 				return false;
 			else
 			{
 				if (this->nRootServerID != right.nRootServerID)
 				{
-					return this->nRootServerID < right.nRootServerID;      //½µĞò
+					return this->nRootServerID < right.nRootServerID;      //é™åº
 				}
 				else
 				{
@@ -104,13 +104,13 @@ public:
 	__int64 GetConnectIDFromProcessID(__int64 processid);
 	void removeSyncProcessID(__int64 processid);
 private:
-	//first Í¬²½Àà¸ù½ÚµãÊı¾İ second Í¬²½Àà±¾½ÚµãID
+	//first åŒæ­¥ç±»æ ¹èŠ‚ç‚¹æ•°æ® second åŒæ­¥ç±»æœ¬èŠ‚ç‚¹ID
 	std::map<struct stSyncInfo, __int64> m_mapSyncPointInfo;
 	std::mutex m_lockSyncInfo;
 
-	//Í¬²½Í¨µÀID·ÖÅä¼ÆÊı
+	//åŒæ­¥é€šé“IDåˆ†é…è®¡æ•°
 	__int64 m_nSyncProcessIDCount;
-	//Í¬²½Í¨µÀIDÓëÁ¬½ÓIDµÄ¶ÔÓ¦
+	//åŒæ­¥é€šé“IDä¸è¿æ¥IDçš„å¯¹åº”
 	std::unordered_map<__int64, __int64> m_mapSyncProcessID;
 	std::mutex m_lockSyncProcess;
 };

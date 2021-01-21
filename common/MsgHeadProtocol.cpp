@@ -1,4 +1,4 @@
-/****************************************************************************
+ï»¿/****************************************************************************
 	Copyright (c) 2020 ZhuLei
 	Email:zhulei1985@foxmail.com
 
@@ -85,7 +85,7 @@ namespace zlnetwork
 		memcpy(&m_vReadShakeHandDataBuf[pos], &m_vReadTempBuf[0], m_vReadTempBuf.size());
 		m_vReadTempBuf.clear();
 
-		//´¦ÀíÏûÏ¢
+		//å¤„ç†æ¶ˆæ¯
 		if (m_vReadShakeHandDataBuf.size() >= 3)
 		{
 			if (m_vReadShakeHandDataBuf[0] == 'G' && m_vReadShakeHandDataBuf[1] == 'E' && m_vReadShakeHandDataBuf[2] == 'T')
@@ -132,12 +132,12 @@ namespace zlnetwork
 				nFinishPos = pos;
 				if (strOneSentence.empty())
 				{
-					//ÒâÎ¶×ÅÎÕÊÖĞÅÏ¢½ÓÊÕÍê±Ï
+					//æ„å‘³ç€æ¡æ‰‹ä¿¡æ¯æ¥æ”¶å®Œæ¯•
 					bFinish = true;
 				}
 				else
 				{
-					//Ò»¾ä¶ÁÍê
+					//ä¸€å¥è¯»å®Œ
 					unsigned int i = 0;
 					for (; i < strOneSentence.size(); i++)
 					{
@@ -176,13 +176,13 @@ namespace zlnetwork
 			}
 		}
 		nFinishPos++;
-		//¼ì²âÎÕÊÖĞÅÏ¢ÊÇ·ñ½ÓÊÕÍê±Ï
+		//æ£€æµ‹æ¡æ‰‹ä¿¡æ¯æ˜¯å¦æ¥æ”¶å®Œæ¯•
 		if (bFinish || (nFinishPos >= pos && m_HandFlag.find("Sec-WebSocket-Key") != m_HandFlag.end()))
 		{
 			std::string result = "HTTP/1.1 101 Switching Protocols\r\n";
 			result += "Connection: upgrade\r\n";
 			result += "Sec-WebSocket-Accept: ";
-			//·µ»ØÎÕÊÖĞÅÏ¢
+			//è¿”å›æ¡æ‰‹ä¿¡æ¯
 			std::string strGUID = m_HandFlag["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 			SHA1 sha;
 			unsigned int message_digest[5];
@@ -310,7 +310,7 @@ namespace zlnetwork
 		if (m_vReadTempBuf.size() > 0)
 		{
 			m_nCurLoadedDataLen += m_vReadTempBuf.size();
-			//¼ÆËãÑÚÂë
+			//è®¡ç®—æ©ç 
 			if (HasMask())
 			{
 				for (unsigned int i = 0; i < m_vReadTempBuf.size(); i++)
@@ -327,7 +327,7 @@ namespace zlnetwork
 					return E_RETURN_COMPLETE;
 				else
 				{
-					//TODO ÏûÏ¢ºÏ²¢
+					//TODO æ¶ˆæ¯åˆå¹¶
 					return E_RETURN_COMPLETE;
 				}
 			}
@@ -348,7 +348,7 @@ namespace zlnetwork
 	{
 		tagByteArray vBuff;
 		vBuff.push_back(0x82);
-		//°´ËÑµ½µÄÎÄµµËµ£¬·şÎñÆ÷·¢ËÍ¸ø¿Í»§¶ËµÄÊı¾İ²»ÄÜÓĞÑÚÂë
+		//æŒ‰æœåˆ°çš„æ–‡æ¡£è¯´ï¼ŒæœåŠ¡å™¨å‘é€ç»™å®¢æˆ·ç«¯çš„æ•°æ®ä¸èƒ½æœ‰æ©ç 
 		if (len > 0xff)
 		{
 			vBuff.push_back((char)127);
@@ -479,10 +479,10 @@ namespace zlnetwork
 		int nResult = E_RETURN_CONTINUE;
 		switch (m_nState)
 		{
-		case E_CONNECT_INIT://³õÊ¼»¯
+		case E_CONNECT_INIT://åˆå§‹åŒ–
 			nResult = OnState_Init();
 			break;
-		case E_CONNECT_SHAKE_HAND://ÎÕÊÖ
+		case E_CONNECT_SHAKE_HAND://æ¡æ‰‹
 			nResult = OnState_Shake_Hand();
 			break;
 		case E_CONNECT_GET_MSG_LEN:
@@ -517,7 +517,7 @@ namespace zlnetwork
 				}
 				nLastConnectID = DecodeBytes2Int64(&vBuff[0], i, vBuff.size());
 				vBuff.clear();
-				AddInt2Bytes(vBuff, 1);//°æ±¾ºÅ
+				AddInt2Bytes(vBuff, 1);//ç‰ˆæœ¬å·
 				AddInt642Bytes(vBuff, time(nullptr));
 				AddInt642Bytes(vBuff, m_pConnector->GetID());
 				m_pConnector->SendData(&vBuff[0], vBuff.size());
@@ -576,7 +576,7 @@ namespace zlnetwork
 				if (strClientMD5String == strMD5String)
 				{
 					m_nState = E_CONNECT_GET_MSG_LEN;
-					//ÑéÖ¤³É¹¦
+					//éªŒè¯æˆåŠŸ
 					return E_RETURN_SHAKE_HAND_COMPLETE;
 				}
 				else

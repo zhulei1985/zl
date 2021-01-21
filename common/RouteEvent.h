@@ -1,5 +1,5 @@
-#pragma once
-//Ö÷ÒªÓÃÓÚ½â¾öÁ¬½ÓºÍÂ·ÓÉĞéÄâÁ¬½ÓÖ®¼äµÄÍ¨ĞÅÎÊÌâ
+ï»¿#pragma once
+//ä¸»è¦ç”¨äºè§£å†³è¿æ¥å’Œè·¯ç”±è™šæ‹Ÿè¿æ¥ä¹‹é—´çš„é€šä¿¡é—®é¢˜
 #include <map>
 #include <vector>
 #include <mutex>
@@ -14,11 +14,11 @@ struct stRouteEvent
 		bFront = true;
 		pMsg = nullptr;
 	}
-	//·¢ËÍÕßË÷Òı
+	//å‘é€è€…ç´¢å¼•
 	__int64 nIndex;
 
 	bool bFront;
-	//×ª·¢µÄÏûÏ¢
+	//è½¬å‘çš„æ¶ˆæ¯
 	CBaseMsgReceiveState* pMsg;
 };
 class CRouteEventMgr
@@ -32,7 +32,7 @@ public:
 	bool SendEvent(__int64 nRecvID, bool bFront, CBaseMsgReceiveState* pMsg, __int64 nSendID = 0);
 	bool GetEvent(__int64 nEventIndex, std::vector<stRouteEvent*>& vOut);
 
-	//TODO ÈÕºó¼ÓÉÏ»º´æ
+	//TODO æ—¥ååŠ ä¸Šç¼“å­˜
 	stRouteEvent* NewEvent();
 	void ReleaseEvent(stRouteEvent* pPoint);
 protected:

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 /****************************************************************************
 	Copyright (c) 2020 ZhuLei
 	Email:zhulei1985@foxmail.com
@@ -43,19 +43,19 @@ namespace zlnetwork
 
 		enum E_PROCESS_RETURN
 		{
-			E_RETURN_CONTINUE,//ÔÚ±¾ÂÖÑ¯ÖĞ¼ÌĞø´¦Àí
-			E_RETURN_NEXT,//ÏÂ¸öÂÖÑ¯ÔÙ´¦Àí
+			E_RETURN_CONTINUE,//åœ¨æœ¬è½®è¯¢ä¸­ç»§ç»­å¤„ç†
+			E_RETURN_NEXT,//ä¸‹ä¸ªè½®è¯¢å†å¤„ç†
 			E_RETURN_COMPLETE,
 			E_RETURN_ERROR,
-			E_RETURN_SHAKE_HAND_COMPLETE,//ÎÕÊÖÍê³É
+			E_RETURN_SHAKE_HAND_COMPLETE,//æ¡æ‰‹å®Œæˆ
 		};
 		virtual int OnProcess() = 0;
 
 		bool GetData(std::vector<char>&, unsigned int);
 
-		virtual int Ping() = 0;//Ïò¿Í»§¶Ë·¢ËÍpingÏûÏ¢
+		virtual int Ping() = 0;//å‘å®¢æˆ·ç«¯å‘é€pingæ¶ˆæ¯
 		virtual int SendHead(unsigned int len) = 0;
-		virtual void ShakeHand(){}//Ö÷¶¯·¢ËÍÎÕÊÖÏûÏ¢
+		virtual void ShakeHand(){}//ä¸»åŠ¨å‘é€æ¡æ‰‹æ¶ˆæ¯
 
 		virtual unsigned __int64 GetDataLen() = 0;
 
@@ -85,12 +85,12 @@ namespace zlnetwork
 	public:
 		enum E_CONNECT_STATE
 		{
-			E_CONNECT_INIT,//³õÊ¼»¯
-			E_CONNECT_SHAKE_HAND,//ÎÕÊÖ
-			E_CONNECT_GET_MSG_HEAD,//µÈ´ıÏûÏ¢Í·
-			E_CONNECT_GET_MSG_LEN,//µÈ´ıÏûÏ¢¶îÍâ³¤¶È
-			E_CONNECT_GET_MSG_MASK,//»ñÈ¡ÏûÏ¢ÑÚÂë
-			E_CONNECT_GET_MSG_BODY,//µÈ´ıÏûÏ¢Ìå
+			E_CONNECT_INIT,//åˆå§‹åŒ–
+			E_CONNECT_SHAKE_HAND,//æ¡æ‰‹
+			E_CONNECT_GET_MSG_HEAD,//ç­‰å¾…æ¶ˆæ¯å¤´
+			E_CONNECT_GET_MSG_LEN,//ç­‰å¾…æ¶ˆæ¯é¢å¤–é•¿åº¦
+			E_CONNECT_GET_MSG_MASK,//è·å–æ¶ˆæ¯æ©ç 
+			E_CONNECT_GET_MSG_BODY,//ç­‰å¾…æ¶ˆæ¯ä½“
 		};
 	public:
 
@@ -115,14 +115,14 @@ namespace zlnetwork
 		bool IsFin();
 		char GetOpcode();
 		bool HasMask();
-		char GetDataLenMode();//0,Ã»ÓĞ¶îÍâ³¤¶È£¬1,¶îÍâ16Î»³¤¶È£¬2,¶îÍâ64Î»³¤¶È
+		char GetDataLenMode();//0,æ²¡æœ‰é¢å¤–é•¿åº¦ï¼Œ1,é¢å¤–16ä½é•¿åº¦ï¼Œ2,é¢å¤–64ä½é•¿åº¦
 		
 
 		unsigned __int64 m_nDataLen;
 		char m_Mask[4];
 		int m_nMaskIndex;
 
-		unsigned __int64 m_nCurLoadedDataLen;//µ±Ç°ÒÑ¾­¶ÁÈ¡µÄ³¤¶È
+		unsigned __int64 m_nCurLoadedDataLen;//å½“å‰å·²ç»è¯»å–çš„é•¿åº¦
 	};
 
 	class CNoneHeadProtocol : public CBaseHeadProtocol
@@ -140,10 +140,10 @@ namespace zlnetwork
 	public:
 		enum E_CONNECT_STATE
 		{
-			E_CONNECT_INIT,//³õÊ¼»¯
-			E_CONNECT_SHAKE_HAND,//ÎÕÊÖ
-			E_CONNECT_GET_MSG_LEN,//µÈ´ıÏûÏ¢Í·
-			E_CONNECT_GET_MSG_BODY,//µÈ´ıÏûÏ¢Ìå
+			E_CONNECT_INIT,//åˆå§‹åŒ–
+			E_CONNECT_SHAKE_HAND,//æ¡æ‰‹
+			E_CONNECT_GET_MSG_LEN,//ç­‰å¾…æ¶ˆæ¯å¤´
+			E_CONNECT_GET_MSG_BODY,//ç­‰å¾…æ¶ˆæ¯ä½“
 		};
 	public:
 		int OnState_Get_Len();
@@ -157,7 +157,7 @@ namespace zlnetwork
 	public:
 		unsigned int m_nDataLen;
 
-		unsigned __int64 m_nCurLoadedDataLen;//µ±Ç°ÒÑ¾­¶ÁÈ¡µÄ³¤¶È
+		unsigned __int64 m_nCurLoadedDataLen;//å½“å‰å·²ç»è¯»å–çš„é•¿åº¦
 	};
 
 	class CInnerHeadProtocol : public CNoneHeadProtocol

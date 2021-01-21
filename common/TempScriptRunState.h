@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "ZLScript.h"
 
 namespace zlscript
@@ -29,11 +29,11 @@ namespace zlscript
 		virtual void CopyToStack(CScriptStack* pStack, int nNum);
 		virtual void CopyFromStack(CScriptStack* pStack);
 
-		//»ñÈ¡º¯Êı±äÁ¿
+		//è·å–å‡½æ•°å˜é‡
 		virtual void ClearFunParam();
 
 	protected:
-		//¶ÑÕ»
+		//å †æ ˆ
 		CScriptStack m_varRegister;
 	};
 }

@@ -1,4 +1,4 @@
-#include "base64.h"
+﻿#include "base64.h"
 #include <WinSock2.h>
 
 base64::base64()

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "SocketConnectorMgr.h"
 #include "ZLScript.h"
 #include "SyncScriptPointInterface.h"
@@ -18,7 +18,7 @@ public:
 
 	static void Init2Script();
 
-	//Õâ¸öGetIDÏÖÔÚ·¢ÏÖÓĞĞ©¶àÓà£¬½Å±¾ÖĞÖ±½Ó¾ÍÒÔ½Å±¾Ö¸ÕëË÷Òı¼´¿É
+	//è¿™ä¸ªGetIDç°åœ¨å‘ç°æœ‰äº›å¤šä½™ï¼Œè„šæœ¬ä¸­ç›´æ¥å°±ä»¥è„šæœ¬æŒ‡é’ˆç´¢å¼•å³å¯
 	int GetID2Script(CScriptRunState* pState);
 
 	int GetPort2Script(CScriptRunState* pState);
@@ -73,11 +73,11 @@ public:
 
 
 public:
-	//"ÎÒ"ÊÇÖ¸±¾Á¬½Ó¶ÔÓ¦µÄ½ø³Ì
+	//"æˆ‘"æ˜¯æŒ‡æœ¬è¿æ¥å¯¹åº”çš„è¿›ç¨‹
 
-	//"±ğÈË"ÒªÇó"ÎÒ"Ö´ĞĞ½Å±¾
+	//"åˆ«äºº"è¦æ±‚"æˆ‘"æ‰§è¡Œè„šæœ¬
 	virtual void RunFrom(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
-	//"±ğÈË"Ïò"ÎÒ"·µ»ØÖ´ĞĞ½Å±¾µÄ½á¹û
+	//"åˆ«äºº"å‘"æˆ‘"è¿”å›æ‰§è¡Œè„šæœ¬çš„ç»“æœ
 	virtual void ResultFrom(CScriptStack& pram, __int64 nReturnID);
 
 public:
@@ -88,7 +88,7 @@ protected:
 
 	__int64 nRouteMode_ConnectID;
 
-	//Õâ¸öÁ´½Ó´¦ÀíµÄ¾µÏñÀà
+	//è¿™ä¸ªé“¾æ¥å¤„ç†çš„é•œåƒç±»
 public:
 	virtual __int64 GetImage4Index(__int64) = 0;
 	virtual __int64 GetIndex4Image(__int64) = 0;
@@ -98,13 +98,13 @@ public:
 	bool CheckScriptLimit(std::string strName);
 	void RemoveScriptLimit(std::string strName);
 protected:
-	//¿ÉÓÃ½Å±¾£¬²»ÔÙ´Ë±íÀïµÄ½Å±¾º¯Êı²»ÄÜÖ´ĞĞ£¬Èç¹ûÊÇÂ·ÓÉÄ£Ê½£¬²»ÔÚ´Ë±íµÄ½Å±¾º¯Êı»á×ª·¢¸ø¶ÔÓ¦µÄÁ´½Ó
+	//å¯ç”¨è„šæœ¬ï¼Œä¸å†æ­¤è¡¨é‡Œçš„è„šæœ¬å‡½æ•°ä¸èƒ½æ‰§è¡Œï¼Œå¦‚æœæ˜¯è·¯ç”±æ¨¡å¼ï¼Œä¸åœ¨æ­¤è¡¨çš„è„šæœ¬å‡½æ•°ä¼šè½¬å‘ç»™å¯¹åº”çš„é“¾æ¥
 	std::map<std::string, int> m_mapScriptLimit;
 
-	//×¢²áµÄÔ¶³Ìº¯Êı
+	//æ³¨å†Œçš„è¿œç¨‹å‡½æ•°
 	std::set<std::string> m_setRemoteFunName;
 protected:
-	//Ã¿µ±"±ğÈË"ÒªÇó"ÎÒ"Ö´ĞĞ½Å±¾²¢ĞèÒª·µ»ØÊ±£¬Éú³ÉÒ»¸ö´Ë×´Ì¬
+	//æ¯å½“"åˆ«äºº"è¦æ±‚"æˆ‘"æ‰§è¡Œè„šæœ¬å¹¶éœ€è¦è¿”å›æ—¶ï¼Œç”Ÿæˆä¸€ä¸ªæ­¤çŠ¶æ€
 	struct tagReturnState
 	{
 		__int64 nEventIndex;
@@ -155,10 +155,10 @@ protected:
 	bool m_bIsWebSocket;
 
 	CBaseHeadProtocol* m_pHeadProtocol;
-	//µ±Ç°ÕıÔÚ´¦ÀíµÄÏûÏ¢
+	//å½“å‰æ­£åœ¨å¤„ç†çš„æ¶ˆæ¯
 	CBaseMsgReceiveState* pCurMsgReceive;
 	
-public://Í¬²½ÀàµÄ¾µÏñË÷Òı
+public://åŒæ­¥ç±»çš„é•œåƒç´¢å¼•
 	__int64 GetImage4Index(__int64);
 	__int64 GetIndex4Image(__int64);
 	void SetImageAndIndex(__int64 nImageID, __int64 nLoaclID);
@@ -166,14 +166,14 @@ protected:
 	std::map<__int64, __int64> m_mapClassImage2Index;
 	std::map<__int64, __int64> m_mapClassIndex2Image;
 public:
-	//"ÎÒ"ÊÇÖ¸±¾Á¬½Ó¶ÔÓ¦µÄ½ø³Ì
-	//"ÎÒ"ÒªÇó"±ğÈË"Ö´ĞĞ½Å±¾
+	//"æˆ‘"æ˜¯æŒ‡æœ¬è¿æ¥å¯¹åº”çš„è¿›ç¨‹
+	//"æˆ‘"è¦æ±‚"åˆ«äºº"æ‰§è¡Œè„šæœ¬
 	virtual void RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
-	//"ÎÒ"Ïò"±ğÈË"·µ»ØÖ´ĞĞ½Å±¾µÄ½á¹û
+	//"æˆ‘"å‘"åˆ«äºº"è¿”å›æ‰§è¡Œè„šæœ¬çš„ç»“æœ
 	virtual void ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
 
 
-	//Â·ÓÉÄ£Ê½
+	//è·¯ç”±æ¨¡å¼
 public:
 	void SetRouteInitScript(const char* pStr);
 	bool RouteMsg(CRouteFrontMsgReceiveState* pMsg);
@@ -183,7 +183,7 @@ protected:
 	std::map<__int64, CScriptRouteConnector*> m_mapRouteConnect;
 };
 
-//Â·ÓÉÄ£Ê½ÏÂµÄÁ´½Ó
+//è·¯ç”±æ¨¡å¼ä¸‹çš„é“¾æ¥
 class CScriptRouteConnector : public CBaseScriptConnector
 {
 public:
@@ -198,7 +198,7 @@ public:
 
 	bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
 
-public://Í¬²½ÀàµÄ¾µÏñË÷Òı
+public://åŒæ­¥ç±»çš„é•œåƒç´¢å¼•
 
 	__int64 GetImage4Index(__int64);
 	__int64 GetIndex4Image(__int64);
@@ -210,10 +210,10 @@ protected:
 	CScriptConnector* m_pMaster;
 	__int64 m_RouteID;
 public:
-	//"ÎÒ"ÊÇÖ¸±¾Á¬½Ó¶ÔÓ¦µÄ½ø³Ì
-//"ÎÒ"ÒªÇó"±ğÈË"Ö´ĞĞ½Å±¾
+	//"æˆ‘"æ˜¯æŒ‡æœ¬è¿æ¥å¯¹åº”çš„è¿›ç¨‹
+//"æˆ‘"è¦æ±‚"åˆ«äºº"æ‰§è¡Œè„šæœ¬
 	virtual void RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
-	//"ÎÒ"Ïò"±ğÈË"·µ»ØÖ´ĞĞ½Å±¾µÄ½á¹û
+	//"æˆ‘"å‘"åˆ«äºº"è¿”å›æ‰§è¡Œè„šæœ¬çš„ç»“æœ
 	virtual void ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
 
 };

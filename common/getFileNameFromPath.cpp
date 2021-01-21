@@ -1,4 +1,4 @@
-#include "getFileNameFromPath.h"
+﻿#include "getFileNameFromPath.h"
 
 
 #ifdef _WIN32

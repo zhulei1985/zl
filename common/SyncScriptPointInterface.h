@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "ScriptPointInterface.h"
 #include "SyncAttributes.h"
 #include <unordered_map>
@@ -13,22 +13,26 @@ namespace zlscript
 		E_SCRIPT_EVENT_DOWN_SYNC_FUN,
 	};
 #define SYNC_INT(val) CSyncIntAttribute val;
+#define SYNC_INT64(val) CSyncInt64Attribute val;
 #define SYNC_STR(val) CSyncStringAttribute val;
 #define INIT_SYNC_ATTRIBUTE(index,val) \
 	m_mapSyncAttributes[index] = &val; \
-	val.init(index,this);
+	val.init(CBaseSyncAttribute::E_FLAG_SYNC,index,this);
+#define INIT_DB_ATTRIBUTE(index,val) \
+	m_mapDBAttributes[#val] = &val; \
+	val.init(CBaseSyncAttribute::E_FLAG_DB,index,this);
+#define INIT_SYNC_AND_DB_ATTRIBUTE(index,val) \
+	m_mapSyncAttributes[index] = &val; \
+	m_mapDBAttributes[#val] = &val; \
+	val.init(CBaseSyncAttribute::E_FLAG_SYNC|CBaseSyncAttribute::E_FLAG_DB,index,this);
+#define INIT_DB_ATTRIBUTE_PRIMARY(index,val) \
+	m_mapDBAttributes[#val] = &val; \
+	val.init(CBaseSyncAttribute::E_FLAG_DB|CBaseSyncAttribute::E_FLAG_DB_PRIMARY,index,this);
+#define INIT_SYNC_AND_DB_ATTRIBUTE_PRIMARY(index,val) \
+	m_mapSyncAttributes[index] = &val; \
+	m_mapDBAttributes[#val] = &val; \
+	val.init(CBaseSyncAttribute::E_FLAG_SYNC|CBaseSyncAttribute::E_FLAG_DB|CBaseSyncAttribute::E_FLAG_DB_PRIMARY,index,this);
 
-//#define SYNC_ATTRIBUTE(index,type,name) \
-//	type name; \ 
-//	void set_##name##(type val) \
-//	{ \
-//		name = val; \
-//		m_mapSyncAttribute[index] = ; \
-//	} \
-//	type get_##name##() \
-//	{ \
-//		return name; \
-//	}
 
 	class CSyncScriptPointInterface : public CScriptPointInterface
 	{
@@ -44,9 +48,9 @@ namespace zlscript
 		virtual int SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState);
 		virtual int SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState);
 
-		//Í¬²½ÀàÊı¾İ£¬Èç¹ûÓĞÉÏ²ã½Úµã£¬ÏòÉÏ²ã½Úµã·¢ËÍ£¬Ã»ÓĞÉÏ²ã½Úµã£¬ÏòÏÂ²ã½Úµã·¢ËÍ
+		//åŒæ­¥ç±»æ•°æ®ï¼Œå¦‚æœæœ‰ä¸Šå±‚èŠ‚ç‚¹ï¼Œå‘ä¸Šå±‚èŠ‚ç‚¹å‘é€ï¼Œæ²¡æœ‰ä¸Šå±‚èŠ‚ç‚¹ï¼Œå‘ä¸‹å±‚èŠ‚ç‚¹å‘é€
 		//void SyncClassData();
-		//½âÎö´«À´µÄÍ¬²½Êı¾İ£¬²¢ÏòÏÂ²ã½Úµã·¢ËÍ
+		//è§£æä¼ æ¥çš„åŒæ­¥æ•°æ®ï¼Œå¹¶å‘ä¸‹å±‚èŠ‚ç‚¹å‘é€
 		void SyncDownClassData(const char* pBuff, int& pos, unsigned int len);
 
 		CSyncScriptPointInterface(const CSyncScriptPointInterface& val);
@@ -104,20 +108,22 @@ namespace zlscript
 		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);
 
 		void ChangeSyncAttibute(CBaseSyncAttribute*);
+		void ChangeDBAttibute(CBaseSyncAttribute*);
 	protected:
-		int m_nRootServerID;//¸ù½ÚµãËùÔÚ·şÎñÆ÷ID
-		__int64 m_nRootClassID;//±¾ÊµÀıÔÚ¸ù½ÚµãÉÏµÄID
-		unsigned int m_nImageTier;//¾µÏñµÄ²ãÊı
+		int m_nRootServerID;//æ ¹èŠ‚ç‚¹æ‰€åœ¨æœåŠ¡å™¨ID
+		__int64 m_nRootClassID;//æœ¬å®ä¾‹åœ¨æ ¹èŠ‚ç‚¹ä¸Šçš„ID
+		unsigned int m_nImageTier;//é•œåƒçš„å±‚æ•°
 
-		__int64 m_nProcessID;//Èç¹ûÍøÂç¾µÏñ£¬ËùÊô½ø³ÌID£¬£¨ÉÏĞĞ½Úµã¶ÔÓ¦µÄÁ¬½ÓID£©
+		__int64 m_nProcessID;//å¦‚æœç½‘ç»œé•œåƒï¼Œæ‰€å±è¿›ç¨‹IDï¼Œï¼ˆä¸Šè¡ŒèŠ‚ç‚¹å¯¹åº”çš„è¿æ¥IDï¼‰
 		//std::set<stUpSyncInfo> m_listUpSyncProcess;
 		std::map<__int64, unsigned int> m_mapUpSyncProcess;
-		//ÓĞĞ©ÏÂĞĞ½Úµã»áÍ¨Öª²»Òª¸øËüÍ¬²½
-		std::map<__int64,bool> m_mapDownSyncProcess;//ĞèÒªÍ¬²½µÄÏß³Ì £¨ÏÂĞĞ½Úµã¶ÔÓ¦µÄÁ¬½ÓID£©
+		//æœ‰äº›ä¸‹è¡ŒèŠ‚ç‚¹ä¼šé€šçŸ¥ä¸è¦ç»™å®ƒåŒæ­¥
+		std::map<__int64,bool> m_mapDownSyncProcess;//éœ€è¦åŒæ­¥çš„çº¿ç¨‹ ï¼ˆä¸‹è¡ŒèŠ‚ç‚¹å¯¹åº”çš„è¿æ¥IDï¼‰
 
 		std::unordered_map<int,int> m_mapSyncFunFlag;
 
 		std::map<unsigned short, CBaseSyncAttribute*> m_mapSyncAttributes;
+		std::map<std::string, CBaseSyncAttribute*> m_mapDBAttributes;
 		std::set<unsigned short> m_setUpdateSyncAttibute;
 
 		std::mutex m_SyncProcessLock;

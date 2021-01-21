@@ -1,11 +1,12 @@
-#include "SyncScriptPointInterface.h"
+Ôªø#include "SyncScriptPointInterface.h"
 #include "zByteArray.h"
 #include "SyncAttributes.h"
 
 namespace zlscript
 {
-	void CBaseSyncAttribute::init(unsigned short index, CSyncScriptPointInterface* master)
+	void CBaseSyncAttribute::init(unsigned short flag, unsigned short index, CSyncScriptPointInterface* master)
 	{
+		m_flag = flag;
 		m_index = index;
 		m_master = master;
 	}
@@ -18,7 +19,10 @@ namespace zlscript
 		m_val = val;
 		if (m_master)
 		{
-			m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_SYNC)
+				m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_DB)
+				m_master->ChangeDBAttibute(this);
 		}
 		return m_val;
 	}
@@ -42,7 +46,10 @@ namespace zlscript
 		m_val = val;
 		if (m_master)
 		{
-			m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_SYNC)
+				m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_DB)
+				m_master->ChangeDBAttibute(this);
 		}
 		return m_val;
 	}
@@ -68,7 +75,10 @@ namespace zlscript
 		m_val = val;
 		if (m_master)
 		{
-			m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_SYNC)
+				m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_DB)
+				m_master->ChangeDBAttibute(this);
 		}
 		return m_val;
 	}
@@ -94,7 +104,10 @@ namespace zlscript
 		m_val = val;
 		if (m_master)
 		{
-			m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_SYNC)
+				m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_DB)
+				m_master->ChangeDBAttibute(this);
 		}
 		return m_val;
 	}
@@ -121,7 +134,10 @@ namespace zlscript
 		m_val = val;
 		if (m_master)
 		{
-			m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_SYNC)
+				m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_DB)
+				m_master->ChangeDBAttibute(this);
 		}
 		return m_val;
 	}
@@ -131,7 +147,10 @@ namespace zlscript
 		m_val = val;
 		if (m_master)
 		{
-			m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_SYNC)
+				m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_DB)
+				m_master->ChangeDBAttibute(this);
 		}
 		return m_val;
 	}
@@ -141,7 +160,10 @@ namespace zlscript
 		m_val = val;
 		if (m_master)
 		{
-			m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_SYNC)
+				m_master->ChangeSyncAttibute(this);
+			if (m_flag & E_FLAG_DB)
+				m_master->ChangeDBAttibute(this);
 		}
 		return m_val;
 	}
@@ -158,7 +180,7 @@ namespace zlscript
 
 	bool CSyncStringAttribute::DecodeData4Bytes(char* pBuff, int& pos, unsigned int len)
 	{
-		//TODO “‘∫Ûº”»Îª∫¥Ê
+		//TODO ‰ª•ÂêéÂä†ÂÖ•ÁºìÂ≠ò
 		char* strbuff = new char[s_maxStrLen];
 
 		bool bResult = DecodeBytes2String(pBuff, pos, len, strbuff, s_maxStrLen);

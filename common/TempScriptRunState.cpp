@@ -1,4 +1,4 @@
-#include "TempScriptRunState.h"
+ï»¿#include "TempScriptRunState.h"
 
 namespace zlscript
 {
@@ -233,7 +233,7 @@ namespace zlscript
 		}
 	}
 
-	//»ñÈ¡º¯Êı±äÁ¿
+	//è·å–å‡½æ•°å˜é‡
 	void CTempScriptRunState::ClearFunParam()
 	{
 		while (m_varRegister.size())

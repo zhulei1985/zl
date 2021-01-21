@@ -1,18 +1,18 @@
-#pragma once
+ï»¿#pragma once
 enum E_MSG_TYPE
 {
 	E_RUN_SCRIPT = 64,
 	E_RUN_SCRIPT_RETURN,
-	//TODO ½¨Á¢Í¬²½ºÍÉÏÏÂĞĞÍ¬²½»¹ĞèÒªË¼¿¼
-	//Í¬²½ÀàÊı¾İÒª·Ö×´Ì¬£¬Í¬²½ËùÓĞÊı¾İ»¹ÊÇÖ»Í¬²½¸Ä±äÊı¾İ
-	E_SYNC_CLASS_INFO,//Í¬²½Àà×´Ì¬
-	E_SYNC_CLASS_DATA,//Í¬²½Ò»¸öÀàµÄÊı¾İ
+	//TODO å»ºç«‹åŒæ­¥å’Œä¸Šä¸‹è¡ŒåŒæ­¥è¿˜éœ€è¦æ€è€ƒ
+	//åŒæ­¥ç±»æ•°æ®è¦åˆ†çŠ¶æ€ï¼ŒåŒæ­¥æ‰€æœ‰æ•°æ®è¿˜æ˜¯åªåŒæ­¥æ”¹å˜æ•°æ®
+	E_SYNC_CLASS_INFO,//åŒæ­¥ç±»çŠ¶æ€
+	E_SYNC_CLASS_DATA,//åŒæ­¥ä¸€ä¸ªç±»çš„æ•°æ®
 
-	E_SYNC_DOWN_PASSAGE,//ÏÂĞĞÍ¬²½Í¨µÀ
-	E_SYNC_UP_PASSAGE,//ÉÏĞĞÍ¬²½Í¨µÀ
+	E_SYNC_DOWN_PASSAGE,//ä¸‹è¡ŒåŒæ­¥é€šé“
+	E_SYNC_UP_PASSAGE,//ä¸Šè¡ŒåŒæ­¥é€šé“
 
-	E_ROUTE_FRONT,//ÓÃÓÚ¿Í»§¶Ë·¢¸ø·şÎñÆ÷
-	E_ROUTE_BACK,//ÓÃÓÚ·şÎñÆ÷·¢¸ø¿Í»§¶Ë
+	E_ROUTE_FRONT,//ç”¨äºå®¢æˆ·ç«¯å‘ç»™æœåŠ¡å™¨
+	E_ROUTE_BACK,//ç”¨äºæœåŠ¡å™¨å‘ç»™å®¢æˆ·ç«¯
 };
 
 class CScriptConnector;
@@ -33,7 +33,7 @@ public:
 	virtual bool Recv(CScriptConnector*) = 0;
 	virtual bool Send(CBaseScriptConnector*);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient,std::vector<char>& vBuff) = 0;
-	//ÍøÂçµÄÁ¬½ÓºÍÂ·ÓÉÁ¬½Ó¶¼ÓĞ¿ÉÄÜÊ¹ÓÃrun
+	//ç½‘ç»œçš„è¿æ¥å’Œè·¯ç”±è¿æ¥éƒ½æœ‰å¯èƒ½ä½¿ç”¨run
 	virtual bool Run(CBaseScriptConnector* pClient) = 0;
 
 public:
@@ -76,13 +76,13 @@ public:
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	//__int64 nEventListIndex;//½Å±¾Ö´ĞĞÆ÷µÄID
-	__int64 nReturnID;//½Å±¾Ö´ĞĞ·µ»ØÓÃµÄID
+	//__int64 nEventListIndex;//è„šæœ¬æ‰§è¡Œå™¨çš„ID
+	__int64 nReturnID;//è„šæœ¬æ‰§è¡Œè¿”å›ç”¨çš„ID
 
-	std::string strScriptFunName;//½Å±¾Ãû
+	std::string strScriptFunName;//è„šæœ¬å
 	CScriptStack m_scriptParm;
 protected:
-	//ÒÔÏÂÊÇ¶ÁÈ¡Ê±µÄÁÙÊ±±äÁ¿
+	//ä»¥ä¸‹æ˜¯è¯»å–æ—¶çš„ä¸´æ—¶å˜é‡
 	int nScriptFunNameLen;
 	int nScriptParmNum;
 	int nCurParmType;
@@ -120,11 +120,11 @@ public:
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	//int nEventListIndex;//½Å±¾Ö´ĞĞÆ÷µÄID
-	__int64 nReturnID;//½Å±¾Ö´ĞĞ×´Ì¬µÄID
+	//int nEventListIndex;//è„šæœ¬æ‰§è¡Œå™¨çš„ID
+	__int64 nReturnID;//è„šæœ¬æ‰§è¡ŒçŠ¶æ€çš„ID
 	CScriptStack m_scriptParm;
 protected:
-	//ÒÔÏÂÊÇ¶ÁÈ¡Ê±µÄÁÙÊ±±äÁ¿
+	//ä»¥ä¸‹æ˜¯è¯»å–æ—¶çš„ä¸´æ—¶å˜é‡
 
 	int nScriptParmNum;
 	int nCurParmType;
@@ -169,16 +169,16 @@ public:
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	//2020.10.28 ÀàÍ¬²½ÏûÏ¢ĞèÒª¸ü¶àµÄĞÅÏ¢
+	//2020.10.28 ç±»åŒæ­¥æ¶ˆæ¯éœ€è¦æ›´å¤šçš„ä¿¡æ¯
 	int nRootServerID;
 	__int64 nRootClassID;
 	int nTier;
 	std::string strClassName;
 	CSyncScriptPointInterface* m_pPoint;
 private:
-	//ÒÔÏÂÊÇ¶ÁÈ¡Ê±µÄÁÙÊ±±äÁ¿
+	//ä»¥ä¸‹æ˜¯è¯»å–æ—¶çš„ä¸´æ—¶å˜é‡
 	int nClassNameStringLen;
-	__int64 nClassID;//Éæ¼°µ½µÄÀàID
+	__int64 nClassID;//æ¶‰åŠåˆ°çš„ç±»ID
 	int nDataLen;
 };
 class CSyncClassDataReceiveState : public CBaseMsgReceiveState
@@ -203,10 +203,10 @@ public:
 
 public:
 	std::string strClassName;
-	__int64 nClassID;//ÀàID
-	std::vector<char> vData;//Í¬²½Êı¾İ
+	__int64 nClassID;//ç±»ID
+	std::vector<char> vData;//åŒæ­¥æ•°æ®
 private:
-	//ÒÔÏÂÊÇ¶ÁÈ¡Ê±µÄÁÙÊ±±äÁ¿
+	//ä»¥ä¸‹æ˜¯è¯»å–æ—¶çš„ä¸´æ—¶å˜é‡
 	int nClassNameStringLen;
 
 	int nDataLen;
@@ -247,12 +247,12 @@ public:
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	__int64 nClassID;//Éæ¼°µ½µÄÀàID
+	__int64 nClassID;//æ¶‰åŠåˆ°çš„ç±»ID
 
 	std::string strFunName;
 	CScriptStack m_scriptParm;
 protected:
-	//ÒÔÏÂÊÇ¶ÁÈ¡Ê±µÄÁÙÊ±±äÁ¿
+	//ä»¥ä¸‹æ˜¯è¯»å–æ—¶çš„ä¸´æ—¶å˜é‡
 	int nFunNameStringLen;
 	int nScriptParmNum;
 	int nCurParmType;
@@ -294,12 +294,12 @@ public:
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	__int64 nClassID;//Éæ¼°µ½µÄÀàID
+	__int64 nClassID;//æ¶‰åŠåˆ°çš„ç±»ID
 	std::string strFunName;
 	CScriptStack m_scriptParm;
 
 protected:
-	//ÒÔÏÂÊÇ¶ÁÈ¡Ê±µÄÁÙÊ±±äÁ¿
+	//ä»¥ä¸‹æ˜¯è¯»å–æ—¶çš„ä¸´æ—¶å˜é‡
 	int nFunNameStringLen;
 	int nScriptParmNum;
 	int nCurParmType;
@@ -330,7 +330,7 @@ public:
 	CBaseMsgReceiveState* pState;
 
 protected:
-	//ÒÔÏÂÊÇ¶ÁÈ¡Ê±µÄÁÙÊ±±äÁ¿
+	//ä»¥ä¸‹æ˜¯è¯»å–æ—¶çš„ä¸´æ—¶å˜é‡
 	int nMsgType;
 };
 
@@ -357,7 +357,7 @@ public:
 	CBaseMsgReceiveState* pState;
 
 protected:
-	//ÒÔÏÂÊÇ¶ÁÈ¡Ê±µÄÁÙÊ±±äÁ¿
+	//ä»¥ä¸‹æ˜¯è¯»å–æ—¶çš„ä¸´æ—¶å˜é‡
 	int nMsgType;
 };
 

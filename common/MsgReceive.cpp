@@ -1,4 +1,4 @@
-#include "ScriptConnector.h"
+ï»¿#include "ScriptConnector.h"
 #include "MsgReceive.h"
 #include "zByteArray.h"
 #include "TempScriptRunState.h"
@@ -233,13 +233,13 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 					CScriptPointInterface* pPoint = nullptr;
 					if (cType == 0)
 					{
-						//±¾µØÀàÊµÀı
+						//æœ¬åœ°ç±»å®ä¾‹
 						pPoint = pMgr->Get(nClassID);
 					}
 					else
 					{
-						//¾µÏñÀàÊµÀı
-						//»ñÈ¡ÔÚ±¾µØµÄÀàÊµÀıË÷Òı
+						//é•œåƒç±»å®ä¾‹
+						//è·å–åœ¨æœ¬åœ°çš„ç±»å®ä¾‹ç´¢å¼•
 						__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
 						pPoint = pMgr->Get(nIndex);
@@ -268,7 +268,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 
 bool CScriptMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
-	//¶ÔÁ¬½Ó¿ÉÖ´ĞĞµÄ½Å±¾×öÏŞÖÆ
+	//å¯¹è¿æ¥å¯æ‰§è¡Œçš„è„šæœ¬åšé™åˆ¶
 	pClient->RunTo(strScriptFunName, m_scriptParm, nReturnID, 0);
 
 	return true;
@@ -328,7 +328,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 		{
 			nPos = 0;
 			nScriptParmNum = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-			//Ç°ÃæÒÑ¾­ÓĞ1¸öÖµ±»Ñ¹Èë¶ÑÕ»
+			//å‰é¢å·²ç»æœ‰1ä¸ªå€¼è¢«å‹å…¥å †æ ˆ
 			//nScriptParmNum += 1;
 		}
 		else
@@ -479,13 +479,13 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 					CScriptPointInterface* pPoint = nullptr;
 					if (cType == 0)
 					{
-						//±¾µØÀàÊµÀı
+						//æœ¬åœ°ç±»å®ä¾‹
 						pPoint = pMgr->Get(nClassID);
 					}
 					else
 					{
-						//¾µÏñÀàÊµÀı
-						//»ñÈ¡ÔÚ±¾µØµÄÀàÊµÀıË÷Òı
+						//é•œåƒç±»å®ä¾‹
+						//è·å–åœ¨æœ¬åœ°çš„ç±»å®ä¾‹ç´¢å¼•
 						__int64 nIndex = pClient->GetIndex4Image(nClassID);
 						pPoint = pMgr->Get(nIndex);
 					}
@@ -512,7 +512,7 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 
 bool CReturnMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
-	//¶ÁÈ¡Íê³É£¬Ö´ĞĞ½á¹û
+	//è¯»å–å®Œæˆï¼Œæ‰§è¡Œç»“æœ
 	if (pClient)
 	{
 		pClient->ResultTo(m_scriptParm, nReturnID,0);
@@ -638,21 +638,21 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 				if (pMgr)
 				{
 					CScriptPointInterface* pPoint = nullptr;
-					__int64 nIndex = pClient->GetIndex4Image(nClassID);//ÏÈ¼ì²éÊÇ²»ÊÇ±¾Á´½ÓµÄ¾µÏñÀà
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);//å…ˆæ£€æŸ¥æ˜¯ä¸æ˜¯æœ¬é“¾æ¥çš„é•œåƒç±»
 					if (nIndex != 0)
 					{
 						pPoint = pMgr->Get(nIndex);
 					}
 					if (pPoint == nullptr)
 					{
-						//ÔÙ¼ì²éÆäËûÁ¬½ÓÉÏÓĞÃ»ÓĞÕâ¸ö¾µÏñÀà
+						//å†æ£€æŸ¥å…¶ä»–è¿æ¥ä¸Šæœ‰æ²¡æœ‰è¿™ä¸ªé•œåƒç±»
 						nIndex = CScriptConnectMgr::GetInstance()->GetSyncIndex(nRootServerID, nRootClassID);
 						if (nIndex != 0)
 						{
 							pPoint = pMgr->Get(nIndex);
 						}
 						
-						//´´½¨ĞÂµÄ¾µÏñÀà
+						//åˆ›å»ºæ–°çš„é•œåƒç±»
 						if (pPoint == nullptr)
 						{
 							pPoint = pMgr->New();
@@ -666,7 +666,7 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 							}
 							else
 							{
-								//Ê§°Ü£¬²»ÊÇÍ¬²½Àà
+								//å¤±è´¥ï¼Œä¸æ˜¯åŒæ­¥ç±»
 								pMgr->Release(pPoint);
 								return true;
 							}
@@ -676,7 +676,7 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 						}
 						else
 						{
-							//Í¨¹ıÆäËûÁ¬½ÓÒÑ¾­»ñµÃÁËÕâ¸ö¾µÏñÀà
+							//é€šè¿‡å…¶ä»–è¿æ¥å·²ç»è·å¾—äº†è¿™ä¸ªé•œåƒç±»
 							m_pPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint);
 							if (m_pPoint)
 							{
@@ -684,7 +684,7 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 							}
 							else
 							{
-								//Ê§°Ü£¬²»ÊÇÍ¬²½Àà
+								//å¤±è´¥ï¼Œä¸æ˜¯åŒæ­¥ç±»
 								pMgr->Release(pPoint);
 								return true;
 							}
@@ -695,7 +695,7 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 						m_pPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint);
 						if (m_pPoint == nullptr)
 						{
-							//Ê§°Ü£¬²»ÊÇÍ¬²½Àà
+							//å¤±è´¥ï¼Œä¸æ˜¯åŒæ­¥ç±»
 							pMgr->Release(pPoint);
 							return true;
 						}
@@ -851,8 +851,8 @@ bool CSyncClassDataReceiveState::Run(CBaseScriptConnector* pClient)
 	//CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
 	//if (pMgr)
 	//{
-	//	//¾µÏñÀàÊµÀı
-	//	//»ñÈ¡ÔÚ±¾µØµÄÀàÊµÀıË÷Òı
+	//	//é•œåƒç±»å®ä¾‹
+	//	//è·å–åœ¨æœ¬åœ°çš„ç±»å®ä¾‹ç´¢å¼•
 	//	__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
 	//	CSyncScriptPointInterface *pPoint = dynamic_cast<CSyncScriptPointInterface*>(pMgr->Get(nIndex));
@@ -1075,13 +1075,13 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 					CScriptPointInterface* pPoint = nullptr;
 					if (cType == 0)
 					{
-						//±¾µØÀàÊµÀı
+						//æœ¬åœ°ç±»å®ä¾‹
 						pPoint = pMgr->Get(nClassID);
 					}
 					else
 					{
-						//¾µÏñÀàÊµÀı
-						//»ñÈ¡ÔÚ±¾µØµÄÀàÊµÀıË÷Òı
+						//é•œåƒç±»å®ä¾‹
+						//è·å–åœ¨æœ¬åœ°çš„ç±»å®ä¾‹ç´¢å¼•
 						__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
 						pPoint = pMgr->Get(nIndex);
@@ -1110,10 +1110,10 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 
 bool CSyncUpMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
-	//½«²ÎÊı·ÅÈëÁÙÊ±×´Ì¬ÖĞ
+	//å°†å‚æ•°æ”¾å…¥ä¸´æ—¶çŠ¶æ€ä¸­
 	CTempScriptRunState TempState;
 	TempState.CopyFromStack(&m_scriptParm);
-	//ÏÂ´«¹ıÀ´µÄÊı¾İ£¬ËµÃ÷½ÓÊÕ·½Ö»ÊÇ¾µÏñ
+	//ä¸‹ä¼ è¿‡æ¥çš„æ•°æ®ï¼Œè¯´æ˜æ¥æ”¶æ–¹åªæ˜¯é•œåƒ
 	__int64 nIndex = nClassID;// pClient->GetIndex4Image(nClassID);
 	if (nIndex)
 	{
@@ -1348,13 +1348,13 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 					CScriptPointInterface* pPoint = nullptr;
 					if (cType == 0)
 					{
-						//±¾µØÀàÊµÀı
+						//æœ¬åœ°ç±»å®ä¾‹
 						pPoint = pMgr->Get(nClassID);
 					}
 					else
 					{
-						//¾µÏñÀàÊµÀı
-						//»ñÈ¡ÔÚ±¾µØµÄÀàÊµÀıË÷Òı
+						//é•œåƒç±»å®ä¾‹
+						//è·å–åœ¨æœ¬åœ°çš„ç±»å®ä¾‹ç´¢å¼•
 						__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
 						pPoint = pMgr->Get(nIndex);
@@ -1382,10 +1382,10 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 
 bool CSyncDownMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
-	//½«²ÎÊı·ÅÈëÁÙÊ±×´Ì¬ÖĞ
+	//å°†å‚æ•°æ”¾å…¥ä¸´æ—¶çŠ¶æ€ä¸­
 	CTempScriptRunState TempState;
 	TempState.CopyFromStack(&m_scriptParm);
-	//ÏÂ´«¹ıÀ´µÄÊı¾İ£¬ËµÃ÷½ÓÊÕ·½Ö»ÊÇ¾µÏñ
+	//ä¸‹ä¼ è¿‡æ¥çš„æ•°æ®ï¼Œè¯´æ˜æ¥æ”¶æ–¹åªæ˜¯é•œåƒ
 	__int64 nIndex = pClient->GetIndex4Image(nClassID);
 	if (nIndex)
 	{
@@ -1536,7 +1536,7 @@ bool CRouteBackMsgReceiveState::Recv(CScriptConnector* pClient)
 
 bool CRouteBackMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
-	//Ö±½Ó¸ø¶ÔÓ¦Á¬½Ó×ª·¢
+	//ç›´æ¥ç»™å¯¹åº”è¿æ¥è½¬å‘
 	return CRouteEventMgr::GetInstance()->SendEvent(nConnectID, false, pState);
 }
 

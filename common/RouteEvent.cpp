@@ -1,4 +1,4 @@
-#include "RouteEvent.h"
+ï»¿#include "RouteEvent.h"
 
 CRouteEventMgr CRouteEventMgr::s_Instance;
 
@@ -27,7 +27,7 @@ bool CRouteEventMgr::Unregister(__int64 nID)
 	auto it = m_mapEvents.find(nID);
 	if (it != m_mapEvents.end())
 	{
-		//TODO Èç¹û»¹ÓĞÃ»ÓĞ´¦ÀíÍêµÄÊÂ¼ş£¬´òÓ¡´íÎóĞÅÏ¢
+		//TODO å¦‚æœè¿˜æœ‰æ²¡æœ‰å¤„ç†å®Œçš„äº‹ä»¶ï¼Œæ‰“å°é”™è¯¯ä¿¡æ¯
 		m_mapEvents.erase(it);
 		return true;
 	}

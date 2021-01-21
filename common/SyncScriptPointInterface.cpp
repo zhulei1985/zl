@@ -1,4 +1,4 @@
-#include "SyncScriptPointInterface.h"
+ï»¿#include "SyncScriptPointInterface.h"
 #include "ScriptConnector.h"
 #include "ScriptConnectMgr.h"
 #include "zByteArray.h"
@@ -8,9 +8,9 @@ namespace zlscript
 	CSyncScriptPointInterface::CSyncScriptPointInterface()
 	{
 		m_nProcessID = 0;
-		m_nRootServerID = 0;//¸ù½ÚµãËùÔÚ·şÎñÆ÷ID
-		m_nRootClassID = 0;//±¾ÊµÀıÔÚ¸ù½ÚµãÉÏµÄID
-		m_nImageTier = 0;//¾µÏñµÄ²ãÊı
+		m_nRootServerID = 0;//æ ¹èŠ‚ç‚¹æ‰€åœ¨æœåŠ¡å™¨ID
+		m_nRootClassID = 0;//æœ¬å®ä¾‹åœ¨æ ¹èŠ‚ç‚¹ä¸Šçš„ID
+		m_nImageTier = 0;//é•œåƒçš„å±‚æ•°
 	}
 	CSyncScriptPointInterface::~CSyncScriptPointInterface()
 	{
@@ -33,7 +33,7 @@ namespace zlscript
 				CScriptStack tempStack;
 
 
-				//»ñÈ¡º¯ÊıÃû
+				//è·å–å‡½æ•°å
 				int nResult = 0;
 				//std::lock_guard<std::mutex> _lock{ *m_FunLock };
 				m_FunLock.lock();
@@ -69,7 +69,7 @@ namespace zlscript
 				CScriptStack parmStack;
 				pState->CopyToStack(&parmStack, pState->GetParamNum());
 
-				//ÏÈÖ´ĞĞ±¾µØÊı¾İ
+				//å…ˆæ‰§è¡Œæœ¬åœ°æ•°æ®
 				int nResult = 0;
 				//std::lock_guard<std::mutex> _lock{ *m_FunLock };
 				m_FunLock.lock();
@@ -95,7 +95,7 @@ namespace zlscript
 						tempStack.push(*parmStack.GetVal(i));
 					}
 					std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
-					//È»ºóÔÙÍ¬²½¸ø×Ó½Úµã
+					//ç„¶åå†åŒæ­¥ç»™å­èŠ‚ç‚¹
 					auto Syncit = m_mapDownSyncProcess.begin();
 					for (; Syncit != m_mapDownSyncProcess.end(); )
 					{
@@ -119,7 +119,7 @@ namespace zlscript
 
 				else if (m_setUpdateSyncAttibute.size() > 0)
 				{
-					//Í¬²½ÊôĞÔÓĞ¸üĞÂ
+					//åŒæ­¥å±æ€§æœ‰æ›´æ–°
 					std::vector<char> vBuff;
 					AddAllData2Bytes(vBuff, false);
 					int pos = 0;
@@ -137,7 +137,7 @@ namespace zlscript
 	}
 	int CSyncScriptPointInterface::SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState)
 	{
-		if (GetProcessID() > 0)//²»ÊÇ¸ù½Úµã£¬¼ÌĞøÍùÉÏ·¢ËÍ
+		if (GetProcessID() > 0)//ä¸æ˜¯æ ¹èŠ‚ç‚¹ï¼Œç»§ç»­å¾€ä¸Šå‘é€
 		{
 			CScriptStack tempStack;
 			ScriptVector_PushVar(tempStack, this);
@@ -167,7 +167,7 @@ namespace zlscript
 		CScriptStack parmStack;
 		pState->CopyToStack(&parmStack, pState->GetParamNum());
 
-		//ÏÈÖ´ĞĞ±¾µØÊı¾İ
+		//å…ˆæ‰§è¡Œæœ¬åœ°æ•°æ®
 		int nResult = 0;
 		//std::lock_guard<std::mutex> _lock{ *m_FunLock };
 		int index = CScriptSuperPointerMgr::GetInstance()->GetClassFunIndex(nClassType, strFun);
@@ -199,7 +199,7 @@ namespace zlscript
 			if (itSyncFlag->second >= 1)
 			{
 				std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
-				//È»ºóÔÙÍ¬²½¸ø×Ó½Úµã
+				//ç„¶åå†åŒæ­¥ç»™å­èŠ‚ç‚¹
 				auto Syncit = m_mapDownSyncProcess.begin();
 				for (; Syncit != m_mapDownSyncProcess.end(); )
 				{
@@ -230,7 +230,7 @@ namespace zlscript
 			{
 				if (m_setUpdateSyncAttibute.size() > 0)
 				{
-					//Í¬²½ÊôĞÔÓĞ¸üĞÂ
+					//åŒæ­¥å±æ€§æœ‰æ›´æ–°
 					std::vector<char> vBuff;
 					AddAllData2Bytes(vBuff, false);
 					int pos = 0;
@@ -252,12 +252,12 @@ namespace zlscript
 	//	ScriptVector_PushVar(tempStack, &vBuff[0], vBuff.size());
 	//	if (GetProcessID() > 0)
 	//	{
-	//		//ÏòÉÏ²ã½Úµã·¢ËÍÍ¬²½Êı¾İ
+	//		//å‘ä¸Šå±‚èŠ‚ç‚¹å‘é€åŒæ­¥æ•°æ®
 	//		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_DATA, 0, tempStack, GetProcessID());
 	//	}
 	//	else
 	//	{
-	//		//ÏòÏÂ²ã½Úµã·¢ËÍÍ¬²½Êı¾İ
+	//		//å‘ä¸‹å±‚èŠ‚ç‚¹å‘é€åŒæ­¥æ•°æ®
 	//		auto Syncit = m_mapDownSyncProcess.begin();
 	//		for (; Syncit != m_mapDownSyncProcess.end(); )
 	//		{
@@ -282,9 +282,9 @@ namespace zlscript
 	void CSyncScriptPointInterface::SyncDownClassData(const char* pBuff, int& pos, unsigned int len)
 	{
 		int startPos = pos;
-		//½âÂëÊı¾İ
+		//è§£ç æ•°æ®
 		DecodeData4Bytes((char*)pBuff, pos, len);
-		//·¢ËÍÍ¬²½ÏûÏ¢¸øÏÂ²ã½Úµã
+		//å‘é€åŒæ­¥æ¶ˆæ¯ç»™ä¸‹å±‚èŠ‚ç‚¹
 		CScriptStack tempStack;
 		ScriptVector_PushVar(tempStack, this);
 		ScriptVector_PushVar(tempStack, pBuff+startPos, pos - startPos);
@@ -317,7 +317,7 @@ namespace zlscript
 	CSyncScriptPointInterface& CSyncScriptPointInterface::operator=(const CSyncScriptPointInterface& val)
 	{
 		CScriptPointInterface::operator=(val);
-		// TODO: ÔÚ´Ë´¦²åÈë return Óï¾ä
+		// TODO: åœ¨æ­¤å¤„æ’å…¥ return è¯­å¥
 		return *this;
 	}
 	void CSyncScriptPointInterface::AddUpSyncProcess(__int64 processId, int tier)
@@ -328,7 +328,7 @@ namespace zlscript
 		auto itOld = m_mapUpSyncProcess.find(m_nProcessID);
 		if (itOld != m_mapUpSyncProcess.end())
 		{
-			//£¿ĞèÒª¸ù¾İ²ãÊı¶¯Ì¬µ÷ÕûÉÏĞĞÍ¬²½Ë÷ÒıÂğ£¿
+			//ï¼Ÿéœ€è¦æ ¹æ®å±‚æ•°åŠ¨æ€è°ƒæ•´ä¸Šè¡ŒåŒæ­¥ç´¢å¼•å—ï¼Ÿ
 		}
 		else
 		{
@@ -439,5 +439,8 @@ namespace zlscript
 		{
 			m_setUpdateSyncAttibute.insert(pAttr->m_index);
 		}
+	}
+	void CSyncScriptPointInterface::ChangeDBAttibute(CBaseSyncAttribute* pAttr)
+	{
 	}
 }

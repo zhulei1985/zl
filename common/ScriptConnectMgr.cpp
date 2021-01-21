@@ -1,11 +1,11 @@
-#include "ScriptConnectMgr.h"
+ï»¿#include "ScriptConnectMgr.h"
 #include "ScriptConnector.h"
 #include "zByteArray.h"
 void InitNetworkConnect()
 {
 	if (!initSocket())
 	{
-		//PrintDebug("debug", "ÍøÂç³õÊ¼»¯Ê§°Ü");
+		//PrintDebug("debug", "ç½‘ç»œåˆå§‹åŒ–å¤±è´¥");
 	}
 	CScriptConnectMgr::GetInstance()->OnInit();
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("SetListenPort", SetListenPort2Script);
@@ -74,7 +74,7 @@ int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CSc
 //	AddInt642Bytes(m_vBuff, (__int64)0);
 //
 //	std::string scriptName = pState->PopCharVarFormStack();
-//	AddString2Bytes(m_vBuff, (char*)scriptName.c_str());//½Å±¾º¯ÊıÃû
+//	AddString2Bytes(m_vBuff, (char*)scriptName.c_str());//è„šæœ¬å‡½æ•°å
 //
 //	AddChar2Bytes(m_vBuff, (char)nParmNum);
 //
@@ -116,7 +116,7 @@ CSocketConnector* CScriptConnectMgr::CreateNew(SOCKET sRemote, const char* pIP, 
 	CScriptConnectMgr::GetInstance()->AddClient(pConnector);
 	printf("new connect: %s; all connect count: %d \n", pIP, CScriptConnectMgr::GetInstance()->GetConnectSize());
 
-	//Ö´ĞĞ³õÊ¼»¯½Å±¾
+	//æ‰§è¡Œåˆå§‹åŒ–è„šæœ¬
 	auto itScript = m_mapInitConnectScript.find(nPort);
 	if (itScript != m_mapInitConnectScript.end())
 	{
