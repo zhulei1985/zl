@@ -113,8 +113,8 @@
     <ClCompile Include="..\script\class\zBinaryBuffer.cpp">
       <Filter>script</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\SyncAttributes.cpp">
-      <Filter>common</Filter>
+    <ClCompile Include="..\script\class\ScriptClassAttributes.cpp">
+      <Filter>script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -267,8 +267,8 @@
     <ClInclude Include="..\script\class\zBinaryBuffer.h">
       <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\SyncAttributes.h">
-      <Filter>common</Filter>
+    <ClInclude Include="..\script\class\ScriptClassAttributes.h">
+      <Filter>script</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

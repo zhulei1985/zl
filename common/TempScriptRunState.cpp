@@ -1,4 +1,5 @@
-﻿#include "TempScriptRunState.h"
+﻿#include "scriptcommon.h"
+#include "TempScriptRunState.h"
 
 namespace zlscript
 {
@@ -87,7 +88,7 @@ namespace zlscript
 			const char* pStr = StackVarInfo::s_strPool.GetString(var.Int64);
 			if (pStr)
 			{
-				nReturn = atoi(pStr);
+				nReturn = _atoi64(pStr);
 
 			}
 			else

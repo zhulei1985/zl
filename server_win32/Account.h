@@ -29,13 +29,13 @@ public:
 	////virtual bool DecodeData4Bytes(char* pBuff, int& pos, int len);
 
 private:
-	SYNC_INT64(Id);
-	SYNC_STR(strNickName);
-	SYNC_STR(strAccountName);
+	ATTR_INT64(Id);
+	ATTR_STR(strNickName);
+	ATTR_STR(strAccountName);
 	//std::string strNickName;
 
 	//std::string strAccountName;
-	SYNC_STR(strPassword);
+	ATTR_STR(strPassword);
 
 private:
 	std::unordered_map<std::string, StackVarInfo> m_mapData;

@@ -782,7 +782,7 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 		if (pPoint && pSyncPoint)
 		{
 			pPoint->Lock();
-			AddString2Bytes(vBuff, (char*)pPoint->GetClassName());
+			AddString2Bytes(vBuff, (char*)pPoint->ClassName());
 			if (pPoint->GetPoint())
 			{
 				if (pSyncPoint->GetProcessID() == GetEventIndex())
@@ -800,7 +800,7 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 						//新同步
 						pSyncPoint->AddDownSyncProcess(this->GetEventIndex());
 						//发送消息
-						SendSyncClassMsg(pPoint->GetClassName(), pSyncPoint);
+						SendSyncClassMsg(pPoint->ClassName(), pSyncPoint);
 					}
 					AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
 				}

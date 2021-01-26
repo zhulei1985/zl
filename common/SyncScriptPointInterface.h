@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "ScriptPointInterface.h"
-#include "SyncAttributes.h"
+#include "ScriptClassAttributes.h"
 #include <unordered_map>
 namespace zlscript
 {
@@ -12,26 +12,20 @@ namespace zlscript
 		E_SCRIPT_EVENT_UP_SYNC_FUN,
 		E_SCRIPT_EVENT_DOWN_SYNC_FUN,
 	};
-#define SYNC_INT(val) CSyncIntAttribute val;
-#define SYNC_INT64(val) CSyncInt64Attribute val;
-#define SYNC_STR(val) CSyncStringAttribute val;
+
 #define INIT_SYNC_ATTRIBUTE(index,val) \
 	m_mapSyncAttributes[index] = &val; \
-	val.init(CBaseSyncAttribute::E_FLAG_SYNC,index,this);
-#define INIT_DB_ATTRIBUTE(index,val) \
-	m_mapDBAttributes[#val] = &val; \
-	val.init(CBaseSyncAttribute::E_FLAG_DB,index,this);
+	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC,index,this);
+
 #define INIT_SYNC_AND_DB_ATTRIBUTE(index,val) \
 	m_mapSyncAttributes[index] = &val; \
 	m_mapDBAttributes[#val] = &val; \
-	val.init(CBaseSyncAttribute::E_FLAG_SYNC|CBaseSyncAttribute::E_FLAG_DB,index,this);
-#define INIT_DB_ATTRIBUTE_PRIMARY(index,val) \
-	m_mapDBAttributes[#val] = &val; \
-	val.init(CBaseSyncAttribute::E_FLAG_DB|CBaseSyncAttribute::E_FLAG_DB_PRIMARY,index,this);
+	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index,this);
+
 #define INIT_SYNC_AND_DB_ATTRIBUTE_PRIMARY(index,val) \
 	m_mapSyncAttributes[index] = &val; \
 	m_mapDBAttributes[#val] = &val; \
-	val.init(CBaseSyncAttribute::E_FLAG_SYNC|CBaseSyncAttribute::E_FLAG_DB|CBaseSyncAttribute::E_FLAG_DB_PRIMARY,index,this);
+	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY,index,this);
 
 
 	class CSyncScriptPointInterface : public CScriptPointInterface
@@ -107,8 +101,7 @@ namespace zlscript
 		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, bool bAll = true);
 		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);
 
-		void ChangeSyncAttibute(CBaseSyncAttribute*);
-		void ChangeDBAttibute(CBaseSyncAttribute*);
+		void ChangeScriptAttribute(short flag, CBaseScriptClassAttribute* pAttr);
 	protected:
 		int m_nRootServerID;//根节点所在服务器ID
 		__int64 m_nRootClassID;//本实例在根节点上的ID
@@ -122,8 +115,8 @@ namespace zlscript
 
 		std::unordered_map<int,int> m_mapSyncFunFlag;
 
-		std::map<unsigned short, CBaseSyncAttribute*> m_mapSyncAttributes;
-		std::map<std::string, CBaseSyncAttribute*> m_mapDBAttributes;
+		std::map<unsigned short, CBaseScriptClassAttribute*> m_mapSyncAttributes;
+		
 		std::set<unsigned short> m_setUpdateSyncAttibute;
 
 		std::mutex m_SyncProcessLock;

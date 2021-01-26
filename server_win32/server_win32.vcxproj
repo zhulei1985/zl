@@ -163,7 +163,6 @@
     <ClCompile Include="..\common\ScriptConnectMgr.cpp" />
     <ClCompile Include="..\common\ScriptConnector.cpp" />
     <ClCompile Include="..\common\sha1.cpp" />
-    <ClCompile Include="..\common\SyncAttributes.cpp" />
     <ClCompile Include="..\common\SyncScriptPointInterface.cpp" />
     <ClCompile Include="..\common\TempScriptRunState.cpp" />
     <ClCompile Include="..\network\class\BaseConnector.cpp" />
@@ -172,6 +171,7 @@
     <ClCompile Include="..\network\class\RingBuffer.cpp" />
     <ClCompile Include="..\network\class\SocketConnectorMgr.cpp" />
     <ClCompile Include="..\script\class\ScriptCallBackFunion.cpp" />
+    <ClCompile Include="..\script\class\ScriptClassAttributes.cpp" />
     <ClCompile Include="..\script\class\ScriptClassMgr.cpp" />
     <ClCompile Include="..\script\class\ScriptCodeLoader.cpp" />
     <ClCompile Include="..\script\class\scriptcommon.cpp" />
@@ -204,7 +204,6 @@
     <ClInclude Include="..\common\ScriptConnectMgr.h" />
     <ClInclude Include="..\common\ScriptConnector.h" />
     <ClInclude Include="..\common\sha1.h" />
-    <ClInclude Include="..\common\SyncAttributes.h" />
     <ClInclude Include="..\common\SyncScriptPointInterface.h" />
     <ClInclude Include="..\common\TempScriptRunState.h" />
     <ClInclude Include="..\network\class\BaseConnector.h" />
@@ -219,6 +218,7 @@
     <ClInclude Include="..\script\class\EScriptSentenceType.h" />
     <ClInclude Include="..\script\class\EScriptVariableType.h" />
     <ClInclude Include="..\script\class\ScriptCallBackFunion.h" />
+    <ClInclude Include="..\script\class\ScriptClassAttributes.h" />
     <ClInclude Include="..\script\class\ScriptClassMgr.h" />
     <ClInclude Include="..\script\class\ScriptCodeLoader.h" />
     <ClInclude Include="..\script\class\scriptcommon.h" />
