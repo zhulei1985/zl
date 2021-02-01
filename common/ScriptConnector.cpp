@@ -293,6 +293,9 @@ void CBaseScriptConnector::OnInit()
 
 	InitEvent(zlscript::E_SCRIPT_EVENT_UP_SYNC_DATA, std::bind(&CBaseScriptConnector::EventUpSyncData, this, std::placeholders::_1, std::placeholders::_2), false);
 	InitEvent(zlscript::E_SCRIPT_EVENT_DOWN_SYNC_DATA, std::bind(&CBaseScriptConnector::EventDownSyncData, this, std::placeholders::_1, std::placeholders::_2), false);
+
+	InitEvent(zlscript::E_SCRIPT_EVENT_REMOVE_UP_SYNC, std::bind(&CBaseScriptConnector::EventRemoveUpSync, this, std::placeholders::_1, std::placeholders::_2), false);
+	InitEvent(zlscript::E_SCRIPT_EVENT_REMOVE_DOWN_SYNC, std::bind(&CBaseScriptConnector::EventRemoveDownSync, this, std::placeholders::_1, std::placeholders::_2), false);
 }
 
 bool CBaseScriptConnector::OnProcess()
@@ -409,6 +412,22 @@ void CBaseScriptConnector::SendSyncClassData(__int64 classID, std::vector<char>&
 	SendMsg(&msg);
 }
 
+void CBaseScriptConnector::SendRemoveSyncUp(__int64 classID)
+{
+	CSyncUpRemoveMsgReceiveState msg;
+	msg.nClassID = classID;
+
+	SendMsg(&msg);
+}
+
+void CBaseScriptConnector::SendRemoveSyncDown(__int64 classID)
+{
+	CSyncDownRemoveMsgReceiveState msg;
+	msg.nClassID = classID;
+
+	SendMsg(&msg);
+}
+
 
 void CBaseScriptConnector::EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
@@ -449,6 +468,20 @@ void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, CScriptStack& Parm
 	tagByteArray data;
 	ScriptStack_GetBinary(ParmInfo, data);
 	SendSyncClassData(nClassID, data);
+}
+
+void CBaseScriptConnector::EventRemoveUpSync(__int64 nSendID, CScriptStack& ParmInfo)
+{
+	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
+
+	SendRemoveSyncUp(nClassID);
+}
+
+void CBaseScriptConnector::EventRemoveDownSync(__int64 nSendID, CScriptStack& ParmInfo)
+{
+	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
+
+	SendRemoveSyncDown(nClassID);
 }
 
 
@@ -567,6 +600,32 @@ bool CScriptConnector::IsSocketClosed()
 	return CSocketConnector::IsSocketClosed();
 }
 
+void CScriptConnector::Close()
+{
+	CSocketConnector::Close();
+	tDisconnectTime = std::chrono::steady_clock::now();
+}
+
+bool CScriptConnector::CanDelete()
+{
+	if (CBaseConnector::CanDelete())
+	{
+		auto curTime = std::chrono::steady_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - tDisconnectTime);
+		if (duration.count() >= 1000)
+		{
+			return true;
+		}
+
+		if (m_nEventListIndex == 0)
+		{
+			return false;
+		}
+		return true;
+	}
+	return false;
+}
+
 void CScriptConnector::OnInit()
 {
 	CSocketConnector::OnInit();
@@ -618,6 +677,10 @@ bool CScriptConnector::OnProcess()
 				//合并连接信息
 				auto pOldConnect = CScriptConnectMgr::GetInstance()->GetConnector(m_pHeadProtocol->GetLastConnectID());
 				Merge(pOldConnect);
+				if (!pOldConnect->IsSocketClosed())
+				{
+					pOldConnect->Close();
+				}
 			}
 			break;
 		case CBaseHeadProtocol::E_RETURN_ERROR:
@@ -785,7 +848,8 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 			AddString2Bytes(vBuff, (char*)pPoint->ClassName());
 			if (pPoint->GetPoint())
 			{
-				if (pSyncPoint->GetProcessID() == GetEventIndex())
+				//if (pSyncPoint->GetProcessID() == GetEventIndex())
+				if (pSyncPoint->CheckUpSyncProcess(GetEventIndex()))
 				{
 					//如果这个类实例是本连接对应的镜像
 					AddChar2Bytes(vBuff, 0);
@@ -847,7 +911,18 @@ void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 	m_mapReturnState = pOldConnect->m_mapReturnState;
 	m_nReturnCount = pOldConnect->m_nReturnCount;
 
+	m_mapClassImage2Index = pOldConnect->m_mapClassImage2Index;
+	m_mapClassIndex2Image = pOldConnect->m_mapClassIndex2Image;
+
+	m_mapRouteConnect = pOldConnect->m_mapRouteConnect;
+
+	pOldConnect->m_mapClassImage2Index.clear();
+	pOldConnect->m_mapClassIndex2Image.clear();
+	pOldConnect->m_vecEventIndexs.clear();
 	pOldConnect->m_mapReturnState.clear();
+	pOldConnect->m_nEventListIndex = 0;
+
+	pOldConnect->m_mapRouteConnect.clear();
 }
 
 

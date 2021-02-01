@@ -11,6 +11,9 @@ enum E_MSG_TYPE
 	E_SYNC_DOWN_PASSAGE,//下行同步通道
 	E_SYNC_UP_PASSAGE,//上行同步通道
 
+	E_SYNC_DOWN_REMOVE,//移除下行同步
+	E_SYNC_UP_REMOVE,//移除上行同步
+
 	E_ROUTE_FRONT,//用于客户端发给服务器
 	E_ROUTE_BACK,//用于服务器发给客户端
 };
@@ -305,6 +308,51 @@ protected:
 	int nCurParmType;
 	int nStringLen;
 	std::string strClassName;
+};
+
+//E_SYNC_DOWN_REMOVE,//移除下行同步
+class CSyncDownRemoveMsgReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CSyncDownRemoveMsgReceiveState()
+	{
+		nClassID = -1;
+	}
+	int GetType()
+	{
+		return E_SYNC_DOWN_REMOVE;
+	}
+	virtual void Clear()
+	{
+		nClassID = -1;
+	}
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+public:
+	__int64 nClassID;//涉及到的类ID
+};
+//E_SYNC_UP_REMOVE,//移除上行同步
+class CSyncUpRemoveMsgReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CSyncUpRemoveMsgReceiveState()
+	{
+		nClassID = -1;
+	}
+	int GetType()
+	{
+		return E_SYNC_UP_REMOVE;
+	}
+	virtual void Clear()
+	{
+		nClassID = -1;
+	}
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+public:
+	__int64 nClassID;//涉及到的类ID
 };
 
 class CRouteFrontMsgReceiveState : public CBaseMsgReceiveState

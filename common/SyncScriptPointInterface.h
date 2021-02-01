@@ -11,6 +11,9 @@ namespace zlscript
 
 		E_SCRIPT_EVENT_UP_SYNC_FUN,
 		E_SCRIPT_EVENT_DOWN_SYNC_FUN,
+
+		E_SCRIPT_EVENT_REMOVE_UP_SYNC,
+		E_SCRIPT_EVENT_REMOVE_DOWN_SYNC,
 	};
 
 #define INIT_SYNC_ATTRIBUTE(index,val) \
@@ -32,7 +35,7 @@ namespace zlscript
 	{
 	public:
 		CSyncScriptPointInterface();
-		~CSyncScriptPointInterface();
+		virtual ~CSyncScriptPointInterface();
 	public:
 		virtual void SetSyncFun(int id, int type)
 		{
@@ -93,10 +96,12 @@ namespace zlscript
 		}
 
 		void AddUpSyncProcess(__int64 processId, int tier);
+		bool CheckUpSyncProcess(__int64 processId);
 		void RemoveUpSyncProcess(__int64 processId);
 
 		void AddDownSyncProcess(__int64);
 		bool CheckDownSyncProcess(__int64);
+		void RemoveDownSyncProcess(__int64 processId);
 
 		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, bool bAll = true);
 		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);

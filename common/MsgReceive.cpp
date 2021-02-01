@@ -1419,6 +1419,98 @@ bool CSyncDownMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, s
 	return true;
 }
 
+bool CSyncDownRemoveMsgReceiveState::Recv(CScriptConnector*)
+{
+	std::vector<char> vOut;
+	int nPos = 0;
+	if (nClassID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool CSyncDownRemoveMsgReceiveState::Run(CBaseScriptConnector* pClient)
+{
+	if (pClient)
+	{
+		__int64 nIndex = pClient->GetIndex4Image(nClassID);
+		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nIndex);
+		if (pPoint)
+		{
+			CSyncScriptPointInterface *pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+			if (pSyncPoint)
+			{
+				//发送者的down对应接收者的up
+				pSyncPoint->RemoveUpSyncProcess(pClient->GetEventIndex());
+			}
+			CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
+		}
+		return true;
+	}
+	return false;
+}
+
+bool CSyncDownRemoveMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+{
+	AddChar2Bytes(vBuff, E_SYNC_DOWN_REMOVE);
+	AddInt642Bytes(vBuff, nClassID);
+	return true;
+}
+
+bool CSyncUpRemoveMsgReceiveState::Recv(CScriptConnector*)
+{
+	std::vector<char> vOut;
+	int nPos = 0;
+	if (nClassID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+bool CSyncUpRemoveMsgReceiveState::Run(CBaseScriptConnector* pClient)
+{
+	if (pClient)
+	{
+		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nClassID);
+		if (pPoint)
+		{
+			CSyncScriptPointInterface* pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+			if (pSyncPoint)
+			{
+				//发送者的up对应接收者的down
+				pSyncPoint->RemoveDownSyncProcess(pClient->GetEventIndex());
+			}
+			CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
+		}
+		return true;
+	}
+	return false;
+}
+
+bool CSyncUpRemoveMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+{
+	AddChar2Bytes(vBuff, E_SYNC_DOWN_REMOVE);
+	AddInt642Bytes(vBuff, pClient->GetImage4Index(nClassID));
+	return true;
+}
+
 void CRouteFrontMsgReceiveState::Clear()
 {
 	nConnectID = -1;
@@ -1591,4 +1683,5 @@ void CMsgReceiveMgr::RemoveRceiveState(CBaseMsgReceiveState* pState)
 		delete pState;
 	}
 }
+
 

@@ -67,6 +67,10 @@ namespace zlnetwork
 		virtual char* GetIP() = 0;
 
 		virtual bool CheckOverlappedIOCompleted() = 0;
+		virtual bool CanDelete()
+		{
+			return CheckOverlappedIOCompleted();
+		}
 	public:
 		__int64 GetID() const
 		{

@@ -46,6 +46,7 @@ public:
 	virtual int GetSocketPort() { return 0; }
 	virtual bool IsSocketClosed() { return true; }
 
+
 	virtual void OnInit();
 	virtual bool OnProcess();
 	virtual void OnDestroy();
@@ -59,6 +60,8 @@ public:
 	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
 	virtual void SyncDownClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
 	virtual void SendSyncClassData(__int64 classID, std::vector<char>& data);
+	virtual void SendRemoveSyncUp(__int64 classID);
+	virtual void SendRemoveSyncDown(__int64 classID);
 
 	virtual void EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventRunFun(__int64 nSendID, CScriptStack& ParmInfo);
@@ -68,6 +71,9 @@ public:
 
 	virtual void EventUpSyncData(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo);
+
+	virtual void EventRemoveUpSync(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventRemoveDownSync(__int64 nSendID, CScriptStack& ParmInfo);
 
 	virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
 
@@ -132,6 +138,8 @@ public:
 public:
 	virtual int GetSocketPort();
 	virtual bool IsSocketClosed();
+	virtual void Close();
+	bool CanDelete();
 
 	virtual void OnInit();
 	bool OnProcess();
@@ -148,6 +156,7 @@ public:
 	//virtual void SyncDownClassFunRun(CSyncScriptPointInterface* pPoint,std::string strFunName, CScriptStack& stack);
 	void Merge(CScriptConnector* pOldConnect);
 protected:
+	std::chrono::time_point<std::chrono::steady_clock> tDisconnectTime;
 
 	typedef std::function< int(CSocketConnector* pConnector)> StateFun;
 	std::map<int, StateFun> m_mapStateFun;

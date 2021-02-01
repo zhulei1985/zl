@@ -87,7 +87,7 @@ namespace zlnetwork
 						tagInfo.pConnector->Open();
 						tagInfo.pConnector->OnInit();
 					}
-					else if (tagInfo.pConnector->CheckOverlappedIOCompleted())
+					else if (tagInfo.pConnector->CanDelete())
 					{
 						tagInfo.pConnector->OnDestroy();
 						delete tagInfo.pConnector;

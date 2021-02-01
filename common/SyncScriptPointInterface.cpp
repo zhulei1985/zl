@@ -14,11 +14,20 @@ namespace zlscript
 	}
 	CSyncScriptPointInterface::~CSyncScriptPointInterface()
 	{
-		//std::map<unsigned short, CBaseSyncAttribute*>::iterator it = m_mapSyncAttributes.begin();
-		//for (; it != m_mapSyncAttributes.end(); it++)
-		//{
-		//	CSyncAttributeMake::GetInstance()->Remove(it->second);
-		//}
+		std::map<__int64, unsigned int>::iterator itUp = m_mapUpSyncProcess.begin();
+		CScriptStack tempStack;
+		ScriptVector_PushVar(tempStack, this);
+		for (; itUp != m_mapUpSyncProcess.end(); itUp++)
+		{
+			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_REMOVE_UP_SYNC, itUp->first, tempStack, GetProcessID());
+		}
+		std::map<__int64, bool>::iterator itDown = m_mapDownSyncProcess.begin();
+		for (; itDown != m_mapDownSyncProcess.end(); itDown++)
+		{
+			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_REMOVE_DOWN_SYNC, itDown->first, tempStack, GetProcessID());
+		}
+		E_SCRIPT_EVENT_REMOVE_UP_SYNC,
+			E_SCRIPT_EVENT_REMOVE_DOWN_SYNC,
 		m_mapSyncAttributes.clear();
 	}
 	int CSyncScriptPointInterface::RunFun(int id, CScriptRunState* pState)
@@ -329,11 +338,28 @@ namespace zlscript
 		if (itOld != m_mapUpSyncProcess.end())
 		{
 			//？需要根据层数动态调整上行同步索引吗？
+			int curTier = itOld->second;
+			if (tier < curTier)
+			{
+				m_nProcessID = processId;
+				m_nImageTier = tier;
+			}
 		}
 		else
 		{
 			m_nProcessID = processId;
+			m_nImageTier = tier;
 		}
+	}
+	bool CSyncScriptPointInterface::CheckUpSyncProcess(__int64 processId)
+	{
+		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+		auto itOld = m_mapUpSyncProcess.find(m_nProcessID);
+		if (itOld != m_mapUpSyncProcess.end())
+		{
+			return true;
+		}
+		return false;
 	}
 	void CSyncScriptPointInterface::RemoveUpSyncProcess(__int64 processId)
 	{
@@ -346,6 +372,8 @@ namespace zlscript
 		if (m_nProcessID == processId)
 		{
 			int nTier = 0x7fffffff;
+			m_nProcessID = 0;
+			m_nImageTier = 0;
 			auto itOld = m_mapUpSyncProcess.begin();
 			for (; itOld != m_mapUpSyncProcess.end(); itOld++)
 			{
@@ -353,8 +381,13 @@ namespace zlscript
 				{
 					nTier = itOld->second;
 					m_nProcessID = itOld->first;
+					m_nImageTier = nTier;
 				}
 			}
+		}
+		if (m_mapUpSyncProcess.empty())
+		{
+			//是否应该删除了？
 		}
 	}
 	void CSyncScriptPointInterface::AddDownSyncProcess(__int64 nID)
@@ -371,6 +404,13 @@ namespace zlscript
 			return true;
 		}
 		return false;
+	}
+	void CSyncScriptPointInterface::RemoveDownSyncProcess(__int64 processId)
+	{
+		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+		auto it = m_mapDownSyncProcess.find(processId);
+		if (it != m_mapDownSyncProcess.end())
+			m_mapDownSyncProcess.erase(it);
 	}
 	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff, bool bAll)
 	{
