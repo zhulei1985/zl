@@ -1,4 +1,5 @@
-CArray AccountArray = nullptr;
+HashMap mapAccount = nullptr;
+CArray ConnectorArray = nullptr;
 void InitConnector(Connector pConnector)
 {
 	pConnector->SetHeadProtocol("inner","server","123456");
@@ -9,11 +10,7 @@ void InitConnector(Connector pConnector)
 void RegisterAccount(string strAccount, string password, Connector pConnector)
 {
 	print("³¢ÊÔ×¢²áÕËºÅ:"+strAccount+" "+password);
-	if (CheckClassPoint(AccountArray) == 0)
-	{
-		AccountArray = new CArray;
-	}
-	CAccount pAccount = AccountArray->GetVal(strAccount);
+	CAccount pAccount = mapAccount->GetVal(strAccount);
 	if (CheckClassPoint(pAccount))
 	{
 		//ÕËºÅÒÑ´æÔÚ£¬×¢²áÊ§°Ü
@@ -27,19 +24,16 @@ void RegisterAccount(string strAccount, string password, Connector pConnector)
 
 	pAccount->SetVal("connect",pConnector);
 	pConnector->SetVal("account",pAccount);
-	AccountArray->SetVal(strAccount,pAccount);
+	mapAccount->SetVal(strAccount,pAccount);
 	//·¢ËÍ×¢²á³É¹¦£¬µÇÂ¼³É¹¦
 	pConnector->RunScript(0,"LoginSuccess",pAccount);
 	pConnector->SetScriptLimit("Talk",1);
+	ConnectorArray->Add(pConnector);
 }
 void LoginAccount(string strAccount, string password, Connector pConnector)
 {
 	print("³¢ÊÔµÇÂ¼ÕËºÅ:"+strAccount+" "+password);
-	if (0 == CheckClassPoint(AccountArray))
-	{
-		AccountArray = new CArray;
-	}
-	CAccount pAccount = AccountArray->GetVal(strAccount);
+	CAccount pAccount = mapAccount->GetVal(strAccount);
 	if (0 == CheckClassPoint(pAccount))
 	{
 		//ÕËºÅ²»´æÔÚ£¬µÇÂ¼Ê§°Ü
@@ -55,8 +49,10 @@ void LoginAccount(string strAccount, string password, Connector pConnector)
 
 	pAccount->SetVal("connect",pConnector);
 	pConnector->SetVal("account",pAccount);
+	mapAccount->SetVal(strAccount,pAccount);
 	pConnector->RunScript(0,"LoginSuccess",pAccount);
 	pConnector->SetScriptLimit("Talk",1);
+	ConnectorArray->Add(pConnector);
 }
 
 void Talk(string strContent, Connector pConnector)
@@ -64,31 +60,29 @@ void Talk(string strContent, Connector pConnector)
 
 	if (strContent != "")
 	{
-		if (CheckClassPoint(AccountArray))
+
+		CAccount pMainAccount = pConnector->GetVal("account");
+		int i = 0;
+		while (i < ConnectorArray->GetSize())
 		{
-			CAccount pMainAccount = pConnector->GetVal("account");
-			int i = 0;
-			while (i < AccountArray->GetSize())
+			Connector pAccClient = ConnectorArray->Get(i);
+
+			if (CheckClassPoint(pAccClient))
 			{
-				CAccount pAccount = AccountArray->GetValByIndex(i);
-				if (CheckClassPoint(pAccount))
-				{
-					Connector pAccClient = pAccount->GetConnect();
-					if (CheckClassPoint(pAccClient))
-					{
-						pAccClient->RunScript(0,"SendMessage",pMainAccount,strContent);
-					}
-				}
-				i = i + 1;
+				pAccClient->RunScript(0,"SendMessage",pMainAccount,strContent);
 			}
+		
+			i = i + 1;
 		}
+		
 	}
 }
 void main()
 {
 	//³õÊ¼»¯Êý¾Ý
 	InitData("Data");
-
+	mapAccount = new HashMap;
+	ConnectorArray = new CArray;
 	SetListenPort(9999,"InitConnector");
 	print("Æô¶¯Íê³É");
 }

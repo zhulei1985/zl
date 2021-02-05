@@ -841,40 +841,43 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 	{
 		AddChar2Bytes(vBuff, EScriptVal_ClassPointIndex);
 		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(pVal->Int64);
-		auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
-		if (pPoint && pSyncPoint)
+		if (pPoint)
 		{
-			pPoint->Lock();
-			AddString2Bytes(vBuff, (char*)pPoint->ClassName());
-			if (pPoint->GetPoint())
+			auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+			if (pSyncPoint)
 			{
-				//if (pSyncPoint->GetProcessID() == GetEventIndex())
-				if (pSyncPoint->CheckUpSyncProcess(GetEventIndex()))
+				pPoint->Lock();
+				AddString2Bytes(vBuff, (char*)pPoint->ClassName());
+				if (pPoint->GetPoint())
 				{
-					//如果这个类实例是本连接对应的镜像
-					AddChar2Bytes(vBuff, 0);
-					__int64 nImageIndex = GetImage4Index(pPoint->GetPoint()->GetScriptPointIndex());
-					AddInt642Bytes(vBuff, nImageIndex);
-				}
-				else
-				{
-					AddChar2Bytes(vBuff, 1);
-					if (!pSyncPoint->CheckDownSyncProcess(this->GetEventIndex()))
+					//if (pSyncPoint->GetProcessID() == GetEventIndex())
+					if (pSyncPoint->CheckUpSyncProcess(GetEventIndex()))
 					{
-						//新同步
-						pSyncPoint->AddDownSyncProcess(this->GetEventIndex());
-						//发送消息
-						SendSyncClassMsg(pPoint->ClassName(), pSyncPoint);
+						//如果这个类实例是本连接对应的镜像
+						AddChar2Bytes(vBuff, 0);
+						__int64 nImageIndex = GetImage4Index(pPoint->GetPoint()->GetScriptPointIndex());
+						AddInt642Bytes(vBuff, nImageIndex);
 					}
-					AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+					else
+					{
+						AddChar2Bytes(vBuff, 1);
+						if (!pSyncPoint->CheckDownSyncProcess(this->GetEventIndex()))
+						{
+							//新同步
+							pSyncPoint->AddDownSyncProcess(this->GetEventIndex());
+							//发送消息
+							SendSyncClassMsg(pPoint->ClassName(), pSyncPoint);
+						}
+						AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+					}
+					//AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
 				}
-				//AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+				pPoint->Unlock();
 			}
-			pPoint->Unlock();
-		}
-		else
-		{
-			//错误，没有找到对象或是非同步性对象
+			else
+			{
+				//错误，没有找到对象或是非同步性对象
+			}
 		}
 		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}

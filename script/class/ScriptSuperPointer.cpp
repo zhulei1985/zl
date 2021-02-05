@@ -31,6 +31,16 @@ namespace zlscript
 		m_ID = id;
 	}
 
+	void CScriptBasePointer::SetAutoReleaseMode(int val)
+	{
+		m_nAutoReleaseMode = val;
+	}
+
+	int CScriptBasePointer::GetAutoReleaseMode()
+	{
+		return m_nAutoReleaseMode;
+	}
+
 	CScriptSuperPointerMgr CScriptSuperPointerMgr::s_Instance;
 
 	void CScriptSuperPointerMgr::Init()
@@ -84,6 +94,71 @@ namespace zlscript
 			}
 		}
 		m_MutexLock.unlock();
+	}
+
+	void CScriptSuperPointerMgr::AddPoint2Release(__int64 id)
+	{
+		m_autoReleaseIds.insert(id);
+	}
+
+	void CScriptSuperPointerMgr::ReleaseAutoPoint()
+	{
+		std::vector<CScriptPointInterface*> vPoints;
+		//std::lock_guard<std::mutex> Lock(m_MutexLock);
+		m_MutexLock.lock();
+		auto itId = m_autoReleaseIds.begin();
+		for (; itId != m_autoReleaseIds.end();)
+		{
+			std::map<__int64, CScriptBasePointer*>::iterator it = m_mapPointer.find(*itId);
+			if (it != m_mapPointer.end())
+			{
+				CScriptBasePointer* pPoint = it->second;
+				if (pPoint->m_nUseCount > 0)
+				{
+					itId++;
+					//TODO 应该删除的指针，还有地方引用，不应该
+					continue;
+				}
+				CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(pPoint->GetType());
+				if (pPoint->GetPoint())
+				{
+					pPoint->GetPoint()->ClearScriptPointIndex();
+					vPoints.push_back(pPoint->GetPoint());
+					//delete pPoint->GetPoint();
+				}
+
+				pPoint->SetPointer(nullptr);
+
+				m_mapPointer.erase(it);
+				if (pPoint->m_nUseCount <= 0)
+				{
+					delete pPoint;
+				}
+			}
+			itId = m_autoReleaseIds.erase(itId);
+		}
+		m_MutexLock.unlock();
+
+		for (unsigned int i = 0; i < vPoints.size(); i++)
+		{
+			delete vPoints[i];
+		}
+	}
+
+	bool CScriptSuperPointerMgr::SetPointAutoRelease(__int64 nID, int autorelease)
+	{
+		std::lock_guard<std::mutex> Lock(m_MutexLock);
+		std::map<__int64, CScriptBasePointer*>::iterator it = m_mapPointer.find(nID);
+		if (it != m_mapPointer.end())
+		{
+			auto pPoint = it->second;
+			if (pPoint)
+			{
+				pPoint->SetAutoReleaseMode(autorelease);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	bool CScriptSuperPointerMgr::RemoveClassPoint(__int64 nID)
@@ -152,6 +227,67 @@ namespace zlscript
 			}
 		}
 		m_MutexLock.unlock();
+	}
+
+	bool CScriptSuperPointerMgr::ScriptUsePointer(__int64 id)
+	{
+		if (id == 0)
+		{
+			return false;
+		}
+		std::lock_guard<std::mutex> Lock(m_MutexLock);
+		std::map<__int64, CScriptBasePointer*>::iterator it = m_mapPointer.find(id);
+		if (it != m_mapPointer.end())
+		{
+			auto pPoint = it->second;
+			if (pPoint)
+			{
+				pPoint->m_nScriptUseCount++;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	bool CScriptSuperPointerMgr::ScriptReleasePointer(__int64 id)
+	{
+		if (id == 0)
+		{
+			return false;
+		}
+		std::lock_guard<std::mutex> Lock(m_MutexLock);
+
+		std::map<__int64, CScriptBasePointer*>::iterator it = m_mapPointer.find(id);
+		if (it != m_mapPointer.end())
+		{
+			auto pPoint = it->second;
+			if (pPoint)
+			{
+				if (pPoint->m_nScriptUseCount < 1)
+				{
+					pPoint->m_nScriptUseCount = 0;
+					//标记是否可以释放
+					if (pPoint->GetAutoReleaseMode() & SCRIPT_NO_USED_AUTO_RELEASE)
+					{
+						bool bRelease = true;
+						pPoint->Lock();
+						if (pPoint->GetPoint() && !pPoint->GetPoint()->CanRelease())
+						{
+							bRelease = false;
+						}
+						pPoint->Unlock();
+						if (bRelease)
+							m_autoReleaseIds.insert(pPoint->GetID());
+					}
+				}
+				else
+				{
+					pPoint->m_nScriptUseCount--;
+				}
+			}
+			return true;
+		}
+		return false;
 	}
 
 	int CScriptSuperPointerMgr::GetClassFunIndex(int classindex, std::string funname)

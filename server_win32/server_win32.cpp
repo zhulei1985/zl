@@ -104,22 +104,27 @@ int ExecuteCommand(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
 
 	return ECALLBACK_FINISH;
 }
-
+void DebugPrint(const char* pStr)
+{
+	if (pStr)
+		printf("%s\n", pStr);
+}
 int main()
 {
     //std::cout << "Hello World!\n";
 	zlscript::InitScript();
+	zlscript::CScriptDebugPrintMgr::GetInstance()->RegisterCallBack_PrintFun(DebugPrint);
 	InitNetworkConnect();
 	CScriptConnector::Init2Script();
 	CAccount::Init2Script();
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("UserInput", UserInput);
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("ExecuteCommand", ExecuteCommand);
 	//设置脚本DEBUG输出
-	std::function<void(const char*)> debugfun = [](const char* pstr)
-	{
-		std::cout << pstr;
-	};
-	zlscript::CScriptDebugPrintMgr::GetInstance()->RegisterCallBack_PrintFun(debugfun);
+	//std::function<void(const char*)> debugfun = [](const char* pstr)
+	//{
+	//	std::cout << pstr;
+	//};
+	//zlscript::CScriptDebugPrintMgr::GetInstance()->RegisterCallBack_PrintFun(debugfun);
 
 	//读取所有脚本
 	char buf1[1024];

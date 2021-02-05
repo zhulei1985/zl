@@ -2,6 +2,8 @@
 #include "ScriptPointInterface.h"
 #include "ScriptClassAttributes.h"
 #include <unordered_map>
+
+#define SCRIPT_NO_DOWN_SYNC_AUTO_RELEASE 2
 namespace zlscript
 {
 	enum E_SCRIPT_EVENT_TYPE_SYNC
@@ -36,6 +38,8 @@ namespace zlscript
 	public:
 		CSyncScriptPointInterface();
 		virtual ~CSyncScriptPointInterface();
+
+		virtual bool CanRelease();
 	public:
 		virtual void SetSyncFun(int id, int type)
 		{
@@ -94,6 +98,8 @@ namespace zlscript
 		{
 			return m_nProcessID;
 		}
+
+		void ClearSyncInfo();
 
 		void AddUpSyncProcess(__int64 processId, int tier);
 		bool CheckUpSyncProcess(__int64 processId);

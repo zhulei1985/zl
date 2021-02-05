@@ -9,6 +9,8 @@ CAccount::CAccount()
 	INIT_SYNC_AND_DB_ATTRIBUTE(3, strAccountName);
 	INIT_DB_ATTRIBUTE(4, strPassword);
 
+	AddClassObject(this->GetScriptPointIndex(), this);
+
 	RegisterClassFun(SetAccountName, this, &CAccount::SetAccountName2Script);
 	RegisterClassFun(GetAccountName, this, &CAccount::GetAccountName2Script);
 	RegisterClassFun(SetPassword, this, &CAccount::SetPassword2Script);

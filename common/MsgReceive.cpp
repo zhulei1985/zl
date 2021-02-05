@@ -655,7 +655,7 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 						//创建新的镜像类
 						if (pPoint == nullptr)
 						{
-							pPoint = pMgr->New();
+							pPoint = pMgr->New(SCRIPT_NO_DOWN_SYNC_AUTO_RELEASE| SCRIPT_NO_USED_AUTO_RELEASE);
 							m_pPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint);
 							if (m_pPoint)
 							{
@@ -1668,6 +1668,12 @@ CBaseMsgReceiveState* CMsgReceiveMgr::CreateRceiveState(char cType)
 		break;
 	case E_ROUTE_FRONT:
 		return new CRouteFrontMsgReceiveState;
+		break;
+	case E_SYNC_DOWN_REMOVE:
+		return new CSyncDownRemoveMsgReceiveState;
+		break;
+	case E_SYNC_UP_REMOVE:
+		return new CSyncUpRemoveMsgReceiveState;
 		break;
 	case E_ROUTE_BACK:
 		return new CRouteBackMsgReceiveState;

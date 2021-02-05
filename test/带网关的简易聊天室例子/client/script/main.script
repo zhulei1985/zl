@@ -1,9 +1,11 @@
+CAccount pMyAccount = nullptr;
 void PrintGuide()
 {
 	print("¼òÒ×ÁÄÌìÊÒÖ¸Áî:");
 	print("×¢²áÕËºÅ: RegisterAccount [ÕËºÅ] [ÃÜÂë]");
 	print("µÇÂ¼ÕËºÅ: LoginAccount [ÕËºÅ] [ÃÜÂë]");
 	print("·¢ËÍÏûÏ¢(ÐèÒªµÇÂ¼): Talk [ÄÚÈÝ]");
+	print("ÐÞ¸ÄêÇ³Æ: SetNick [Ãû³Æ]");
 }
 
 void Error_CannotRunScript()
@@ -21,18 +23,38 @@ void LoginFail()
 	print("µÇÂ¼Ê§°Ü");
 }
 
-void RegisterSuccess()
+void RegisterSuccess(CAccount pAccount)
 {
+	pMyAccount = pAccount;
 	print("×¢²á³É¹¦");
 }
 
-void LoginSuccess()
+void LoginSuccess(CAccount pAccount)
 {
+	pMyAccount = pAccount;
 	print("µÇÂ¼³É¹¦");
 }
 void SendMessage(CAccount pAccount, string strContent, Connector pClient )
 {
 	print(pAccount->GetNickName()+":"+strContent);
+}
+void RegisterAccount(string strAccount, string password, Connector pClient)
+{
+	pClient->RunScript(0,"RegisterAccount",strAccount,password);
+}
+void LoginAccount(string strAccount, string password, Connector pClient)
+{
+	pClient->RunScript(0,"LoginAccount",strAccount,password);
+}
+void Talk(string strContent, Connector pClient)
+{
+	pClient->RunScript(0,"Talk",strContent);
+}
+void SetNick(string name, Connector pClient)
+{
+	print("³¢ÊÔÉèÖÃêÇ³Æ");
+	//CAccount pAccount = GetVal4Data("Account","a");
+	pMyAccount->SetNickName(name);
 }
 void main()
 {
@@ -63,7 +85,8 @@ void main()
 		}
 		else
 		{
-			pClient->RunScript(0,ExecuteCommand(str));
+			RunScript(0,ExecuteCommand(str,pClient));
+			//pClient->RunScript(0,ExecuteCommand(str));
 		}
 
 		//print(str);

@@ -258,9 +258,6 @@
     <ClInclude Include="..\common\sha1.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\SyncScriptPointInterface.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\TempScriptRunState.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -269,6 +266,9 @@
     </ClInclude>
     <ClInclude Include="..\script\class\ScriptClassAttributes.h">
       <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SyncScriptPointInterface.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

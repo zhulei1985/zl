@@ -14,21 +14,14 @@ namespace zlscript
 	}
 	CSyncScriptPointInterface::~CSyncScriptPointInterface()
 	{
-		std::map<__int64, unsigned int>::iterator itUp = m_mapUpSyncProcess.begin();
-		CScriptStack tempStack;
-		ScriptVector_PushVar(tempStack, this);
-		for (; itUp != m_mapUpSyncProcess.end(); itUp++)
-		{
-			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_REMOVE_UP_SYNC, itUp->first, tempStack, GetProcessID());
-		}
-		std::map<__int64, bool>::iterator itDown = m_mapDownSyncProcess.begin();
-		for (; itDown != m_mapDownSyncProcess.end(); itDown++)
-		{
-			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_REMOVE_DOWN_SYNC, itDown->first, tempStack, GetProcessID());
-		}
-		E_SCRIPT_EVENT_REMOVE_UP_SYNC,
-			E_SCRIPT_EVENT_REMOVE_DOWN_SYNC,
+		ClearSyncInfo();
+
 		m_mapSyncAttributes.clear();
+	}
+	bool CSyncScriptPointInterface::CanRelease()
+	{
+		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+		return m_mapDownSyncProcess.empty();
 	}
 	int CSyncScriptPointInterface::RunFun(int id, CScriptRunState* pState)
 	{
@@ -329,6 +322,23 @@ namespace zlscript
 		// TODO: 在此处插入 return 语句
 		return *this;
 	}
+	void CSyncScriptPointInterface::ClearSyncInfo()
+	{
+		std::map<__int64, unsigned int>::iterator itUp = m_mapUpSyncProcess.begin();
+		CScriptStack tempStack;
+		ScriptVector_PushVar(tempStack, this);
+		for (; itUp != m_mapUpSyncProcess.end(); itUp++)
+		{
+			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_REMOVE_UP_SYNC, itUp->first, tempStack, GetProcessID());
+		}
+		m_mapUpSyncProcess.clear();
+		std::map<__int64, bool>::iterator itDown = m_mapDownSyncProcess.begin();
+		for (; itDown != m_mapDownSyncProcess.end(); itDown++)
+		{
+			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_REMOVE_DOWN_SYNC, itDown->first, tempStack, GetProcessID());
+		}
+		m_mapDownSyncProcess.clear();
+	}
 	void CSyncScriptPointInterface::AddUpSyncProcess(__int64 processId, int tier)
 	{
 		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
@@ -372,7 +382,7 @@ namespace zlscript
 		if (m_nProcessID == processId)
 		{
 			int nTier = 0x7fffffff;
-			m_nProcessID = 0;
+			m_nProcessID = -1;
 			m_nImageTier = 0;
 			auto itOld = m_mapUpSyncProcess.begin();
 			for (; itOld != m_mapUpSyncProcess.end(); itOld++)
@@ -388,6 +398,13 @@ namespace zlscript
 		if (m_mapUpSyncProcess.empty())
 		{
 			//是否应该删除了？
+			//直接删除
+			auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(this->GetScriptPointIndex());
+			if (pPoint->GetAutoReleaseMode() & SCRIPT_NO_DOWN_SYNC_AUTO_RELEASE)
+			{
+				CScriptSuperPointerMgr::GetInstance()->AddPoint2Release(this->GetScriptPointIndex());
+			}
+			CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 		}
 	}
 	void CSyncScriptPointInterface::AddDownSyncProcess(__int64 nID)
@@ -407,10 +424,27 @@ namespace zlscript
 	}
 	void CSyncScriptPointInterface::RemoveDownSyncProcess(__int64 processId)
 	{
-		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+		//std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+		m_SyncProcessLock.lock();
 		auto it = m_mapDownSyncProcess.find(processId);
 		if (it != m_mapDownSyncProcess.end())
 			m_mapDownSyncProcess.erase(it);
+		if (!m_mapDownSyncProcess.empty())
+		{
+			m_SyncProcessLock.unlock();
+			return;
+		}
+		m_SyncProcessLock.unlock();
+		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(this->GetScriptPointIndex());
+		if (pPoint->GetAutoReleaseMode() & SCRIPT_NO_DOWN_SYNC_AUTO_RELEASE )
+		{
+			if (pPoint->m_nScriptUseCount == 0)
+			{
+				//既没有下行，也没有脚本变量引用了
+				CScriptSuperPointerMgr::GetInstance()->AddPoint2Release(this->GetScriptPointIndex());
+			}
+		}
+		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
 	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff, bool bAll)
 	{
