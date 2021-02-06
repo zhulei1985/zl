@@ -8,7 +8,7 @@ void InitConnector(Connector pConnector)
 void main()
 {
 	//初始化数据
-	CData pData = GetData("Data");
+	InitData("Data");
 
 	SetListenPort(9998,"InitConnector");
 

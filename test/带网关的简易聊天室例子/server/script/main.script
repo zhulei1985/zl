@@ -1,27 +1,16 @@
+HashMap mapAccount = nullptr;
+CArray ConnectorArray = nullptr;
 void InitConnector(Connector pConnector)
 {
 	pConnector->SetHeadProtocol("inner","server","123456");
-	//网关链接后，设置路由链接的初始函数
-	pConnector->SetRouteInitScript("InitRouteConnector");
-
-}
-void InitRouteConnector(Connector pConnector)
-{
-	//一个客户端通过网关路由链接过来
 	pConnector->SetScriptLimit("Error_CannotRunScript",1);
 	pConnector->SetScriptLimit("RegisterAccount",1);
 	pConnector->SetScriptLimit("LoginAccount",1);
-	print("route connect");
 }
 void RegisterAccount(string strAccount, string password, Connector pConnector)
 {
-	CArray AccountArray = GetVal4Data("Data","Account");
-	if (CheckClassPoint(AccountArray) == 0)
-	{
-		AccountArray = NewArray();
-		SetVal2Data("Data","Account",AccountArray);
-	}
-	CAccount pAccount = AccountArray->GetVal(strAccount);
+	print("尝试注册账号:"+strAccount+" "+password);
+	CAccount pAccount = mapAccount->GetVal(strAccount);
 	if (CheckClassPoint(pAccount))
 	{
 		//账号已存在，注册失败
@@ -33,22 +22,18 @@ void RegisterAccount(string strAccount, string password, Connector pConnector)
 	pAccount->SetPassword(password);
 	pAccount->SetNickName(strAccount);
 
-	pAccount->SetConnect(pConnector);
-	pConnector->SetAccount(strAccount);
-	AccountArray->SetVal(strAccount,pAccount);
+	pAccount->SetVal("connect",pConnector);
+	pConnector->SetVal("account",pAccount);
+	mapAccount->SetVal(strAccount,pAccount);
 	//发送注册成功，登录成功
 	pConnector->RunScript(0,"LoginSuccess",pAccount);
 	pConnector->SetScriptLimit("Talk",1);
+	ConnectorArray->Add(pConnector);
 }
 void LoginAccount(string strAccount, string password, Connector pConnector)
 {
-	CArray AccountArray = GetVal4Data("Data","Account");
-	if (0 == CheckClassPoint(AccountArray))
-	{
-		AccountArray = NewArray();
-		SetVal2Data("Data","Account",AccountArray);
-	}
-	CAccount pAccount = AccountArray->GetVal(strAccount);
+	print("尝试登录账号:"+strAccount+" "+password);
+	CAccount pAccount = mapAccount->GetVal(strAccount);
 	if (0 == CheckClassPoint(pAccount))
 	{
 		//账号不存在，登录失败
@@ -62,10 +47,12 @@ void LoginAccount(string strAccount, string password, Connector pConnector)
 		return;
 	}
 
-	pAccount->SetConnect(pConnector);
-	pConnector->SetAccount(strAccount);
+	pAccount->SetVal("connect",pConnector);
+	pConnector->SetVal("account",pAccount);
+	mapAccount->SetVal(strAccount,pAccount);
 	pConnector->RunScript(0,"LoginSuccess",pAccount);
 	pConnector->SetScriptLimit("Talk",1);
+	ConnectorArray->Add(pConnector);
 }
 
 void Talk(string strContent, Connector pConnector)
@@ -73,33 +60,29 @@ void Talk(string strContent, Connector pConnector)
 
 	if (strContent != "")
 	{
-		CArray AccountArray = GetVal4Data("Data","Account");
-		if (CheckClassPoint(AccountArray))
+
+		CAccount pMainAccount = pConnector->GetVal("account");
+		int i = 0;
+		while (i < ConnectorArray->GetSize())
 		{
-			CAccount pMainAccount = AccountArray->GetVal(pConnector->GetAccount());
-			int i = 0;
-			while (i < AccountArray->GetSize())
+			Connector pAccClient = ConnectorArray->Get(i);
+
+			if (CheckClassPoint(pAccClient))
 			{
-				CAccount pAccount = AccountArray->GetValByIndex(i);
-				if (CheckClassPoint(pAccount))
-				{
-					Connector pAccClient = pAccount->GetConnect();
-					if (CheckClassPoint(pAccClient))
-					{
-						pAccClient->RunScript(0,"SendMessage",pMainAccount,strContent);
-					}
-				}
-				i = i + 1;
+				pAccClient->RunScript(0,"SendMessage",pMainAccount,strContent);
 			}
+		
+			i = i + 1;
 		}
+		
 	}
 }
 void main()
 {
 	//初始化数据
-	CData pData = GetData("Data");
-	//设置网关连来的端口
+	InitData("Data");
+	mapAccount = new HashMap;
+	ConnectorArray = new CArray;
 	SetListenPort(9999,"InitConnector");
-
 	print("启动完成");
 }
