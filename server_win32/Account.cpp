@@ -5,9 +5,9 @@
 CAccount::CAccount()
 {
 	INIT_SYNC_AND_DB_ATTRIBUTE_PRIMARY(1, Id);
-	INIT_SYNC_AND_DB_ATTRIBUTE(2, strNickName);
-	INIT_SYNC_AND_DB_ATTRIBUTE(3, strAccountName);
-	INIT_DB_ATTRIBUTE(4, strPassword);
+	INIT_SYNC_AND_DB_ATTRIBUTE_UNIQUE(2, strAccountName);
+	INIT_DB_ATTRIBUTE(3, strPassword);
+	INIT_SYNC_AND_DB_ATTRIBUTE(4, strNickName);
 
 	AddClassObject(this->GetScriptPointIndex(), this);
 

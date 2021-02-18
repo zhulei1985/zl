@@ -1643,6 +1643,94 @@ bool CRouteBackMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, 
 	return true;
 }
 
+void CRouteChangeMsgReceiveState::Clear()
+{
+	nOldConnectID = -1;
+	nNewConnectID = -1;
+}
+
+bool CRouteChangeMsgReceiveState::Recv(CScriptConnector*)
+{
+	std::vector<char> vOut;
+	int nPos = 0;
+	if (nOldConnectID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nOldConnectID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if (nNewConnectID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nNewConnectID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool CRouteChangeMsgReceiveState::Run(CBaseScriptConnector* pClient)
+{
+	pClient->ChangeRoute(nOldConnectID, nNewConnectID);
+	return true;
+}
+
+bool CRouteChangeMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+{
+	AddChar2Bytes(vBuff, E_ROUTE_CHANGE);
+	AddInt642Bytes(vBuff, nOldConnectID);
+	AddInt642Bytes(vBuff, nNewConnectID);
+	return true;
+}
+
+void CRouteRemoveMsgReceiveState::Clear()
+{
+	nConnectID = -1;
+}
+
+bool CRouteRemoveMsgReceiveState::Recv(CScriptConnector*)
+{
+	std::vector<char> vOut;
+	int nPos = 0;
+	if (nConnectID == -1)
+	{
+		if (m_GetData(vOut, 8))
+		{
+			nPos = 0;
+			nConnectID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool CRouteRemoveMsgReceiveState::Run(CBaseScriptConnector* pClient)
+{
+	pClient->RemoveRoute(nConnectID);
+	return true;
+}
+
+bool CRouteRemoveMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+{
+	AddChar2Bytes(vBuff, E_ROUTE_REMOVE);
+	AddInt642Bytes(vBuff, nConnectID);
+	return true;
+}
+
 CMsgReceiveMgr CMsgReceiveMgr::s_Instance;
 CBaseMsgReceiveState* CMsgReceiveMgr::CreateRceiveState(char cType)
 {
@@ -1677,6 +1765,12 @@ CBaseMsgReceiveState* CMsgReceiveMgr::CreateRceiveState(char cType)
 		break;
 	case E_ROUTE_BACK:
 		return new CRouteBackMsgReceiveState;
+		break;
+	case E_ROUTE_CHANGE:
+		return new CRouteChangeMsgReceiveState;
+		break;
+	case E_ROUTE_REMOVE:
+		return new CRouteRemoveMsgReceiveState;
 		break;
 	}
 	return nullptr;

@@ -16,6 +16,9 @@ enum E_MSG_TYPE
 
 	E_ROUTE_FRONT,//用于客户端发给服务器
 	E_ROUTE_BACK,//用于服务器发给客户端
+
+	E_ROUTE_CHANGE,//更换路由前端
+	E_ROUTE_REMOVE,//移除路由状态
 };
 
 class CScriptConnector;
@@ -407,6 +410,52 @@ public:
 protected:
 	//以下是读取时的临时变量
 	int nMsgType;
+};
+//E_ROUTE_CHANGE,//更换路由前端
+class CRouteChangeMsgReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CRouteChangeMsgReceiveState()
+	{
+		nOldConnectID = -1;
+		nNewConnectID = -1;
+	}
+	int GetType()
+	{
+		return E_ROUTE_CHANGE;
+	}
+	virtual void Clear();
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+
+public:
+	__int64 nOldConnectID;
+	__int64 nNewConnectID;
+protected:
+
+};
+//E_ROUTE_REMOVE,//移除路由状态
+class CRouteRemoveMsgReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CRouteRemoveMsgReceiveState()
+	{
+		nConnectID = -1;
+	}
+	int GetType()
+	{
+		return E_ROUTE_REMOVE;
+	}
+	virtual void Clear();
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+
+public:
+	__int64 nConnectID;
+protected:
+
 };
 
 class CMsgReceiveMgr

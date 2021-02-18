@@ -27,6 +27,11 @@ namespace zlscript
 	m_mapDBAttributes[#val] = &val; \
 	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index,this);
 
+#define INIT_SYNC_AND_DB_ATTRIBUTE_UNIQUE(index,val) \
+	m_mapSyncAttributes[index] = &val; \
+	m_mapDBAttributes[#val] = &val; \
+	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index,this);
+
 #define INIT_SYNC_AND_DB_ATTRIBUTE_PRIMARY(index,val) \
 	m_mapSyncAttributes[index] = &val; \
 	m_mapDBAttributes[#val] = &val; \

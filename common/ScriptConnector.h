@@ -10,6 +10,11 @@
 using namespace zlnetwork;
 using namespace zlscript;
 
+enum E_SCRIPT_EVENT_TYPE_CONNECT
+{
+	E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE = 100,//
+	E_SCRIPT_EVENT_TYPE_CONNECT_CHANGE,
+};
 class CBaseScriptConnector : public CScriptPointInterface, public CScriptExecFrame
 {
 public:
@@ -22,7 +27,7 @@ public:
 	int GetID2Script(CScriptRunState* pState);
 
 	int GetPort2Script(CScriptRunState* pState);
-
+	int Close2Script(CScriptRunState* pState);
 	int IsConnect2Script(CScriptRunState* pState);
 	int RunScript2Script(CScriptRunState* pState);
 
@@ -38,6 +43,8 @@ public:
 
 	int GetVal2Script(CScriptRunState* pState);
 	int SetVal2Script(CScriptRunState* pState);
+
+	int Merge2Script(CScriptRunState* pState);
 public:
 	//virtual __int64 GetID()
 	//{
@@ -46,7 +53,7 @@ public:
 	virtual int GetSocketPort() { return 0; }
 	virtual bool IsSocketClosed() { return true; }
 
-
+	virtual void Close(){}
 	virtual void OnInit();
 	virtual bool OnProcess();
 	virtual void OnDestroy();
@@ -62,6 +69,8 @@ public:
 	virtual void SendSyncClassData(__int64 classID, std::vector<char>& data);
 	virtual void SendRemoveSyncUp(__int64 classID);
 	virtual void SendRemoveSyncDown(__int64 classID);
+	virtual void SendRemoveRoute(__int64 nConnectID);
+	virtual void SendChangeRoute(__int64 oldid, __int64 newid);
 
 	virtual void EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventRunFun(__int64 nSendID, CScriptStack& ParmInfo);
@@ -74,6 +83,9 @@ public:
 
 	virtual void EventRemoveUpSync(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventRemoveDownSync(__int64 nSendID, CScriptStack& ParmInfo);
+
+	virtual void EventRemoveRoute(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventChangeRoute(__int64 nSendID, CScriptStack& ParmInfo);
 
 	virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
 
@@ -88,6 +100,8 @@ public:
 
 public:
 	virtual void SetRouteInitScript(const char*) {}
+	virtual void ChangeRoute(__int64 nOldId, __int64 nNewId){}
+	virtual void RemoveRoute(__int64 nId){}
 	virtual bool RouteMsg(CRouteFrontMsgReceiveState* pMsg) { return false; }
 protected:
 	std::unordered_map<std::string, StackVarInfo> m_mapData;
@@ -185,6 +199,8 @@ public:
 	//路由模式
 public:
 	void SetRouteInitScript(const char* pStr);
+	void ChangeRoute(__int64 nOldId, __int64 nNewId);
+	void RemoveRoute(__int64 nId);
 	bool RouteMsg(CRouteFrontMsgReceiveState* pMsg);
 
 protected:
@@ -199,6 +215,7 @@ public:
 	CScriptRouteConnector();
 
 public:
+	virtual void Close();
 	virtual void OnInit();
 	virtual bool OnProcess();
 	virtual void OnDestroy();
@@ -218,6 +235,7 @@ public:
 protected:
 	CScriptConnector* m_pMaster;
 	__int64 m_RouteID;
+	bool bRun;
 public:
 	//"我"是指本连接对应的进程
 //"我"要求"别人"执行脚本

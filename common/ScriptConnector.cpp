@@ -11,6 +11,7 @@ CBaseScriptConnector::CBaseScriptConnector()
 	RegisterClassFun(GetID, this, &CBaseScriptConnector::GetID2Script);
 	RegisterClassFun(GetPort, this, &CBaseScriptConnector::GetPort2Script);
 
+	RegisterClassFun(Close, this, &CBaseScriptConnector::Close2Script);
 	RegisterClassFun(IsConnect, this, &CBaseScriptConnector::IsConnect2Script);
 	RegisterClassFun(RunScript, this, &CBaseScriptConnector::RunScript2Script);
 	RegisterClassFun(SetVal, this, &CBaseScriptConnector::SetVal2Script);
@@ -38,6 +39,7 @@ void CBaseScriptConnector::Init2Script()
 	RegisterClassFun1("GetID", CBaseScriptConnector);
 	RegisterClassFun1("GetPort", CBaseScriptConnector);
 
+	RegisterClassFun1("Close", CBaseScriptConnector);
 	RegisterClassFun1("IsConnect", CBaseScriptConnector);
 	RegisterClassFun1("RunScript", CBaseScriptConnector);
 	RegisterClassFun1("SetVal", CBaseScriptConnector);
@@ -73,6 +75,17 @@ int CBaseScriptConnector::GetPort2Script(CScriptRunState* pState)
 
 	pState->ClearFunParam();
 	pState->PushVarToStack(GetSocketPort());
+	return ECALLBACK_FINISH;
+}
+int CBaseScriptConnector::Close2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	this->Close();
+	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
 int CBaseScriptConnector::IsConnect2Script(CScriptRunState* pState)
@@ -166,6 +179,12 @@ int CBaseScriptConnector::SetRoute2Script(CScriptRunState* pState)
 	{
 		return ECALLBACK_ERROR;
 	}
+	if (nRouteMode_ConnectID)
+	{
+		CScriptStack scriptParm;
+		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE, GetEventIndex(), scriptParm, nRouteMode_ConnectID);
+	}
+	nRouteMode_ConnectID = 0;
 	__int64 nClassIndex = pState->PopClassPointFormStack();
 	CScriptBasePointer* pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nClassIndex);
 	if (pPoint)
@@ -179,10 +198,7 @@ int CBaseScriptConnector::SetRoute2Script(CScriptRunState* pState)
 		pPoint->Unlock();
 		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
-	else
-	{
-		nRouteMode_ConnectID = 0;
-	}
+
 	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
@@ -276,6 +292,32 @@ int CBaseScriptConnector::SetVal2Script(CScriptRunState* pState)
 	return ECALLBACK_FINISH;
 }
 
+int CBaseScriptConnector::Merge2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	CScriptConnector* pMain = dynamic_cast<CScriptConnector*>(this);
+	CScriptConnector* pOld = nullptr;
+	__int64 nClassIndex = pState->PopClassPointFormStack();
+	CScriptBasePointer* pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nClassIndex);
+	if (pPoint)
+	{
+		pPoint->Lock();
+		pOld = dynamic_cast<CScriptConnector*>(pPoint->GetPoint());
+		if (pMain && pOld)
+		{
+			pMain->Merge(pOld);
+		}
+		pPoint->Unlock();
+		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
+	}
+	//TODO 两者必须都是CScriptConnector,否则报错
+	pState->ClearFunParam();
+	return ECALLBACK_FINISH;
+}
+
 void CBaseScriptConnector::OnInit()
 {
 	CScriptExecFrame::OnInit();
@@ -296,6 +338,10 @@ void CBaseScriptConnector::OnInit()
 
 	InitEvent(zlscript::E_SCRIPT_EVENT_REMOVE_UP_SYNC, std::bind(&CBaseScriptConnector::EventRemoveUpSync, this, std::placeholders::_1, std::placeholders::_2), false);
 	InitEvent(zlscript::E_SCRIPT_EVENT_REMOVE_DOWN_SYNC, std::bind(&CBaseScriptConnector::EventRemoveDownSync, this, std::placeholders::_1, std::placeholders::_2), false);
+
+	InitEvent(E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE, std::bind(&CBaseScriptConnector::EventRemoveRoute, this, std::placeholders::_1, std::placeholders::_2), false);
+	InitEvent(E_SCRIPT_EVENT_TYPE_CONNECT_CHANGE, std::bind(&CBaseScriptConnector::EventChangeRoute, this, std::placeholders::_1, std::placeholders::_2), false);
+
 }
 
 bool CBaseScriptConnector::OnProcess()
@@ -428,6 +474,23 @@ void CBaseScriptConnector::SendRemoveSyncDown(__int64 classID)
 	SendMsg(&msg);
 }
 
+void CBaseScriptConnector::SendRemoveRoute(__int64 nConnectID)
+{
+	CRouteRemoveMsgReceiveState msg;
+	msg.nConnectID = nConnectID;
+
+	SendMsg(&msg);
+}
+
+void CBaseScriptConnector::SendChangeRoute(__int64 oldid, __int64 newid)
+{
+	CRouteChangeMsgReceiveState msg;
+	msg.nOldConnectID = oldid;
+	msg.nNewConnectID = newid;
+
+	SendMsg(&msg);
+}
+
 
 void CBaseScriptConnector::EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
@@ -482,6 +545,19 @@ void CBaseScriptConnector::EventRemoveDownSync(__int64 nSendID, CScriptStack& Pa
 	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
 
 	SendRemoveSyncDown(nClassID);
+}
+
+void CBaseScriptConnector::EventRemoveRoute(__int64 nSendID, CScriptStack& ParmInfo)
+{
+	//__int64 nConnectID = ScriptStack_GetInt(ParmInfo);
+	SendRemoveRoute(nSendID);
+}
+
+void CBaseScriptConnector::EventChangeRoute(__int64 nSendID, CScriptStack& ParmInfo)
+{
+	__int64 nOldConnectID = ScriptStack_GetInt(ParmInfo);
+	//__int64 nNewConnectID = ScriptStack_GetInt(ParmInfo);
+	SendChangeRoute(nOldConnectID, nSendID);
 }
 
 
@@ -767,12 +843,24 @@ bool CScriptConnector::OnProcess()
 
 
 	std::map<__int64, CScriptRouteConnector*>::iterator it = m_mapRouteConnect.begin();
-	for (; it != m_mapRouteConnect.end(); it++)
+	for (; it != m_mapRouteConnect.end(); )
 	{
 		CScriptRouteConnector* pRoute = it->second;
 		if (pRoute)
 		{
-			pRoute->OnProcess();
+			if (!pRoute->OnProcess())
+			{
+				delete pRoute;
+				it = m_mapRouteConnect.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+		else
+		{
+			it = m_mapRouteConnect.erase(it);
 		}
 	}
 	return true;
@@ -917,6 +1005,14 @@ void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 	m_mapClassImage2Index = pOldConnect->m_mapClassImage2Index;
 	m_mapClassIndex2Image = pOldConnect->m_mapClassIndex2Image;
 
+	if (pOldConnect->nRouteMode_ConnectID)
+	{
+		CScriptStack scriptParm;
+		ScriptVector_PushVar(scriptParm, pOldConnect->GetEventIndex());
+		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_CHANGE, 
+			GetEventIndex(), scriptParm, nRouteMode_ConnectID);
+	}
+	nRouteMode_ConnectID = pOldConnect->nRouteMode_ConnectID;
 	m_mapRouteConnect = pOldConnect->m_mapRouteConnect;
 
 	pOldConnect->m_mapClassImage2Index.clear();
@@ -926,6 +1022,7 @@ void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 	pOldConnect->m_nEventListIndex = 0;
 
 	pOldConnect->m_mapRouteConnect.clear();
+	pOldConnect->nRouteMode_ConnectID = 0;
 }
 
 
@@ -1053,6 +1150,35 @@ void CScriptConnector::SetRouteInitScript(const char* pStr)
 	strRouteInitScript = pStr;
 }
 
+void CScriptConnector::ChangeRoute(__int64 nOldId, __int64 nNewId)
+{
+	auto it = m_mapRouteConnect.find(nOldId);
+	if (it != m_mapRouteConnect.end())
+	{
+		auto pRoute = it->second;
+		if (pRoute)
+		{
+			pRoute->SetRouteID(nNewId);
+			m_mapRouteConnect[nNewId] = pRoute;
+		}
+
+		m_mapRouteConnect.erase(it);
+	}
+}
+
+void CScriptConnector::RemoveRoute(__int64 nId)
+{
+	auto it = m_mapRouteConnect.find(nId);
+	if (it != m_mapRouteConnect.end())
+	{
+		auto pRoute = it->second;
+		if (pRoute)
+		{
+			pRoute->Close();
+		}
+	}
+}
+
 bool CScriptConnector::RouteMsg(CRouteFrontMsgReceiveState* pState)
 {
 	//CRouteFrontMsgReceiveState* pState = dynamic_cast<CRouteFrontMsgReceiveState*>(pMsg);
@@ -1086,6 +1212,12 @@ bool CScriptConnector::RouteMsg(CRouteFrontMsgReceiveState* pState)
 
 CScriptRouteConnector::CScriptRouteConnector()
 {
+	bRun = true;
+}
+
+void CScriptRouteConnector::Close()
+{
+	bRun = false;
 }
 
 void CScriptRouteConnector::OnInit()
@@ -1095,6 +1227,10 @@ void CScriptRouteConnector::OnInit()
 
 bool CScriptRouteConnector::OnProcess()
 {
+	if (!bRun)
+	{
+		return false;
+	}
 	CBaseScriptConnector::OnProcess();
 
 	//处理路由消息

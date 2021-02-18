@@ -2,6 +2,8 @@
 #include "SyncScriptPointInterface.h"
 CDataBase::CDataBase()
 {
+	AddClassObject(this->GetScriptPointIndex(), this);
+
 	RegisterClassFun(InitDB, this, &CDataBase::InitDB2Script);
 	RegisterClassFun(InitTable, this, &CDataBase::InitTable2Script);
 	RegisterClassFun(Query, this, &CDataBase::Query2Script);
@@ -11,7 +13,6 @@ CDataBase::CDataBase()
 
 	mysql_init(&mysql);
 
-	mysql_options(&mysql, MYSQL_OPT_RECONNECT,nullptr);
 }
 
 CDataBase::~CDataBase()
@@ -50,7 +51,11 @@ int CDataBase::InitDB2Script(CScriptRunState* pState)
 	{
 		bResult = 0;
 	}
-
+	else
+	{
+		char value = 1;
+		mysql_options(&mysql, MYSQL_OPT_RECONNECT, &value);
+	}
 	pState->ClearFunParam();
 	pState->PushVarToStack(bResult);
 	return ECALLBACK_FINISH;
@@ -68,7 +73,7 @@ int CDataBase::InitTable2Script(CScriptRunState* pState)
 	auto pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
 	if (pMgr)
 	{
-		auto pPoint = pMgr->New();
+		auto pPoint = pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
 		if (pPoint)
 		{
 			std::lock_guard<std::mutex> Lock(m_Lock);
@@ -78,65 +83,104 @@ int CDataBase::InitTable2Script(CScriptRunState* pState)
 			auto itAttr = attributes.begin();
 			for (; itAttr != attributes.end(); itAttr++)
 			{
+				auto pAttr = itAttr->second;
 				if (itAttr != attributes.begin())
 				{
 					strSql += ",";
 				}
 				strSql += itAttr->first;
-			}
-			strSql += ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;";
-			strSql += "DESC ";
-			strSql += strClassName;
-			strSql += ";";
-			//查询数据
-			MYSQL_RES* res;
-			MYSQL_ROW row;
-			mysql_query(&mysql, strSql.c_str());
-			//获取结果集
-			res = mysql_store_result(&mysql);
-			//检查表的字段
-			std::map<std::string, std::string> resultDic;
-			while (row = mysql_fetch_row(res))
-			{
-				resultDic[row[0]] = row[1];
-			}
-			mysql_free_result(res);
-			//auto attributes = pPoint->GetDBAttributes();
-			itAttr = attributes.begin();
-			for (; itAttr != attributes.end(); itAttr++)
-			{
-				auto pAttr = itAttr->second;
-				if (resultDic.find(itAttr->first) == resultDic.end())
+				strSql += " ";
+				strSql += pAttr->ToType();
+
+				if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
 				{
-					std::string sqlAddField = "ALTER TABLE ";
-					sqlAddField += strClassName;
-					sqlAddField += " ADD ";
-					sqlAddField += itAttr->first;
-					sqlAddField += " ";
-					if (pAttr->ToType() == "TEXT")
-					{
-						if ((pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
-							| pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
-						{
-							sqlAddField += "VARCHAR(128)";
-						}
-					}
-					else
-					{
-						sqlAddField += pAttr->ToType();
-					}
-					if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
-					{
-						sqlAddField += " NOT NULL PRIMARY KEY";
-					}
-					else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
-					{
-						sqlAddField += " UNIQUE";
-					}
-					mysql_query(&mysql, sqlAddField.c_str());
+					strSql += " NOT NULL PRIMARY KEY";
+				}
+				else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
+				{
+					strSql += " NOT NULL UNIQUE KEY";
 				}
 			}
+			//注意！！！mysql5.7以上会出现only_full_group_by问题，需要在mysql上设置好
+			strSql += ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;\n";
 
+			////查询数据
+			MYSQL_RES* res;
+			MYSQL_ROW row;
+			SCRIPT_PRINT("sql", "%s", strSql.c_str());
+			int queryResult = mysql_query(&mysql, strSql.c_str());
+			if (queryResult == 0)
+			{
+				strSql = "DESC ";
+				strSql += strClassName;
+				strSql += ";";
+				SCRIPT_PRINT("sql", "%s", strSql.c_str());
+				queryResult = mysql_query(&mysql, strSql.c_str());
+				if (queryResult == 0)
+				{
+					//获取结果集
+					res = mysql_store_result(&mysql);
+					//检查表的字段
+					std::map<std::string, std::string> resultDic;
+					if (res)
+					{
+						while (row = mysql_fetch_row(res))
+						{
+							resultDic[row[0]] = row[1];
+						}
+					}
+
+					mysql_free_result(res);
+
+					//auto attributes = pPoint->GetDBAttributes();
+					itAttr = attributes.begin();
+					for (; itAttr != attributes.end(); itAttr++)
+					{
+						auto pAttr = itAttr->second;
+						if (resultDic.find(itAttr->first) == resultDic.end())
+						{
+							std::string sqlAddField = "ALTER TABLE ";
+							sqlAddField += strClassName;
+							sqlAddField += " ADD ";
+							sqlAddField += itAttr->first;
+							sqlAddField += " ";
+							if (pAttr->ToType() == "TEXT")
+							{
+								if ((pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
+									| pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
+								{
+									sqlAddField += "VARCHAR(128)";
+								}
+							}
+							else
+							{
+								sqlAddField += pAttr->ToType();
+							}
+							if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
+							{
+								sqlAddField += " NOT NULL PRIMARY KEY";
+							}
+							else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
+							{
+								sqlAddField += " UNIQUE";
+							}
+							mysql_query(&mysql, sqlAddField.c_str());
+						}
+					}
+				}
+				else
+				{
+					//错误
+					const char* pStrError = mysql_error(&mysql);
+					SCRIPT_PRINT("sqlerror", "%s", pStrError);
+				}
+			}
+			else
+			{
+				//错误
+				const char *pStrError = mysql_error(&mysql);
+				SCRIPT_PRINT("sqlerror", "%s", pStrError);
+			}
 			pMgr->Release(pPoint);
 		}
 	}
@@ -159,7 +203,7 @@ int CDataBase::Query2Script(CScriptRunState* pState)
 	if (pMgr)
 	{
 		std::lock_guard<std::mutex> Lock(m_Lock);
-		auto pPoint = pMgr->New();
+		auto pPoint = pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
 		std::string strSql = "SELECT ";
 		auto attributes = pPoint->GetDBAttributes();
 		auto itAttr = attributes.begin();
@@ -181,26 +225,35 @@ int CDataBase::Query2Script(CScriptRunState* pState)
 		//查询数据
 		MYSQL_RES* res;
 		MYSQL_ROW row;
-		mysql_query(&mysql, strSql.c_str());
-		//获取结果集
-		res = mysql_store_result(&mysql);
-		//检查表的字段
-		if (row = mysql_fetch_row(res))
+		SCRIPT_PRINT("sql", "%s", strSql.c_str());
+		int queryResult = mysql_query(&mysql, strSql.c_str());
+		if (queryResult == 0)
 		{
-			itAttr = attributes.begin();
-			for (int i = 0; itAttr != attributes.end(); itAttr++,i++)
+			//获取结果集
+			res = mysql_store_result(&mysql);
+			//检查表的字段
+			if (row = mysql_fetch_row(res))
 			{
-				itAttr->second->SetVal(row[i]);
+				itAttr = attributes.begin();
+				for (int i = 0; itAttr != attributes.end(); itAttr++, i++)
+				{
+					itAttr->second->SetVal(row[i]);
+				}
 			}
+			else
+			{
+				//如果查询不成功
+				pMgr->Release(pPoint);
+				pPoint = nullptr;
+			}
+			mysql_free_result(res);
 		}
 		else
 		{
-			//如果查询不成功
-			pMgr->Release(pPoint);
-			pPoint = nullptr;
+			//错误
+			const char* pStrError = mysql_error(&mysql);
+			SCRIPT_PRINT("sqlerror", "%s", pStrError);
 		}
-		mysql_free_result(res);		
-
 		pState->ClearFunParam();
 		pState->PushClassPointToStack(pPoint);
 		return ECALLBACK_FINISH;
@@ -224,7 +277,7 @@ int CDataBase::Save2Script(CScriptRunState* pState)
 	if (pPoint)
 	{
 		pPoint->Lock();
-		const char *pClassName = pPoint->ClassName();
+		const char* pClassName = pPoint->ClassName();
 		if (pClassName)
 			strHeadSql += pClassName;
 		strHeadSql += "(";
@@ -257,7 +310,14 @@ int CDataBase::Save2Script(CScriptRunState* pState)
 	{
 		std::string strSql = strHeadSql + strValSql;
 		std::lock_guard<std::mutex> Lock(m_Lock);
-		mysql_query(&mysql, strSql.c_str());
+		SCRIPT_PRINT("sql", "%s", strSql.c_str());
+		int queryResult = mysql_query(&mysql, strSql.c_str());
+		if (queryResult != 0)
+		{
+			//错误
+			const char* pStrError = mysql_error(&mysql);
+			SCRIPT_PRINT("sqlerror", "%s", pStrError);
+		}
 	}
 	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
@@ -269,11 +329,14 @@ int CDataBase::Ping2Script(CScriptRunState* pState)
 	{
 		return ECALLBACK_ERROR;
 	}
+	int nResult = 1;
 	if (m_Lock.try_lock())
 	{
-		mysql_ping(&mysql);
+		nResult = mysql_ping(&mysql);
 		m_Lock.unlock();
 	}
+	pState->ClearFunParam();
+	pState->PushVarToStack(nResult);
 	return ECALLBACK_FINISH;
 }
 
@@ -284,7 +347,7 @@ int CDataBase::Close2Scipt(CScriptRunState* pState)
 		return ECALLBACK_ERROR;
 	}
 	std::lock_guard<std::mutex> Lock(m_Lock);
-	
+
 	mysql_close(&mysql);
 	return ECALLBACK_FINISH;
 }
