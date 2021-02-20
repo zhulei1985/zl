@@ -364,7 +364,7 @@ namespace zlscript
 	bool CSyncScriptPointInterface::CheckUpSyncProcess(__int64 processId)
 	{
 		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
-		auto itOld = m_mapUpSyncProcess.find(m_nProcessID);
+		auto itOld = m_mapUpSyncProcess.find(processId);
 		if (itOld != m_mapUpSyncProcess.end())
 		{
 			return true;
@@ -374,7 +374,7 @@ namespace zlscript
 	void CSyncScriptPointInterface::RemoveUpSyncProcess(__int64 processId)
 	{
 		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
-		auto itOld = m_mapUpSyncProcess.find(m_nProcessID);
+		auto itOld = m_mapUpSyncProcess.find(processId);
 		if (itOld != m_mapUpSyncProcess.end())
 		{
 			m_mapUpSyncProcess.erase(itOld);
