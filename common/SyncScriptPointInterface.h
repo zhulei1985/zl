@@ -114,10 +114,13 @@ namespace zlscript
 		bool CheckDownSyncProcess(__int64);
 		void RemoveDownSyncProcess(__int64 processId);
 
-		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, bool bAll = true);
+		virtual bool AddAllData2Bytes(std::vector<char>& vBuff);
+		virtual bool AddUpdateData2Bytes(std::vector<char>& vBuff);
 		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);
 
 		void ChangeScriptAttribute(short flag, CBaseScriptClassAttribute* pAttr);
+	protected:
+		void ClearUpdateSyncAttibute();
 	protected:
 		int m_nRootServerID;//根节点所在服务器ID
 		__int64 m_nRootClassID;//本实例在根节点上的ID
@@ -133,12 +136,14 @@ namespace zlscript
 
 		std::map<unsigned short, CBaseScriptClassAttribute*> m_mapSyncAttributes;
 		
-		std::set<unsigned short> m_setUpdateSyncAttibute;
+		std::set<CBaseScriptClassAttribute*> m_setUpdateSyncAttibute;
 
 		std::mutex m_SyncProcessLock;
+
+		std::mutex m_UpdateSyncAttLock;
 	};
 
-
+//type 值为0表示不会要求下级节点执行此类函数
 #define RegisterSyncClassFun(name, p, fun, type) \
 	{ \
 		struct CScript_##name##_ClassFunInfo :public CScriptBaseClassFunInfo \
