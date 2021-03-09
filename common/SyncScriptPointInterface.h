@@ -147,6 +147,8 @@ namespace zlscript
 	protected:
 		void ClearUpdateSyncAttibute();
 	protected:
+		void ClearUpdateSyncAttibute();
+	protected:
 		int m_nRootServerID;//根节点所在服务器ID
 		__int64 m_nRootClassID;//本实例在根节点上的ID
 		unsigned int m_nImageTier;//镜像的层数
