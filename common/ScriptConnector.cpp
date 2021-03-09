@@ -336,6 +336,8 @@ void CBaseScriptConnector::OnInit()
 	InitEvent(zlscript::E_SCRIPT_EVENT_UP_SYNC_DATA, std::bind(&CBaseScriptConnector::EventUpSyncData, this, std::placeholders::_1, std::placeholders::_2), false);
 	InitEvent(zlscript::E_SCRIPT_EVENT_DOWN_SYNC_DATA, std::bind(&CBaseScriptConnector::EventDownSyncData, this, std::placeholders::_1, std::placeholders::_2), false);
 
+	InitEvent(zlscript::E_SCRIPT_EVENT_RETURN_SYNC_FUN, std::bind(&CBaseScriptConnector::EventReturnSyncFun, this, std::placeholders::_1, std::placeholders::_2), false);
+
 	InitEvent(zlscript::E_SCRIPT_EVENT_REMOVE_UP_SYNC, std::bind(&CBaseScriptConnector::EventRemoveUpSync, this, std::placeholders::_1, std::placeholders::_2), false);
 	InitEvent(zlscript::E_SCRIPT_EVENT_REMOVE_DOWN_SYNC, std::bind(&CBaseScriptConnector::EventRemoveDownSync, this, std::placeholders::_1, std::placeholders::_2), false);
 
@@ -416,11 +418,12 @@ void CBaseScriptConnector::SendSyncClassMsg(std::string strClassName, CSyncScrip
 	SendMsg(&msg);
 }
 
-void CBaseScriptConnector::SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack)
+void CBaseScriptConnector::SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack, std::list<__int64> listRoute)
 {
 	CSyncUpMsgReceiveState msg;
 	msg.strFunName = strFunName;
 	msg.nClassID = classID;
+	msg.m_listRoute = listRoute;
 	//倒过来压栈
 	for (int i = stack.size() - 1; i >= 0; i--)
 	{
@@ -511,7 +514,22 @@ void CBaseScriptConnector::EventUpSyncFun(__int64 nSendID, CScriptStack& ParmInf
 {
 	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
 	std::string funName = ScriptStack_GetString(ParmInfo);
-	SyncUpClassFunRun(nClassID, funName, ParmInfo);
+	__int64 nRouteNum = ScriptStack_GetInt(ParmInfo);
+	std::list<__int64> listRoute;
+	if (nRouteNum == 1)
+	{
+		//路径第一个值是远程调用返回机制的返回值
+		__int64 nStateID = ScriptStack_GetInt(ParmInfo);
+		listRoute.push_back(AddReturnState(nSendID,nStateID));
+	}
+	else
+	{
+		for (__int64 i = 0; i < nRouteNum; i++)
+		{
+			listRoute.push_back(ScriptStack_GetInt(ParmInfo));
+		}
+	}
+	SyncUpClassFunRun(nClassID, funName, ParmInfo, listRoute);
 }
 
 void CBaseScriptConnector::EventDownSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
@@ -531,6 +549,19 @@ void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, CScriptStack& Parm
 	tagByteArray data;
 	ScriptStack_GetBinary(ParmInfo, data);
 	SendSyncClassData(nClassID, data);
+}
+
+void CBaseScriptConnector::EventReturnSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
+{
+	CSyncFunReturnMsgReceiveState msg;
+	__int64 nRouteNum = ScriptStack_GetInt(ParmInfo);
+	std::list<__int64> listRoute;
+	for (__int64 i = 0; i < nRouteNum; i++)
+	{
+		msg.m_listRoute.push_back(ScriptStack_GetInt(ParmInfo));
+	}
+	msg.m_scriptParm = ParmInfo;
+	SendMsg(&msg);
 }
 
 void CBaseScriptConnector::EventRemoveUpSync(__int64 nSendID, CScriptStack& ParmInfo)

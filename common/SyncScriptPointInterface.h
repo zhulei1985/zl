@@ -14,28 +14,52 @@ namespace zlscript
 		E_SCRIPT_EVENT_UP_SYNC_FUN,
 		E_SCRIPT_EVENT_DOWN_SYNC_FUN,
 
+		E_SCRIPT_EVENT_RETURN_SYNC_FUN,
+
 		E_SCRIPT_EVENT_REMOVE_UP_SYNC,
 		E_SCRIPT_EVENT_REMOVE_DOWN_SYNC,
 	};
 
-#define INIT_SYNC_ATTRIBUTE(index,val) \
-	m_mapSyncAttributes[index] = &val; \
-	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC,index,this);
+#define ATTR_SYNC_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_FLOAT(val,index) ATTR_BASE_FLOAT(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_DOUBLE(val,index) ATTR_BASE_DOUBLE(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_INT64_ARRAY(val,index) ATTR_BASE_INT64_ARRAY(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
 
-#define INIT_SYNC_AND_DB_ATTRIBUTE(index,val) \
-	m_mapSyncAttributes[index] = &val; \
-	m_mapDBAttributes[#val] = &val; \
-	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index,this);
+#define ATTR_SYNC_AND_DB_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
+#define ATTR_SYNC_AND_DB_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
+#define ATTR_SYNC_AND_DB_FLOAT(val,index) ATTR_BASE_FLOAT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
+#define ATTR_SYNC_AND_DB_DOUBLE(val,index) ATTR_BASE_DOUBLE(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
+#define ATTR_SYNC_AND_DB_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
+#define ATTR_SYNC_AND_DB_INT64_ARRAY(val,index) ATTR_BASE_INT64_ARRAY(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
 
-#define INIT_SYNC_AND_DB_ATTRIBUTE_UNIQUE(index,val) \
-	m_mapSyncAttributes[index] = &val; \
-	m_mapDBAttributes[#val] = &val; \
-	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index,this);
 
-#define INIT_SYNC_AND_DB_ATTRIBUTE_PRIMARY(index,val) \
-	m_mapSyncAttributes[index] = &val; \
-	m_mapDBAttributes[#val] = &val; \
-	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY,index,this);
+#define ATTR_SYNC_AND_DB_PRIMARY_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY,index);
+#define ATTR_SYNC_AND_DB_PRIMARY_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY,index);
+
+#define ATTR_SYNC_AND_DB_UNIQUE_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index);
+#define ATTR_SYNC_AND_DB_UNIQUE_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index);
+#define ATTR_SYNC_AND_DB_UNIQUE_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index);
+//
+//#define INIT_SYNC_ATTRIBUTE(index,val) \
+//	m_mapSyncAttributes[index] = &val; \
+//	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC,index,this);
+//
+//#define INIT_SYNC_AND_DB_ATTRIBUTE(index,val) \
+//	m_mapSyncAttributes[index] = &val; \
+//	m_mapDBAttributes[#val] = &val; \
+//	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index,this);
+//
+//#define INIT_SYNC_AND_DB_ATTRIBUTE_UNIQUE(index,val) \
+//	m_mapSyncAttributes[index] = &val; \
+//	m_mapDBAttributes[#val] = &val; \
+//	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index,this);
+//
+//#define INIT_SYNC_AND_DB_ATTRIBUTE_PRIMARY(index,val) \
+//	m_mapSyncAttributes[index] = &val; \
+//	m_mapDBAttributes[#val] = &val; \
+//	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY,index,this);
 
 
 	class CSyncScriptPointInterface : public CScriptPointInterface
@@ -51,8 +75,8 @@ namespace zlscript
 			m_mapSyncFunFlag[id] = type;
 		}
 		virtual int RunFun(int id, CScriptRunState* pState);
-		virtual int SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState);
-		virtual int SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState);
+		virtual int SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64>&);
+		virtual int SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64>&);
 
 		//同步类数据，如果有上层节点，向上层节点发送，没有上层节点，向下层节点发送
 		//void SyncClassData();
@@ -114,10 +138,14 @@ namespace zlscript
 		bool CheckDownSyncProcess(__int64);
 		void RemoveDownSyncProcess(__int64 processId);
 
-		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, bool bAll = true);
+		virtual bool AddAllData2Bytes(std::vector<char>& vBuff);
+		virtual bool AddUpdateData2Bytes(std::vector<char>& vBuff);
 		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);
 
 		void ChangeScriptAttribute(short flag, CBaseScriptClassAttribute* pAttr);
+		void RegisterScriptClassAttr(short flag, CBaseScriptClassAttribute* pAttr);
+	protected:
+		void ClearUpdateSyncAttibute();
 	protected:
 		int m_nRootServerID;//根节点所在服务器ID
 		__int64 m_nRootClassID;//本实例在根节点上的ID
@@ -133,12 +161,14 @@ namespace zlscript
 
 		std::map<unsigned short, CBaseScriptClassAttribute*> m_mapSyncAttributes;
 		
-		std::set<unsigned short> m_setUpdateSyncAttibute;
+		std::set<CBaseScriptClassAttribute*> m_setUpdateSyncAttibute;
 
 		std::mutex m_SyncProcessLock;
+
+		std::mutex m_UpdateSyncAttLock;
 	};
 
-
+//type 值为0表示不会要求下级节点执行此类函数
 #define RegisterSyncClassFun(name, p, fun, type) \
 	{ \
 		struct CScript_##name##_ClassFunInfo :public CScriptBaseClassFunInfo \

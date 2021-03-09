@@ -38,9 +38,9 @@ namespace zlscript
 				//获取函数名
 				int nResult = 0;
 				//std::lock_guard<std::mutex> _lock{ *m_FunLock };
-				m_FunLock.lock();
-				std::map<int, CScriptBaseClassFunInfo*>::iterator it = m_mapScriptClassFun.find(id);
-				if (it != m_mapScriptClassFun.end())
+				//m_FunLock.lock();
+				auto it = m_mapScriptClassFun.find(id);
+				if (it != m_mapScriptClassFun.cend())
 				{
 					CScriptBaseClassFunInfo* pOld = it->second;
 					if (pOld)
@@ -48,14 +48,17 @@ namespace zlscript
 						funName = pOld->GetFunName();
 					}
 				}
-				m_FunLock.unlock();
+				//m_FunLock.unlock();
 				ScriptVector_PushVar(tempStack, this);
 				ScriptVector_PushVar(tempStack, funName.c_str());
+				ScriptVector_PushVar(tempStack, (__int64)1);
+				ScriptVector_PushVar(tempStack, pState->GetId());
 				pState->CopyToStack(&tempStack, pState->GetParamNum());
-				std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+				//std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 				if (!CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, pState->m_pMachine->GetEventIndex(), tempStack, GetProcessID()))
 				{
-
+					pState->ClearFunParam();
+					return ECALLBACK_ERROR;
 				}
 				//CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(GetProcessID());
 				//if (pClient)
@@ -63,7 +66,7 @@ namespace zlscript
 				//	pClient->SyncUpClassFunRun(this, funName, tempStack);
 				//}
 				pState->ClearFunParam();
-				return ECALLBACK_FINISH;
+				return ECALLBACK_WAITING;
 			}
 			else
 			{
@@ -73,10 +76,9 @@ namespace zlscript
 
 				//先执行本地数据
 				int nResult = 0;
-				//std::lock_guard<std::mutex> _lock{ *m_FunLock };
-				m_FunLock.lock();
-				std::map<int, CScriptBaseClassFunInfo*>::iterator it = m_mapScriptClassFun.find(id);
-				if (it != m_mapScriptClassFun.end())
+				//m_FunLock.lock();
+				auto it = m_mapScriptClassFun.find(id);
+				if (it != m_mapScriptClassFun.cend())
 				{
 					CScriptBaseClassFunInfo* pOld = it->second;
 					if (pOld)
@@ -85,7 +87,7 @@ namespace zlscript
 						funName = pOld->GetFunName();
 					}
 				}
-				m_FunLock.unlock();
+				//m_FunLock.unlock();
 
 				if (itSyncFlag->second >= 1)
 				{
@@ -119,14 +121,20 @@ namespace zlscript
 					}
 				}
 
-				else if (m_setUpdateSyncAttibute.size() > 0)
+				else
 				{
-					//同步属性有更新
-					std::vector<char> vBuff;
-					AddAllData2Bytes(vBuff, false);
-					int pos = 0;
-					SyncDownClassData(&vBuff[0], pos, vBuff.size());
-					m_setUpdateSyncAttibute.clear();
+					m_UpdateSyncAttLock.lock();
+					if (!m_setUpdateSyncAttibute.empty())
+					{
+						//同步属性有更新
+						std::vector<char> vBuff;
+						AddUpdateData2Bytes(vBuff);
+						int pos = 0;
+						SyncDownClassData(&vBuff[0], pos, vBuff.size());
+						//m_setUpdateSyncAttibute.clear();
+						ClearUpdateSyncAttibute();
+					}
+					m_UpdateSyncAttLock.unlock();
 				}
 
 				return nResult;
@@ -137,16 +145,21 @@ namespace zlscript
 
 		return CScriptPointInterface::RunFun(id, pState);
 	}
-	int CSyncScriptPointInterface::SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState)
+	int CSyncScriptPointInterface::SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64> &listRoute)
 	{
 		if (GetProcessID() > 0)//不是根节点，继续往上发送
 		{
 			CScriptStack tempStack;
 			ScriptVector_PushVar(tempStack, this);
 			ScriptVector_PushVar(tempStack, strFun.c_str());
+			ScriptVector_PushVar(tempStack, (__int64)listRoute.size());
+			for (auto it = listRoute.begin(); it != listRoute.end(); it++)
+			{
+				ScriptVector_PushVar(tempStack, *it);
+			}
 			pState->CopyToStack(&tempStack, pState->GetParamNum());
 
-			std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+			//std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 			if (!CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, 0, tempStack, GetProcessID()))
 			{
 
@@ -160,10 +173,10 @@ namespace zlscript
 
 			return ECALLBACK_FINISH;
 		}
-		return SyncDownRunFun(nClassType, strFun, pState);
+		return SyncDownRunFun(nClassType, strFun, pState, listRoute);
 	}
 
-	int CSyncScriptPointInterface::SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState)
+	int CSyncScriptPointInterface::SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64> &listRoute)
 	{
 		std::string funName;
 		CScriptStack parmStack;
@@ -174,10 +187,10 @@ namespace zlscript
 		//std::lock_guard<std::mutex> _lock{ *m_FunLock };
 		int index = CScriptSuperPointerMgr::GetInstance()->GetClassFunIndex(nClassType, strFun);
 		bool bNeedSyncDown = false;
-		m_FunLock.lock();
+		//m_FunLock.lock();
 
-		std::map<int, CScriptBaseClassFunInfo*>::iterator it = m_mapScriptClassFun.find(index);
-		if (it != m_mapScriptClassFun.end())
+		auto it = m_mapScriptClassFun.find(index);
+		if (it != m_mapScriptClassFun.cend())
 		{
 			CScriptBaseClassFunInfo* pOld = it->second;
 			if (pOld)
@@ -186,7 +199,28 @@ namespace zlscript
 				funName = pOld->GetFunName();
 			}
 		}
-		m_FunLock.unlock();
+
+		if (listRoute.size() > 0)
+		{
+			//发送同步返回消息
+			__int64 nEventIndex = listRoute.back();
+			listRoute.pop_back();
+			CScriptStack returnStack;
+
+			//TODO 压入剩余路径
+			ScriptVector_PushVar(returnStack, (__int64)listRoute.size());
+			for (auto it = listRoute.begin(); it != listRoute.end(); it++)
+			{
+				ScriptVector_PushVar(returnStack, *it);
+			}
+			//TODO 压入返回值
+			pState->CopyToStack(&returnStack, 1);
+			if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN_SYNC_FUN, 0, returnStack, nEventIndex))
+			{
+			}
+		}
+
+		//m_FunLock.unlock();
 
 		CScriptStack tempStack;
 		ScriptVector_PushVar(tempStack, this);
@@ -210,6 +244,7 @@ namespace zlscript
 						Syncit++;
 						continue;
 					}
+
 					if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_DOWN_SYNC_FUN, 0, tempStack, Syncit->first))
 					{
 						Syncit++;
@@ -230,15 +265,18 @@ namespace zlscript
 			}
 			else
 			{
+				m_UpdateSyncAttLock.lock();
 				if (m_setUpdateSyncAttibute.size() > 0)
 				{
 					//同步属性有更新
 					std::vector<char> vBuff;
-					AddAllData2Bytes(vBuff, false);
+					AddUpdateData2Bytes(vBuff);
 					int pos = 0;
 					SyncDownClassData(&vBuff[0], pos, vBuff.size());
-					m_setUpdateSyncAttibute.clear();
+					//m_setUpdateSyncAttibute.clear();
+					ClearUpdateSyncAttibute();
 				}
+				m_UpdateSyncAttLock.unlock();
 			}
 
 		}
@@ -324,6 +362,7 @@ namespace zlscript
 	}
 	void CSyncScriptPointInterface::ClearSyncInfo()
 	{
+		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 		std::map<__int64, unsigned int>::iterator itUp = m_mapUpSyncProcess.begin();
 		CScriptStack tempStack;
 		ScriptVector_PushVar(tempStack, this);
@@ -436,7 +475,7 @@ namespace zlscript
 		}
 		m_SyncProcessLock.unlock();
 		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(this->GetScriptPointIndex());
-		if (pPoint->GetAutoReleaseMode() & SCRIPT_NO_DOWN_SYNC_AUTO_RELEASE )
+		if (pPoint->GetAutoReleaseMode() & SCRIPT_NO_DOWN_SYNC_AUTO_RELEASE)
 		{
 			if (pPoint->m_nScriptUseCount == 0)
 			{
@@ -446,48 +485,46 @@ namespace zlscript
 		}
 		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
-	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff, bool bAll)
+	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff)
 	{
-		std::lock_guard<std::mutex> Lock(m_FunLock);
-		if (bAll)
+		//std::lock_guard<std::mutex> Lock(m_FunLock);
+
+		AddUShort2Bytes(vBuff, m_mapSyncAttributes.size());
+		auto it = m_mapSyncAttributes.cbegin();
+		for (; it != m_mapSyncAttributes.cend(); it++)
 		{
-			AddUShort2Bytes(vBuff, m_mapSyncAttributes.size());
-			auto it = m_mapSyncAttributes.begin();
-			for (; it != m_mapSyncAttributes.end(); it++)
+			CBaseScriptClassAttribute* att = it->second;
+			if (att)
 			{
-				CBaseScriptClassAttribute* att = it->second;
-				if (att)
-				{
-					AddUShort2Bytes(vBuff, it->first);
-					//AddUChar2Bytes(vBuff, att->type);
-					att->AddData2Bytes(vBuff);
-				}
+				AddUShort2Bytes(vBuff, it->first);
+				//AddUChar2Bytes(vBuff, att->type);
+				att->AddData2Bytes(vBuff);
 			}
 		}
-		else
+
+		return true;
+	}
+	bool CSyncScriptPointInterface::AddUpdateData2Bytes(std::vector<char>& vBuff)
+	{
+		//在此函数之外加锁
+		//std::lock_guard<std::mutex> Lock(m_UpdateSyncAttLock);
+		AddUShort2Bytes(vBuff, m_setUpdateSyncAttibute.size());
+		auto it = m_setUpdateSyncAttibute.begin();
+		for (; it != m_setUpdateSyncAttibute.end(); it++)
 		{
-			AddUShort2Bytes(vBuff, m_setUpdateSyncAttibute.size());
-			auto it = m_setUpdateSyncAttibute.begin();
-			for (; it != m_setUpdateSyncAttibute.end(); it++)
+			CBaseScriptClassAttribute* att = *it;
+			if (att)
 			{
-				auto itAtt = m_mapSyncAttributes.find(*it);
-				if (itAtt != m_mapSyncAttributes.end())
-				{
-					CBaseScriptClassAttribute* att = itAtt->second;
-					if (att)
-					{
-						AddUShort2Bytes(vBuff, itAtt->first);
-						//AddUChar2Bytes(vBuff, att->type);
-						att->AddData2Bytes(vBuff);
-					}
-				}
+				AddUShort2Bytes(vBuff, att->m_index);
+				//AddUChar2Bytes(vBuff, att->type);
+				att->AddChangeData2Bytes(vBuff);
 			}
 		}
 		return true;
 	}
 	bool CSyncScriptPointInterface::DecodeData4Bytes(char* pBuff, int& pos, unsigned int len)
 	{
-		std::lock_guard<std::mutex> Lock(m_FunLock);
+		//std::lock_guard<std::mutex> Lock(m_FunLock);
 		unsigned short size = DecodeBytes2Short(pBuff, pos, len);
 
 		for (unsigned short i = 0; i < size; i++)
@@ -495,7 +532,7 @@ namespace zlscript
 			unsigned short index = DecodeBytes2Short(pBuff, pos, len);
 			//char type = DecodeBytes2Char(pBuff, pos, len);
 			auto it = m_mapSyncAttributes.find(index);
-			if (it != m_mapSyncAttributes.end())
+			if (it != m_mapSyncAttributes.cend())
 			{
 				CBaseScriptClassAttribute* att = it->second;
 				if (att)
@@ -510,11 +547,35 @@ namespace zlscript
 	void CSyncScriptPointInterface::ChangeScriptAttribute(short flag, CBaseScriptClassAttribute* pAttr)
 	{
 		CScriptPointInterface::ChangeScriptAttribute(flag, pAttr);
-
+		std::lock_guard<std::mutex> Lock(m_UpdateSyncAttLock);
 		if (flag & CBaseScriptClassAttribute::E_FLAG_SYNC)
 		{
 			if (pAttr)
-				m_setUpdateSyncAttibute.insert(pAttr->m_index);
+				m_setUpdateSyncAttibute.insert(pAttr);
 		}
+	}
+	void CSyncScriptPointInterface::RegisterScriptClassAttr(short flag, CBaseScriptClassAttribute* pAttr)
+	{
+		CScriptPointInterface::RegisterScriptClassAttr(flag, pAttr);
+		if (flag & CBaseScriptClassAttribute::E_FLAG_SYNC)
+		{
+			if (pAttr)
+				m_mapSyncAttributes[pAttr->m_index] = pAttr;
+		}
+	}
+	void CSyncScriptPointInterface::ClearUpdateSyncAttibute()
+	{
+		//在此函数之外加锁
+		//std::lock_guard<std::mutex> Lock(m_UpdateSyncAttLock);
+		auto it = m_setUpdateSyncAttibute.begin();
+		for (; it != m_setUpdateSyncAttibute.end(); it++)
+		{
+			CBaseScriptClassAttribute* att = *it;
+			if (att)
+			{
+				att->ClearChangeFlag();
+			}
+		}
+		m_setUpdateSyncAttibute.clear();
 	}
 }

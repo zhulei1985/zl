@@ -11,6 +11,8 @@ enum E_MSG_TYPE
 	E_SYNC_DOWN_PASSAGE,//下行同步通道
 	E_SYNC_UP_PASSAGE,//上行同步通道
 
+	E_SYNC_FUN_RETURN,//同步函数交由根节点执行后，需要向调用的子节点发送返回值
+
 	E_SYNC_DOWN_REMOVE,//移除下行同步
 	E_SYNC_UP_REMOVE,//移除上行同步
 
@@ -217,7 +219,7 @@ private:
 
 	int nDataLen;
 };
-
+//需要记录到根节点的路径，以便根节点执行完了函数后将返回值传给发起调用的子节点
 class CSyncUpMsgReceiveState : public CBaseMsgReceiveState
 {
 public:
@@ -227,6 +229,7 @@ public:
 
 		nFunNameStringLen = -1;
 
+		nRouteNum = -1;
 		nScriptParmNum = -1;
 		nCurParmType = -1;
 		nStringLen = -1;
@@ -241,6 +244,7 @@ public:
 
 		nFunNameStringLen = -1;
 
+		nRouteNum = -1;
 		nScriptParmNum = -1;
 		nCurParmType = -1;
 		nStringLen = -1;
@@ -257,8 +261,11 @@ public:
 
 	std::string strFunName;
 	CScriptStack m_scriptParm;
+
+	std::list<__int64> m_listRoute;//路径
 protected:
 	//以下是读取时的临时变量
+	int nRouteNum;
 	int nFunNameStringLen;
 	int nScriptParmNum;
 	int nCurParmType;
@@ -312,7 +319,47 @@ protected:
 	int nStringLen;
 	std::string strClassName;
 };
+class CSyncFunReturnMsgReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CSyncFunReturnMsgReceiveState();
+	~CSyncFunReturnMsgReceiveState();
 
+	int GetType()
+	{
+		return E_SYNC_FUN_RETURN;
+	}
+	virtual void Clear()
+	{
+		nRouteNum = -1;
+		nScriptParmNum = -1;
+		nCurParmType = -1;
+		nStringLen = -1;
+		strClassName.clear();
+		while (m_scriptParm.size())
+			m_scriptParm.pop();
+		while (!m_scriptParm.empty())
+		{
+			m_scriptParm.pop();
+		}
+		m_listRoute.clear();
+	}
+
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+public:
+	CScriptStack m_scriptParm;
+	std::list<__int64> m_listRoute;//路径
+
+protected:
+	//以下是读取时的临时变量
+	int nRouteNum;
+	int nScriptParmNum;
+	int nCurParmType;
+	int nStringLen;
+	std::string strClassName;
+};
 //E_SYNC_DOWN_REMOVE,//移除下行同步
 class CSyncDownRemoveMsgReceiveState : public CBaseMsgReceiveState
 {

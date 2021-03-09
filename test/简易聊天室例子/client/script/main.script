@@ -55,6 +55,7 @@ void SetNick(string name, Connector pClient)
 	print("³¢ÊÔÉèÖÃêÇ³Æ");
 	//CAccount pAccount = GetVal4Data("Account","a");
 	pMyAccount->SetNickName(name);
+	print("ÉèÖÃêÇ³ÆÎª"+pMyAccount->GetNickName());
 }
 void main()
 {

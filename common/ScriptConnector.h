@@ -64,9 +64,10 @@ public:
 	virtual bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal) = 0;
 
 	virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
-	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
+	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack, std::list<__int64> listRoute);
 	virtual void SyncDownClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
 	virtual void SendSyncClassData(__int64 classID, std::vector<char>& data);
+	//virtual void SendReturnSyncFun(std::list<__int64> routeList, CScriptStack& stack);
 	virtual void SendRemoveSyncUp(__int64 classID);
 	virtual void SendRemoveSyncDown(__int64 classID);
 	virtual void SendRemoveRoute(__int64 nConnectID);
@@ -80,6 +81,8 @@ public:
 
 	virtual void EventUpSyncData(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo);
+
+	virtual void EventReturnSyncFun(__int64 nSendID, CScriptStack& ParmInfo);
 
 	virtual void EventRemoveUpSync(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventRemoveDownSync(__int64 nSendID, CScriptStack& ParmInfo);

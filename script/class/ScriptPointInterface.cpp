@@ -25,10 +25,11 @@ namespace zlscript
 	CScriptPointInterface::CScriptPointInterface()
 	{
 		m_nScriptPointIndex = 0;
+		m_pClassInfo = nullptr;
 	}
 	CScriptPointInterface::~CScriptPointInterface()
 	{
-		std::map<int, CScriptBaseClassFunInfo*>::iterator it = m_mapScriptClassFun.begin();
+		auto it = m_mapScriptClassFun.begin();
 		for (; it != m_mapScriptClassFun.end(); it++)
 		{
 			CScriptBaseClassFunInfo* pInfo = it->second;
@@ -95,10 +96,9 @@ namespace zlscript
 	int CScriptPointInterface::RunFun(int id, CScriptRunState* pState)
 	{
 		int nResult = 0;
-		//std::lock_guard<std::mutex> _lock{ *m_FunLock };
-		m_FunLock.lock();
-		std::map<int, CScriptBaseClassFunInfo*>::iterator it = m_mapScriptClassFun.find(id);
-		if (it != m_mapScriptClassFun.end())
+		//m_FunLock.lock();
+		auto it = m_mapScriptClassFun.find(id);
+		if (it != m_mapScriptClassFun.cend())
 		{
 			CScriptBaseClassFunInfo* pOld = it->second;
 			if (pOld)
@@ -106,8 +106,7 @@ namespace zlscript
 				nResult = pOld->RunFun(pState);
 			}
 		}
-		//std::lock_guard<std::mutex> _unlock{ *m_FunLock };
-		m_FunLock.unlock();
+		//m_FunLock.unlock();
 		return nResult;
 	}
 	CScriptPointInterface::CScriptPointInterface(const CScriptPointInterface& val)
@@ -162,6 +161,15 @@ namespace zlscript
 		if (flag & CBaseScriptClassAttribute::E_FLAG_DB)
 		{
 
+		}
+	}
+
+	void CScriptPointInterface::RegisterScriptClassAttr(short flag, CBaseScriptClassAttribute* pAttr)
+	{
+		if (flag & CBaseScriptClassAttribute::E_FLAG_DB)
+		{
+			if (pAttr)
+				m_mapDBAttributes[pAttr->m_strAttrName] = pAttr;
 		}
 	}
 
