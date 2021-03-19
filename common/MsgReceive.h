@@ -195,8 +195,9 @@ public:
 	CSyncClassDataReceiveState()
 	{
 		nClassID = -1;
-
+		nCurParmType = -1;
 		nClassNameStringLen = -1;
+		nClassPointNum = -1;
 		nDataLen = -1;
 
 		strClassName.clear();
@@ -213,10 +214,12 @@ public:
 	std::string strClassName;
 	__int64 nClassID;//类ID
 	std::vector<char> vData;//同步数据
+	std::vector<PointVarInfo> vClassPoint;
 private:
 	//以下是读取时的临时变量
 	int nClassNameStringLen;
-
+	int nCurParmType;
+	int nClassPointNum;
 	int nDataLen;
 };
 //需要记录到根节点的路径，以便根节点执行完了函数后将返回值传给发起调用的子节点

@@ -185,8 +185,8 @@ int CBaseScriptConnector::SetRoute2Script(CScriptRunState* pState)
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE, GetEventIndex(), scriptParm, nRouteMode_ConnectID);
 	}
 	nRouteMode_ConnectID = 0;
-	__int64 nClassIndex = pState->PopClassPointFormStack();
-	CScriptBasePointer* pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nClassIndex);
+	auto pointVal = pState->PopClassPointFormStack();
+	CScriptBasePointer* pPoint = pointVal.pPoint;
 	if (pPoint)
 	{
 		pPoint->Lock();
@@ -196,7 +196,6 @@ int CBaseScriptConnector::SetRoute2Script(CScriptRunState* pState)
 			nRouteMode_ConnectID = pConnector->GetEventIndex();
 		}
 		pPoint->Unlock();
-		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
 
 	pState->ClearFunParam();
@@ -300,8 +299,8 @@ int CBaseScriptConnector::Merge2Script(CScriptRunState* pState)
 	}
 	CScriptConnector* pMain = dynamic_cast<CScriptConnector*>(this);
 	CScriptConnector* pOld = nullptr;
-	__int64 nClassIndex = pState->PopClassPointFormStack();
-	CScriptBasePointer* pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nClassIndex);
+	auto pointVal = pState->PopClassPointFormStack();
+	CScriptBasePointer* pPoint = pointVal.pPoint;
 	if (pPoint)
 	{
 		pPoint->Lock();
@@ -311,7 +310,6 @@ int CBaseScriptConnector::Merge2Script(CScriptRunState* pState)
 			pMain->Merge(pOld);
 		}
 		pPoint->Unlock();
-		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
 	//TODO 两者必须都是CScriptConnector,否则报错
 	pState->ClearFunParam();
@@ -451,15 +449,15 @@ void CBaseScriptConnector::SyncDownClassFunRun(__int64 classID, std::string strF
 	SendMsg(&msg);
 }
 
-void CBaseScriptConnector::SendSyncClassData(__int64 classID, std::vector<char>&data)
-{
-	CSyncClassDataReceiveState msg;
-	msg.nClassID = classID;
-
-	msg.vData = data;
-	
-	SendMsg(&msg);
-}
+//void CBaseScriptConnector::SendSyncClassData(__int64 classID, std::vector<char>&data)
+//{
+//	CSyncClassDataReceiveState msg;
+//	msg.nClassID = classID;
+//
+//	msg.vData = data;
+//	
+//	SendMsg(&msg);
+//}
 
 void CBaseScriptConnector::SendRemoveSyncUp(__int64 classID)
 {
@@ -545,10 +543,31 @@ void CBaseScriptConnector::EventUpSyncData(__int64 nSendID, CScriptStack& ParmIn
 
 void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
+	CSyncClassDataReceiveState msg;
+	msg.nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
 	tagByteArray data;
-	ScriptStack_GetBinary(ParmInfo, data);
-	SendSyncClassData(nClassID, data);
+	ScriptStack_GetBinary(ParmInfo, msg.vData);
+	__int64 nNum = ScriptStack_GetInt(ParmInfo);
+	if (nNum > 0)
+	{
+		msg.vClassPoint.resize(nNum);
+		for (__int64 i = 0; i < nNum; i++)
+		{
+			auto& var = ParmInfo.top();
+			if (var.cType == EScriptVal_ClassPoint)
+			{
+				msg.vClassPoint[i] = var.pPoint;
+			}
+			else
+			{
+				msg.vClassPoint[i] = (__int64)0;
+			}
+			ParmInfo.pop();
+		}
+	}
+
+
+	SendMsg(&msg);
 }
 
 void CBaseScriptConnector::EventReturnSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
@@ -956,17 +975,17 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 		const char* pStr = StackVarInfo::s_binPool.GetBinary(pVal->Int64, size);
 		AddData2Bytes(vBuff, pStr, size);
 	}
-	case EScriptVal_ClassPointIndex:
+	case EScriptVal_ClassPoint:
 	{
-		AddChar2Bytes(vBuff, EScriptVal_ClassPointIndex);
-		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(pVal->Int64);
+		AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
+		auto pPoint = pVal->pPoint;
 		if (pPoint)
 		{
 			auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
 			if (pSyncPoint)
 			{
 				pPoint->Lock();
-				AddString2Bytes(vBuff, (char*)pPoint->ClassName());
+				//AddString2Bytes(vBuff, (char*)pPoint->ClassName());
 				if (pPoint->GetPoint())
 				{
 					//if (pSyncPoint->GetProcessID() == GetEventIndex())
@@ -998,12 +1017,61 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 				//错误，没有找到对象或是非同步性对象
 			}
 		}
-		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
 	break;
 	default:
 		AddChar2Bytes(vBuff, EScriptVal_None);
 		break;
+	}
+	return true;
+}
+
+bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal)
+{
+	if (!pVal)
+	{
+		return false;
+	}
+	AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
+	auto pPoint = pVal->pPoint;
+	if (pPoint)
+	{
+		auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+		if (pSyncPoint)
+		{
+			pPoint->Lock();
+			//AddString2Bytes(vBuff, (char*)pPoint->ClassName());
+			if (pPoint->GetPoint())
+			{
+				//if (pSyncPoint->GetProcessID() == GetEventIndex())
+				if (pSyncPoint->CheckUpSyncProcess(GetEventIndex()))
+				{
+					//如果这个类实例是本连接对应的镜像
+					AddChar2Bytes(vBuff, 0);
+					__int64 nImageIndex = GetImage4Index(pPoint->GetPoint()->GetScriptPointIndex());
+					AddInt642Bytes(vBuff, nImageIndex);
+				}
+				else
+				{
+					AddChar2Bytes(vBuff, 1);
+					if (!pSyncPoint->CheckDownSyncProcess(this->GetEventIndex()))
+					{
+						//新同步
+						pSyncPoint->AddDownSyncProcess(this->GetEventIndex());
+						//发送消息
+						SendSyncClassMsg(pPoint->ClassName(), pSyncPoint);
+					}
+					AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+				}
+				//AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+			}
+			pPoint->Unlock();
+		}
+		else
+		{
+			//错误，没有找到对象或是非同步性对象
+			return false;
+		}
 	}
 	return true;
 }
@@ -1316,6 +1384,15 @@ bool CScriptRouteConnector::SendMsg(CBaseMsgReceiveState* pMsg)
 }
 
 bool CScriptRouteConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal)
+{
+	if (m_pMaster)
+	{
+		return m_pMaster->AddVar2Bytes(vBuff, pVal);
+	}
+	return false;
+}
+
+bool CScriptRouteConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal)
 {
 	if (m_pMaster)
 	{

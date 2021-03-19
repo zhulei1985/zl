@@ -107,13 +107,16 @@
     <ClCompile Include="..\common\SyncScriptPointInterface.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\TempScriptRunState.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\script\class\zBinaryBuffer.cpp">
       <Filter>script</Filter>
     </ClCompile>
     <ClCompile Include="..\script\class\ScriptClassAttributes.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\script\class\StackVarInfo.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\script\class\TempScriptRunState.cpp">
       <Filter>script</Filter>
     </ClCompile>
   </ItemGroup>
@@ -258,9 +261,6 @@
     <ClInclude Include="..\common\sha1.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\TempScriptRunState.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\script\class\zBinaryBuffer.h">
       <Filter>script</Filter>
     </ClInclude>
@@ -269,6 +269,12 @@
     </ClInclude>
     <ClInclude Include="..\common\SyncScriptPointInterface.h">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\script\class\StackVarInfo.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\script\class\TempScriptRunState.h">
+      <Filter>script</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

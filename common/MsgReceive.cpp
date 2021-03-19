@@ -12,7 +12,7 @@ CBaseMsgReceiveState::~CBaseMsgReceiveState()
 bool CBaseMsgReceiveState::Send(CBaseScriptConnector* pClient)
 {
 	std::vector<char> m_vBuff;
-	AddAllData2Bytes(pClient,m_vBuff);
+	AddAllData2Bytes(pClient, m_vBuff);
 
 	pClient->SendMsg(&m_vBuff[0], m_vBuff.size());
 	return true;
@@ -192,33 +192,8 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 			nStringLen = -1;
 		}
 		break;
-		case EScriptVal_ClassPointIndex:
+		case EScriptVal_ClassPoint:
 		{
-
-			if (nStringLen == -1)
-			{
-				nPos = 0;
-				if (m_GetData(vOut, 4))
-				{
-					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-				}
-				else
-				{
-					return false;
-				}
-			}
-			if (nStringLen > 0 && strClassName.empty())
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = &vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
 
 			if (m_GetData(vOut, 9))
 			{
@@ -226,37 +201,30 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				if (pMgr)
+				PointVarInfo pointVar;
+				if (cType == 0)
 				{
-					CScriptPointInterface* pPoint = nullptr;
-					if (cType == 0)
-					{
-						//本地类实例
-						pPoint = pMgr->Get(nClassID);
-					}
-					else
-					{
-						//镜像类实例
-						//获取在本地的类实例索引
-						__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-						pPoint = pMgr->Get(nIndex);
-
-					}
-
-
-					ScriptVector_PushVar(m_scriptParm, pPoint);
+					//本地类实例
+					pointVar = nClassID;
 				}
+				else
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+
+					pointVar = nIndex;
+
+				}
+
+				//pPoint->Lock();
+				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
+				//pPoint->Unlock();
 			}
 			else
 			{
 				return false;
 			}
-
-			nStringLen = -1;
-			strClassName.clear();
 		}
 		break;
 		}
@@ -426,32 +394,8 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 			nStringLen = -1;
 		}
 		break;
-		case EScriptVal_ClassPointIndex:
+		case EScriptVal_ClassPoint:
 		{
-			if (nStringLen == -1)
-			{
-				if (m_GetData(vOut, 4))
-				{
-					nPos = 0;
-					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-				}
-				else
-				{
-					return false;
-				}
-			}
-			if (nStringLen > 0 && strClassName.empty())
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = &vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
 
 			if (m_GetData(vOut, 9))
 			{
@@ -459,35 +403,28 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
 
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				if (pMgr)
+				PointVarInfo pointVar;
+				if (cType == 0)
 				{
-					CScriptPointInterface* pPoint = nullptr;
-					if (cType == 0)
-					{
-						//本地类实例
-						pPoint = pMgr->Get(nClassID);
-					}
-					else
-					{
-						//镜像类实例
-						//获取在本地的类实例索引
-						__int64 nIndex = pClient->GetIndex4Image(nClassID);
-						pPoint = pMgr->Get(nIndex);
-					}
-
-
-					ScriptVector_PushVar(m_scriptParm, pPoint);
+					//本地类实例
+					pointVar = nClassID;
 				}
+				else
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+					pointVar = nIndex;
+				}
+
+				//pPoint->Lock();
+				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
+				//pPoint->Unlock();
 			}
 			else
 			{
 				return false;
 			}
-
-			nStringLen = -1;
-			strClassName.clear();
 		}
 		break;
 		}
@@ -502,7 +439,7 @@ bool CReturnMsgReceiveState::Run(CBaseScriptConnector* pClient)
 	//读取完成，执行结果
 	if (pClient)
 	{
-		pClient->ResultTo(m_scriptParm, nReturnID,0);
+		pClient->ResultTo(m_scriptParm, nReturnID, 0);
 	}
 	//CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN, 0, m_scriptParm, nEventListIndex);
 	return true;
@@ -638,11 +575,11 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 						{
 							pPoint = pMgr->Get(nIndex);
 						}
-						
+
 						//创建新的镜像类
 						if (pPoint == nullptr)
 						{
-							pPoint = pMgr->New(SCRIPT_NO_DOWN_SYNC_AUTO_RELEASE| SCRIPT_NO_USED_AUTO_RELEASE);
+							pPoint = pMgr->New(SCRIPT_NO_DOWN_SYNC_AUTO_RELEASE | SCRIPT_NO_USED_AUTO_RELEASE);
 							m_pPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint);
 							if (m_pPoint)
 							{
@@ -737,43 +674,7 @@ bool CSyncClassDataReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
 	int nPos = 0;
-	//if (nClassID == -1)
-	//{
-	//	if (m_GetData(vOut, 8))
-	//	{
-	//		nPos = 0;
-	//		nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-	//	}
-	//	else
-	//	{
-	//		return false;
-	//	}
-	//}
 
-	//if (nClassNameStringLen == -1)
-	//{
-	//	if (m_GetData(vOut, 4))
-	//	{
-	//		nPos = 0;
-	//		nClassNameStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-	//	}
-	//	else
-	//	{
-	//		return false;
-	//	}
-	//}
-	//if (nClassNameStringLen > 0 && strClassName.empty())
-	//{
-	//	if (m_GetData(vOut, nClassNameStringLen))
-	//	{
-	//		vOut.push_back('\0');
-	//		strClassName = (const char*)&vOut[0];
-	//	}
-	//	else
-	//	{
-	//		return false;
-	//	}
-	//}
 	if (nClassID == -1)
 	{
 		if (m_GetData(vOut, 8))
@@ -786,7 +687,70 @@ bool CSyncClassDataReceiveState::Recv(CScriptConnector* pClient)
 			return false;
 		}
 	}
-	
+
+	if (nClassPointNum == -1)
+	{
+		if (m_GetData(vOut, 4))
+		{
+			nPos = 0;
+			nClassPointNum = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+			vClassPoint.clear();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	while (vClassPoint.size() < nClassPointNum)
+	{
+		if (nCurParmType == -1)
+		{
+			nPos = 0;
+			if (m_GetData(vOut, 1))
+			{
+				nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		switch (nCurParmType)
+		{
+		case EScriptVal_ClassPoint:
+		{
+			if (m_GetData(vOut, 9))
+			{
+				nPos = 0;
+				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+				PointVarInfo pointVar;
+				if (cType == 0)
+				{
+					//本地类实例
+					pointVar = nClassID;
+				}
+				else
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+					pointVar = nIndex;
+				}
+				vClassPoint.push_back(pointVar);
+			}
+			return false;
+
+		}
+		break;
+		return false;
+		}
+		nCurParmType = -1;
+	}
+
+
 	if (nDataLen == -1)
 	{
 		if (m_GetData(vOut, 4))
@@ -811,6 +775,8 @@ bool CSyncClassDataReceiveState::Recv(CScriptConnector* pClient)
 	{
 		return true;
 	}
+
+
 	return false;
 }
 
@@ -819,7 +785,8 @@ bool CSyncClassDataReceiveState::Run(CBaseScriptConnector* pClient)
 	bool bResult = false;
 	__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
-	CScriptBasePointer* pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nIndex);
+	PointVarInfo pointVar = nIndex;
+	CScriptBasePointer* pPoint = pointVar.pPoint;
 	if (pPoint)
 	{
 		pPoint->Lock();
@@ -827,11 +794,11 @@ bool CSyncClassDataReceiveState::Run(CBaseScriptConnector* pClient)
 		if (pSyncPoint)
 		{
 			int pos = 0;
-			pSyncPoint->SyncDownClassData(&vData[0], pos, vData.size());
+
+			pSyncPoint->SyncDownClassData(&vData[0], pos, vData.size(), vClassPoint);
 			bResult = true;
 		}
 		pPoint->Unlock();
-		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 	}
 	return bResult;
 	//int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
@@ -857,8 +824,15 @@ bool CSyncClassDataReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient,
 {
 	AddChar2Bytes(vBuff, E_SYNC_CLASS_DATA);
 	AddInt642Bytes(vBuff, nClassID);
+
+	AddInt2Bytes(vBuff, vClassPoint.size());
+	for (unsigned int i = 0; i < vClassPoint.size(); i++)
+	{
+		pClient->AddVar2Bytes(vBuff, &vClassPoint[i]);
+	}
 	//AddString2Bytes(vBuff, (char*)strClassName.c_str());
 	AddData2Bytes(vBuff, vData);
+
 	return true;
 }
 
@@ -1044,71 +1018,36 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 			nStringLen = -1;
 		}
 		break;
-		case EScriptVal_ClassPointIndex:
+		case EScriptVal_ClassPoint:
 		{
-
-			if (nStringLen == -1)
-			{
-				nPos = 0;
-				if (m_GetData(vOut, 4))
-				{
-					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-				}
-				else
-				{
-					return false;
-				}
-			}
-			if (nStringLen > 0 && strClassName.empty())
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = &vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
 
 			if (m_GetData(vOut, 9))
 			{
 				nPos = 0;
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				if (pMgr)
+				PointVarInfo pointVar;
+				if (cType == 0)
 				{
-					CScriptPointInterface* pPoint = nullptr;
-					if (cType == 0)
-					{
-						//本地类实例
-						pPoint = pMgr->Get(nClassID);
-					}
-					else
-					{
-						//镜像类实例
-						//获取在本地的类实例索引
-						__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-						pPoint = pMgr->Get(nIndex);
-
-					}
-
-
-					ScriptVector_PushVar(m_scriptParm, pPoint);
+					//本地类实例
+					pointVar = nClassID;
 				}
+				else
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+					pointVar = nIndex;
+				}
+
+				//pPoint->Lock();
+				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
+				//pPoint->Unlock();
 			}
 			else
 			{
 				return false;
 			}
-
-			nStringLen = -1;
-			strClassName.clear();
 		}
 		break;
 		}
@@ -1125,21 +1064,19 @@ bool CSyncUpMsgReceiveState::Run(CBaseScriptConnector* pClient)
 	TempState.CopyFromStack(&m_scriptParm);
 	//下传过来的数据，说明接收方只是镜像
 	__int64 nIndex = nClassID;// pClient->GetIndex4Image(nClassID);
-	if (nIndex)
+
+	PointVarInfo pointVar = nIndex;
+	auto pPoint = pointVar.pPoint;
+	if (pPoint)
 	{
-		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nIndex);
-		if (pPoint)
+		pPoint->Lock();
+		auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+		if (pMaster)
 		{
-			pPoint->Lock();
-			auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
-			if (pMaster)
-			{
-				m_listRoute.push_back(pClient->GetEventIndex());
-				pMaster->SyncUpRunFun(pPoint->GetType(), strFunName, &TempState, m_listRoute);
-			}
-			pPoint->Unlock();
+			m_listRoute.push_back(pClient->GetEventIndex());
+			pMaster->SyncUpRunFun(pPoint->GetType(), strFunName, &TempState, m_listRoute);
 		}
-		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
+		pPoint->Unlock();
 	}
 	return true;
 }
@@ -1324,71 +1261,36 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 			nStringLen = -1;
 		}
 		break;
-		case EScriptVal_ClassPointIndex:
+		case EScriptVal_ClassPoint:
 		{
-
-			if (nStringLen == -1)
-			{
-				nPos = 0;
-				if (m_GetData(vOut, 4))
-				{
-					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-				}
-				else
-				{
-					return false;
-				}
-			}
-			if (nStringLen > 0 && strClassName.empty())
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = &vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
 
 			if (m_GetData(vOut, 9))
 			{
 				nPos = 0;
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				if (pMgr)
+				PointVarInfo pointVar;
+				if (cType == 0)
 				{
-					CScriptPointInterface* pPoint = nullptr;
-					if (cType == 0)
-					{
-						//本地类实例
-						pPoint = pMgr->Get(nClassID);
-					}
-					else
-					{
-						//镜像类实例
-						//获取在本地的类实例索引
-						__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-						pPoint = pMgr->Get(nIndex);
-
-					}
-
-
-					ScriptVector_PushVar(m_scriptParm, pPoint);
+					//本地类实例
+					pointVar = nClassID;
 				}
+				else
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+					pointVar = nIndex;
+				}
+
+				//pPoint->Lock();
+				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
+				//pPoint->Unlock();
 			}
 			else
 			{
 				return false;
 			}
-
-			nStringLen = -1;
-			strClassName.clear();
 		}
 		break;
 		}
@@ -1404,21 +1306,19 @@ bool CSyncDownMsgReceiveState::Run(CBaseScriptConnector* pClient)
 	TempState.CopyFromStack(&m_scriptParm);
 	//下传过来的数据，说明接收方只是镜像
 	__int64 nIndex = pClient->GetIndex4Image(nClassID);
-	if (nIndex)
+
+	PointVarInfo pointVar = nIndex;
+	auto pPoint = pointVar.pPoint;
+	if (pPoint)
 	{
-		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nIndex);
-		if (pPoint)
+		pPoint->Lock();
+		auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+		if (pMaster)
 		{
-			pPoint->Lock();
-			auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
-			if (pMaster)
-			{
-				std::list<__int64> listRoute;
-				pMaster->SyncDownRunFun(pPoint->GetType(), strFunName, &TempState, listRoute);
-			}
-			pPoint->Unlock();
+			std::list<__int64> listRoute;
+			pMaster->SyncDownRunFun(pPoint->GetType(), strFunName, &TempState, listRoute);
 		}
-		CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
+		pPoint->Unlock();
 	}
 	return true;
 }
@@ -1594,68 +1494,36 @@ bool CSyncFunReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 			nStringLen = -1;
 		}
 		break;
-		case EScriptVal_ClassPointIndex:
+		case EScriptVal_ClassPoint:
 		{
-			if (nStringLen == -1)
-			{
-				if (m_GetData(vOut, 4))
-				{
-					nPos = 0;
-					nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-				}
-				else
-				{
-					return false;
-				}
-			}
-			if (nStringLen > 0 && strClassName.empty())
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = &vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
 
 			if (m_GetData(vOut, 9))
 			{
 				nPos = 0;
 				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				if (pMgr)
+				PointVarInfo pointVar;
+				if (cType == 0)
 				{
-					CScriptPointInterface* pPoint = nullptr;
-					if (cType == 0)
-					{
-						//本地类实例
-						pPoint = pMgr->Get(nClassID);
-					}
-					else
-					{
-						//镜像类实例
-						//获取在本地的类实例索引
-						__int64 nIndex = pClient->GetIndex4Image(nClassID);
-						pPoint = pMgr->Get(nIndex);
-					}
-
-
-					ScriptVector_PushVar(m_scriptParm, pPoint);
+					//本地类实例
+					pointVar = nClassID;
 				}
+				else
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+					pointVar = nIndex;
+				}
+
+				//pPoint->Lock();
+				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
+				//pPoint->Unlock();
 			}
 			else
 			{
 				return false;
 			}
-
-			nStringLen = -1;
-			strClassName.clear();
 		}
 		break;
 		}
@@ -1741,16 +1609,16 @@ bool CSyncDownRemoveMsgReceiveState::Run(CBaseScriptConnector* pClient)
 	if (pClient)
 	{
 		__int64 nIndex = pClient->GetIndex4Image(nClassID);
-		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nIndex);
+		PointVarInfo pointVar = nIndex;
+		auto pPoint = pointVar.pPoint;
 		if (pPoint)
 		{
-			CSyncScriptPointInterface *pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+			CSyncScriptPointInterface* pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
 			if (pSyncPoint)
 			{
 				//发送者的down对应接收者的up
 				pSyncPoint->RemoveUpSyncProcess(pClient->GetEventIndex());
 			}
-			CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 		}
 		return true;
 	}
@@ -1786,7 +1654,8 @@ bool CSyncUpRemoveMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	if (pClient)
 	{
-		auto pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(nClassID);
+		PointVarInfo pointVar = nClassID;
+		auto pPoint = pointVar.pPoint;
 		if (pPoint)
 		{
 			CSyncScriptPointInterface* pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
@@ -1795,7 +1664,6 @@ bool CSyncUpRemoveMsgReceiveState::Run(CBaseScriptConnector* pClient)
 				//发送者的up对应接收者的down
 				pSyncPoint->RemoveDownSyncProcess(pClient->GetEventIndex());
 			}
-			CScriptSuperPointerMgr::GetInstance()->ReturnPointer(pPoint);
 		}
 		return true;
 	}

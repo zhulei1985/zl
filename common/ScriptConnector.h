@@ -62,11 +62,12 @@ public:
 	virtual bool RunMsg(CBaseMsgReceiveState* pMsg);
 
 	virtual bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal) = 0;
+	virtual bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo *pVal) = 0;
 
 	virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
 	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack, std::list<__int64> listRoute);
 	virtual void SyncDownClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
-	virtual void SendSyncClassData(__int64 classID, std::vector<char>& data);
+	//virtual void SendSyncClassData(__int64 classID, std::vector<char>& data);
 	//virtual void SendReturnSyncFun(std::list<__int64> routeList, CScriptStack& stack);
 	virtual void SendRemoveSyncUp(__int64 classID);
 	virtual void SendRemoveSyncDown(__int64 classID);
@@ -165,6 +166,7 @@ public:
 	virtual bool SendMsg(CBaseMsgReceiveState* pMsg);
 
 	bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
+	bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal);
 
 	void SetHeadProtocol(CBaseHeadProtocol* pProtocol);
 
@@ -226,6 +228,7 @@ public:
 	virtual bool SendMsg(CBaseMsgReceiveState *pMsg);
 
 	bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
+	bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal);
 
 public://同步类的镜像索引
 

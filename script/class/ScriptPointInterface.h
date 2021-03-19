@@ -90,6 +90,9 @@ namespace zlscript
 #define ATTR_BASE_DOUBLE(val,flag,index) CScriptDoubleAttribute val{#val,flag,index,this};
 #define ATTR_BASE_STR(val,flag,index) CScriptStringAttribute val{#val,flag,index,this};
 #define ATTR_BASE_INT64_ARRAY(val,flag,index) CScriptInt64ArrayAttribute val{#val,flag,index,this};
+#define ATTR_BASE_CLASS_POINT(val,flag,index) CScriptClassPointAttribute val{#val,flag,index,this};
+#define ATTR_BASE_CLASS_POINT_ARRAY(val,flag,index) CScriptClassPointArrayAttribute val{#val,flag,index,this};
+#define ATTR_BASE_CLASS_POINT_MAP(val,flag,index) CScriptInt64toClassPointMapAttribute val{#val,flag,index,this};
 
 #define ATTR_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_NONE,index);
 #define ATTR_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_NONE,index);
@@ -131,7 +134,8 @@ namespace zlscript
 		}
 
 		void SetFun(int id, CScriptBaseClassFunInfo* pInfo);
-		int RunFun(int id, CScriptRunState* pState);
+		virtual int RunFun(int id, CScriptRunState* pState);
+		//virtual int CallFun(const char*pFunName, CScriptStack &parms);
 
 		CScriptPointInterface(const CScriptPointInterface& val);
 		virtual CScriptPointInterface& operator=(const CScriptPointInterface& val);
@@ -142,6 +146,11 @@ namespace zlscript
 		}
 		virtual void ChangeScriptAttribute(short flag, CBaseScriptClassAttribute* pAttr);
 		virtual void RegisterScriptClassAttr(short flag, CBaseScriptClassAttribute* pAttr);
+
+		virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point) { return 0; }
+		virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index) { return PointVarInfo(); }
+
+		CScriptBaseClassFunInfo* GetClassFunInfo(int id);
 	protected:
 		//用于所有脚本可用的类实例索引，作用范围是本地
 		__int64 m_nScriptPointIndex;
@@ -151,7 +160,7 @@ namespace zlscript
 
 		std::map<std::string, CBaseScriptClassAttribute*> m_mapDBAttributes;
 
-		std::map<int, CScriptBaseClassFunInfo*> m_mapScriptClassFun;
+		std::vector<CScriptBaseClassFunInfo*> m_vecScriptClassFun;
 
 		std::mutex m_FunLock;
 		//std::shared_ptr<std::mutex> m_FunLock;

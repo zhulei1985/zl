@@ -26,6 +26,7 @@ namespace zlscript
 #define ATTR_SYNC_DOUBLE(val,index) ATTR_BASE_DOUBLE(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
 #define ATTR_SYNC_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
 #define ATTR_SYNC_INT64_ARRAY(val,index) ATTR_BASE_INT64_ARRAY(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_CLASS_POINT(val,index) ATTR_BASE_CLASS_POINT(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
 
 #define ATTR_SYNC_AND_DB_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
 #define ATTR_SYNC_AND_DB_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
@@ -74,14 +75,14 @@ namespace zlscript
 		{
 			m_mapSyncFunFlag[id] = type;
 		}
-		virtual int RunFun(int id, CScriptRunState* pState);
+		int RunFun(int id, CScriptRunState* pState);
 		virtual int SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64>&);
 		virtual int SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64>&);
 
 		//同步类数据，如果有上层节点，向上层节点发送，没有上层节点，向下层节点发送
 		//void SyncClassData();
 		//解析传来的同步数据，并向下层节点发送
-		void SyncDownClassData(const char* pBuff, int& pos, unsigned int len);
+		void SyncDownClassData(const char* pBuff, int& pos, unsigned int len, std::vector<PointVarInfo>& vClassPoint);
 
 		CSyncScriptPointInterface(const CSyncScriptPointInterface& val);
 		virtual CSyncScriptPointInterface& operator=(const CSyncScriptPointInterface& val);
@@ -144,8 +145,9 @@ namespace zlscript
 
 		void ChangeScriptAttribute(short flag, CBaseScriptClassAttribute* pAttr);
 		void RegisterScriptClassAttr(short flag, CBaseScriptClassAttribute* pAttr);
-	protected:
-		void ClearUpdateSyncAttibute();
+
+		virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point);
+		virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index);
 	protected:
 		void ClearUpdateSyncAttibute();
 	protected:
@@ -164,6 +166,9 @@ namespace zlscript
 		std::map<unsigned short, CBaseScriptClassAttribute*> m_mapSyncAttributes;
 		
 		std::set<CBaseScriptClassAttribute*> m_setUpdateSyncAttibute;
+
+		std::vector<PointVarInfo> m_vecSyncClassPoint;//需要同步的脚本类指针
+		std::vector<PointVarInfo> m_vecDecodeSyncClassPoint;//需要同步的脚本类指针
 
 		std::mutex m_SyncProcessLock;
 

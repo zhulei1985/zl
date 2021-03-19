@@ -20,8 +20,7 @@
 #include <list>
 #include <stack>
 #include <string>
-#include "zStringBuffer.h"
-#include "zBinaryBuffer.h"
+#include "StackVarInfo.h"
 #include "EScriptVariableType.h"
 #include "ScriptSuperPointer.h"
 
@@ -29,31 +28,6 @@
 
 namespace zlscript
 {
-	struct StackVarInfo
-	{
-		unsigned char cType;
-		unsigned char cExtend;
-		union
-		{
-			double Double;
-			__int64 Int64;
-			//const char *pStr;
-		};
-
-		StackVarInfo();
-		StackVarInfo(const StackVarInfo& cls);
-		~StackVarInfo();
-
-		void Clear();
-
-		//赋值重载
-		StackVarInfo& operator=(const StackVarInfo& cls);
-		bool operator==(const StackVarInfo& cls) const;
-
-		static zlscript::CStringPool s_strPool;
-		static zlscript::CBinaryPool s_binPool;
-	};
-
 	class CScriptStack
 	{
 	public:
@@ -141,7 +115,7 @@ namespace zlscript
 	}
 	inline std::string GetString_StackVar(StackVarInfo* pVar)
 	{
-		char strbuff[2048];
+		char strbuff[64];
 		memset(strbuff, 0, sizeof(strbuff));
 		if (pVar == nullptr)
 		{
@@ -162,7 +136,7 @@ namespace zlscript
 		{
 			const char* pStr = StackVarInfo::s_strPool.GetString(pVar->Int64);
 			if (pStr)
-				strcpy(strbuff, pStr);
+				return pStr;
 		}
 		break;
 		}
@@ -177,15 +151,46 @@ namespace zlscript
 		__int64 nReturn = 0;
 		switch (pVar->cType)
 		{
-		case EScriptVal_ClassPointIndex:
+		//case EScriptVal_ClassPointIndex:
+		//{
+		//	nReturn = pVar->Int64;
+		//}
+		//break;
+		case EScriptVal_ClassPoint:
 		{
-			nReturn = pVar->Int64;
+			if (pVar->pPoint)
+			{
+				nReturn = pVar->pPoint->GetID();
+			}
 		}
 		break;
 		}
 		return nReturn;
 	}
+	inline PointVarInfo GetPoint_StackVar(StackVarInfo* pVar)
+	{
+		if (pVar == nullptr)
+		{
+			return PointVarInfo();
+		}
 
+		switch (pVar->cType)
+		{
+		//case EScriptVal_ClassPointIndex:
+		//{
+		//	//nReturn = pVar->Int64;
+		//	return PointVarInfo(pVar->Int64);
+		//}
+		//break;
+		case EScriptVal_ClassPoint:
+		{
+			//pReturn = pVar->pPoint;
+			return PointVarInfo(pVar->pPoint);
+		}
+		break;
+		}
+		return PointVarInfo();
+	}
 
 	inline __int64 ScriptStack_GetInt(CScriptStack& Stack)
 	{
@@ -303,13 +308,44 @@ namespace zlscript
 		__int64 nReturn = 0;
 		switch (var.cType)
 		{
-		case EScriptVal_ClassPointIndex:
-			nReturn = var.Int64;
-			break;
+		//case EScriptVal_ClassPointIndex:
+		//	nReturn = var.Int64;
+		//	break;
+		case EScriptVal_ClassPoint:
+		{
+			if (var.pPoint)
+			{
+				nReturn = var.pPoint->GetID();
+			}
+		}
+		break;
 		}
 
 		Stack.pop();
 		return nReturn;
+	}
+	inline PointVarInfo ScriptStack_GetClassPoint(CScriptStack& Stack)
+	{
+		if (Stack.empty())
+		{
+			return PointVarInfo();
+		}
+		StackVarInfo& var = Stack.top();
+		PointVarInfo stReturn;
+		switch (var.cType)
+		{
+		//case EScriptVal_ClassPointIndex:
+		//	stReturn = var.Int64;
+		//	break;
+		case EScriptVal_ClassPoint:
+		{
+			stReturn = var.pPoint;
+		}
+		break;
+		}
+
+		Stack.pop();
+		return stReturn;
 	}
 	inline bool ScriptStack_GetBinary(CScriptStack& Stack, std::vector<char>& out)
 	{
@@ -393,24 +429,39 @@ namespace zlscript
 	inline void ScriptVector_PushVar(CScriptStack& Stack, CScriptPointInterface* pVal)
 	{
 		StackVarInfo var;
-		var.cType = EScriptVal_ClassPointIndex;
+		var.cType = EScriptVal_ClassPoint;
 		if (pVal)
 		{
-			var.Int64 = pVal->GetScriptPointIndex();
-			CScriptSuperPointerMgr::GetInstance()->ScriptUsePointer(var.Int64);
+			var.pPoint = CScriptSuperPointerMgr::GetInstance()->PickupPointer(pVal->GetScriptPointIndex());
 		}
 		else
-			var.Int64 = 0;
+			var.pPoint = nullptr;
 		Stack.push(var);
 	}
 
-	inline void ScriptVector_PushClassPointIndex(CScriptStack& Stack, __int64 val)
+	inline void ScriptVector_PushVar(CScriptStack& Stack, CScriptBasePointer* pVal)
 	{
 		StackVarInfo var;
-		var.cType = EScriptVal_ClassPointIndex;
-		var.Int64 = val;
+		var.cType = EScriptVal_ClassPoint;
+		if (pVal)
+		{
+			var.pPoint = pVal;
+
+			CScriptSuperPointerMgr::GetInstance()->PickupPointer(pVal);
+		}
+		else
+			var.pPoint = nullptr;
 		Stack.push(var);
 	}
+
+	//inline void ScriptVector_PushClassPointIndex(CScriptStack& Stack, __int64 val)
+	//{
+	//	StackVarInfo var;
+	//	var.cType = EScriptVal_ClassPointIndex;
+	//	var.Int64 = val;
+	//	CScriptSuperPointerMgr::GetInstance()->ScriptUsePointer(var.Int64);
+	//	Stack.push(var);
+	//}
 
 	inline void ScriptVector_PushVar(CScriptStack& Stack, StackVarInfo* val)
 	{
