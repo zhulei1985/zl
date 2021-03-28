@@ -26,7 +26,10 @@ namespace zlscript
 #define ATTR_SYNC_DOUBLE(val,index) ATTR_BASE_DOUBLE(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
 #define ATTR_SYNC_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
 #define ATTR_SYNC_INT64_ARRAY(val,index) ATTR_BASE_INT64_ARRAY(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_INT64_MAP(val,index) ATTR_BASE_INT64_MAP(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
 #define ATTR_SYNC_CLASS_POINT(val,index) ATTR_BASE_CLASS_POINT(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_CLASS_POINT_ARRAY(val,index) ATTR_BASE_CLASS_POINT_ARRAY(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
+#define ATTR_SYNC_CLASS_POINT_MAP(val,index) ATTR_BASE_CLASS_POINT_MAP(val,CBaseScriptClassAttribute::E_FLAG_SYNC,index);
 
 #define ATTR_SYNC_AND_DB_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
 #define ATTR_SYNC_AND_DB_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
@@ -34,6 +37,7 @@ namespace zlscript
 #define ATTR_SYNC_AND_DB_DOUBLE(val,index) ATTR_BASE_DOUBLE(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
 #define ATTR_SYNC_AND_DB_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
 #define ATTR_SYNC_AND_DB_INT64_ARRAY(val,index) ATTR_BASE_INT64_ARRAY(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
+#define ATTR_SYNC_AND_DB_INT64_MAP(val,index) ATTR_BASE_INT64_MAP(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index);
 
 
 #define ATTR_SYNC_AND_DB_PRIMARY_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY,index);

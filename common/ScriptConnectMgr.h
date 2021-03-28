@@ -63,9 +63,15 @@ private:
 
 	//通过监听端口建立的连接的初始化脚本
 public:
-	static void SetInitConnectScript(int nPort,std::string strScript);
+	static void SetInitConnectScript(int nPort,std::string strScript, std::string strDisconnectScript);
+public:
+	struct tagConnectScript
+	{
+		std::string strInitScript;
+		std::string strDisconnectScript;
+	};
 private:
-	static std::map<int, std::string> m_mapInitConnectScript;
+	static std::map<int, tagConnectScript> m_mapInitConnectScript;
 
 	//同步类的判断，让不同连接创建的同一同步类的镜像不会重复建立
 public:

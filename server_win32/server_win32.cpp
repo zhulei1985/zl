@@ -153,7 +153,7 @@ int main()
 		std::bind(&zlscript::CScriptVirtualMachine::EventReturnFun, &Machine, std::placeholders::_1, std::placeholders::_2));
 	Machine.InitEvent(zlscript::E_SCRIPT_EVENT_RUNSCRIPT,
 		std::bind(&zlscript::CScriptVirtualMachine::EventRunScriptFun, &Machine, std::placeholders::_1, std::placeholders::_2));
-
+	Machine.SetInstance();
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	auto oldtime = std::chrono::steady_clock::now();
 	zlscript::RunScript("main");

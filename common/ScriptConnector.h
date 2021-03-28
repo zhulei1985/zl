@@ -45,6 +45,7 @@ public:
 	int SetVal2Script(CScriptRunState* pState);
 
 	int Merge2Script(CScriptRunState* pState);
+	int SetDisconnectScript2Script(CScriptRunState* pState);
 public:
 	//virtual __int64 GetID()
 	//{
@@ -93,7 +94,7 @@ public:
 
 	virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
 
-
+	void SetDisconnectScript(std::string val);
 public:
 	//"我"是指本连接对应的进程
 
@@ -140,7 +141,7 @@ protected:
 	tagReturnState* GetReturnState(__int64 nID);
 	void RemoveReturnState(__int64 nID);
 
-
+	std::string m_strDisconnectScript;
 };
 class CScriptRouteConnector;
 class CScriptConnector : public CSocketConnector, public CBaseScriptConnector

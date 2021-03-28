@@ -21,8 +21,9 @@ int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CS
 	}
 	int nPort = pState->PopIntVarFormStack();
 	std::string strScript = pState->PopCharVarFormStack();
+	std::string strDisconnectScript = pState->PopCharVarFormStack();
 	CScriptConnectMgr::GetInstance()->SetListen(nPort, CScriptConnectMgr::CreateNew);
-	CScriptConnectMgr::SetInitConnectScript(nPort, strScript);
+	CScriptConnectMgr::SetInitConnectScript(nPort, strScript, strDisconnectScript);
 	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
@@ -91,7 +92,7 @@ int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CSc
 
 
 CScriptConnectMgr CScriptConnectMgr::s_Instance;
-std::map<int, std::string> CScriptConnectMgr::m_mapInitConnectScript;
+std::map<int, CScriptConnectMgr::tagConnectScript> CScriptConnectMgr::m_mapInitConnectScript;
 
 CScriptConnectMgr::CScriptConnectMgr()
 {
@@ -122,8 +123,16 @@ CSocketConnector* CScriptConnectMgr::CreateNew(SOCKET sRemote, const char* pIP, 
 	{
 		CScriptStack m_scriptParm;
 		ScriptVector_PushVar(m_scriptParm, pConnector);
-		zlscript::CScriptVirtualMachine machine;
-		machine.RunFunImmediately(itScript->second, m_scriptParm);
+		//单独使用一个machine对象，会使全局变量无法共享
+		//要么使脚本的全局变量脱离单个machine通用，要么就使用主machine的实例
+		//zlscript::CScriptVirtualMachine machine;
+		//machine.RunFunImmediately(itScript->second.strInitScript, m_scriptParm);
+		if (zlscript::CScriptVirtualMachine::GetInstance())
+		{
+			zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(itScript->second.strInitScript, m_scriptParm);
+		}
+
+		pConnector->SetDisconnectScript(itScript->second.strDisconnectScript);
 	}
 
 	return pConnector;
@@ -167,9 +176,12 @@ CScriptConnector* CScriptConnectMgr::NewConnector(const char* pIP, int Port)
 	return pClient;
 }
 
-void CScriptConnectMgr::SetInitConnectScript(int nPort, std::string strScript)
+void CScriptConnectMgr::SetInitConnectScript(int nPort, std::string strScript, std::string strDisconnectScript)
 {
-	m_mapInitConnectScript[nPort] = strScript;
+	tagConnectScript script;
+	script.strInitScript = strScript;
+	script.strDisconnectScript = strDisconnectScript;
+	m_mapInitConnectScript[nPort] = script;
 }
 
 __int64 CScriptConnectMgr::GetSyncIndex(int serverID, __int64 id)

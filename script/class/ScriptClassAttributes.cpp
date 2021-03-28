@@ -449,20 +449,184 @@ namespace zlscript
 
 	unsigned int CScriptInt64toInt64MapAttribute::GetSize()
 	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		return m_mapVal.size();
+	}
+
+	bool CScriptInt64toInt64MapAttribute::SetVal(__int64 index, __int64 nVal)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		m_mapVal[index] = nVal;
+		m_setFlag.insert(index);
+		return true;
+	}
+
+	__int64 CScriptInt64toInt64MapAttribute::GetVal(__int64 index)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		auto it = m_mapVal.find(index);
+		if (it != m_mapVal.end())
+		{
+			return it->second;
+		}
 		return 0;
+	}
+
+	bool CScriptInt64toInt64MapAttribute::Remove(__int64 index)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		auto it = m_mapVal.find(index);
+		if (it != m_mapVal.end())
+		{
+			m_mapVal.erase(it);
+			m_setFlag.insert(index);
+			return true;
+		}
+		return false;
+	}
+
+	void CScriptInt64toInt64MapAttribute::clear()
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		m_mapVal.clear();
+	}
+
+	std::string CScriptInt64toInt64MapAttribute::ToType()
+	{
+		return "TEXT";
+	}
+
+	std::string CScriptInt64toInt64MapAttribute::ToString()
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		std::string str;
+		char strbuff[32];
+		auto it = m_mapVal.begin();
+		for (unsigned int i = 0; it != m_mapVal.end(); i++,it++)
+		{
+			if (i > 0)
+			{
+				str += ";";
+			}
+			snprintf(strbuff, sizeof(strbuff), "%lld", it->first);
+			str += strbuff;
+			str += ",";
+			snprintf(strbuff, sizeof(strbuff), "%lld", it->second);
+			str += strbuff;
+		}
+		return str;
+	}
+
+	bool CScriptInt64toInt64MapAttribute::SetVal(std::string str)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		m_setFlag.clear();
+		m_mapVal.clear();
+		char ch[2] = { 0,0 };
+		std::string strSub;
+		__int64 nFirst = 0;
+		for (unsigned int i = 0; i < str.length(); i++)
+		{
+			char curChar = str[i];
+			if (curChar == ';')
+			{
+				auto nSecond = _atoi64(str.c_str());
+				m_mapVal[nFirst] = nSecond;
+			}
+			else if (curChar == ',')
+			{
+				nFirst = _atoi64(str.c_str());
+			}
+			else
+			{
+				strSub.push_back(curChar);
+			}
+		}
+		if (!str.empty())
+		{
+			auto nSecond = _atoi64(str.c_str());
+			m_mapVal[nFirst] = nSecond;
+		}
+		return true;
+	}
+
+	void CScriptInt64toInt64MapAttribute::ClearChangeFlag()
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		m_setFlag.clear();
 	}
 
 	void CScriptInt64toInt64MapAttribute::AddData2Bytes(std::vector<char>& vBuff)
 	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		AddChar2Bytes(vBuff, 1);//第一是是否全部更新，1是，0否
+		AddUInt2Bytes(vBuff, m_mapVal.size());//第二个是要更新多少数据
+		auto it = m_mapVal.begin();
+		for (; it != m_mapVal.end(); it++)
+		{
+			AddInt642Bytes(vBuff, it->first);
+			AddInt642Bytes(vBuff, it->second);
+		}
 	}
 
 	void CScriptInt64toInt64MapAttribute::AddChangeData2Bytes(std::vector<char>& vBuff)
 	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		AddChar2Bytes(vBuff, 0);//第一是是否全部更新，1是，0否
+		AddUInt2Bytes(vBuff, m_setFlag.size());//第二个是要更新多少数据
+		auto itFlag = m_setFlag.begin();
+		for (; itFlag != m_setFlag.end(); itFlag++)
+		{
+			auto it = m_mapVal.find(*itFlag);
+			if (it != m_mapVal.end())
+			{
+				AddInt642Bytes(vBuff, it->first);
+				AddInt642Bytes(vBuff, it->second);
+			}
+			else
+			{
+				AddInt642Bytes(vBuff, *itFlag);
+				AddInt642Bytes(vBuff, -1);
+			}
+		}
 	}
 
 	bool CScriptInt64toInt64MapAttribute::DecodeData4Bytes(char* pBuff, int& pos, unsigned int len)
 	{
-		return false;
+		std::lock_guard<std::mutex> Lock(m_lock);
+		char mode = DecodeBytes2Char(pBuff, pos, len);
+		int nNum = DecodeBytes2Int(pBuff, pos, len);
+		if (mode == 1)
+		{
+			m_mapVal.clear();
+			for (int i = 0; i < nNum; i++)
+			{
+				__int64 nIndex = DecodeBytes2Int64(pBuff, pos, len);
+				__int64 nVal = DecodeBytes2Int64(pBuff, pos, len);
+				m_mapVal[nIndex] = nVal;
+			}
+		}
+		else
+		{
+			for (int i = 0; i < nNum; i++)
+			{
+				__int64 nIndex = DecodeBytes2Int64(pBuff, pos, len);
+				__int64 nVal = DecodeBytes2Int64(pBuff, pos, len);
+				if (nVal != -1)
+				{
+					m_mapVal[nIndex] = nVal;
+				}
+				else
+				{
+					auto it = m_mapVal.find(nIndex);
+					if (it != m_mapVal.end())
+					{
+						m_mapVal.erase(it);
+					}
+				}
+			}
+		}
+		return true;
 	}
 
 	CScriptClassPointAttribute::operator PointVarInfo& ()
@@ -592,11 +756,78 @@ namespace zlscript
 
 	PointVarInfo CScriptClassPointArrayAttribute::GetVal(unsigned int index)
 	{
+		std::lock_guard<std::mutex> Lock(m_lock);
 		if (index < m_vecVal.size())
 		{
 			return m_vecVal[index];
 		}
 		return PointVarInfo();
+	}
+
+	void CScriptClassPointArrayAttribute::PushBack(CScriptPointInterface* pPoint)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		m_setFlag.insert(m_vecVal.size());
+		m_vecVal.push_back(pPoint->GetScriptPointIndex());
+	}
+
+	void CScriptClassPointArrayAttribute::PushBack(CScriptBasePointer* pPoint)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		m_setFlag.insert(m_vecVal.size());
+		m_vecVal.push_back(pPoint);
+	}
+
+	void CScriptClassPointArrayAttribute::PushBack(__int64 nVal)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		m_setFlag.insert(m_vecVal.size());
+		m_vecVal.push_back(nVal);
+	}
+
+	bool CScriptClassPointArrayAttribute::Remove(CScriptPointInterface* pPoint)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		auto it = m_vecVal.begin();
+		for (; it != m_vecVal.end(); it++)
+		{
+			if ((*it).pPoint && (*it).pPoint->GetPoint() == pPoint)
+			{
+				m_vecVal.erase(it);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool CScriptClassPointArrayAttribute::Remove(CScriptBasePointer* pPoint)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		auto it = m_vecVal.begin();
+		for (; it != m_vecVal.end(); it++)
+		{
+			if ((*it).pPoint == pPoint)
+			{
+				m_vecVal.erase(it);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool CScriptClassPointArrayAttribute::Remove(unsigned int index)
+	{
+		std::lock_guard<std::mutex> Lock(m_lock);
+		auto it = m_vecVal.begin();
+		for (unsigned int i = 0; it != m_vecVal.end(); it++, i++)
+		{
+			if (i == index)
+			{
+				m_vecVal.erase(it);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	void CScriptClassPointArrayAttribute::clear()
@@ -848,7 +1079,7 @@ namespace zlscript
 				}
 			}
 		}
-		return false;
+		return true;
 	}
 
 }

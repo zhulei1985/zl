@@ -26,6 +26,8 @@ CBaseScriptConnector::CBaseScriptConnector()
 	RegisterClassFun(SetRouteInitScript, this, &CBaseScriptConnector::SetRouteInitScript2Script);
 
 	RegisterClassFun(SetHeadProtocol, this, &CBaseScriptConnector::SetHeadProtocol2Script);
+
+	RegisterClassFun(SetDisconnectScript, this, &CBaseScriptConnector::SetDisconnectScript2Script);
 }
 
 CBaseScriptConnector::~CBaseScriptConnector()
@@ -53,6 +55,8 @@ void CBaseScriptConnector::Init2Script()
 	RegisterClassFun1("SetRoute", CBaseScriptConnector);
 	RegisterClassFun1("SetRouteInitScript", CBaseScriptConnector);
 	RegisterClassFun1("SetHeadProtocol", CBaseScriptConnector);
+
+	RegisterClassFun1("SetDisconnectScript", CBaseScriptConnector);
 }
 
 int CBaseScriptConnector::GetID2Script(CScriptRunState* pState)
@@ -316,6 +320,18 @@ int CBaseScriptConnector::Merge2Script(CScriptRunState* pState)
 	return ECALLBACK_FINISH;
 }
 
+int CBaseScriptConnector::SetDisconnectScript2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	std::string val = pState->PopCharVarFormStack();
+	SetDisconnectScript(val);
+	pState->ClearFunParam();
+	return ECALLBACK_FINISH;
+}
+
 void CBaseScriptConnector::OnInit()
 {
 	CScriptExecFrame::OnInit();
@@ -369,6 +385,19 @@ void CBaseScriptConnector::OnDestroy()
 
 	}
 	m_mapReturnState.clear();
+
+	if (m_strDisconnectScript.size() > 0)
+	{
+		CScriptStack m_scriptParm;
+		ScriptVector_PushVar(m_scriptParm, this);
+
+		//zlscript::CScriptVirtualMachine machine;
+		//machine.RunFunImmediately(m_strDisconnectScript, m_scriptParm);
+		if (zlscript::CScriptVirtualMachine::GetInstance())
+		{
+			zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(m_strDisconnectScript, m_scriptParm);
+		}
+	}
 	RemoveClassObject(this->GetScriptPointIndex());
 	CRouteEventMgr::GetInstance()->Unregister(GetEventIndex());
 	CScriptExecFrame::Clear();
@@ -608,6 +637,11 @@ void CBaseScriptConnector::EventChangeRoute(__int64 nSendID, CScriptStack& ParmI
 	__int64 nOldConnectID = ScriptStack_GetInt(ParmInfo);
 	//__int64 nNewConnectID = ScriptStack_GetInt(ParmInfo);
 	SendChangeRoute(nOldConnectID, nSendID);
+}
+
+void CBaseScriptConnector::SetDisconnectScript(std::string val)
+{
+	m_strDisconnectScript = val;
 }
 
 
@@ -1189,9 +1223,12 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 			//初始化
 			CScriptStack m_scriptParm;
 			ScriptVector_PushVar(m_scriptParm, funName.c_str());
-			zlscript::CScriptVirtualMachine machine;
-			machine.RunFunImmediately("Error_CannotRunScript", m_scriptParm);
-
+			//zlscript::CScriptVirtualMachine machine;
+			//machine.RunFunImmediately("Error_CannotRunScript", m_scriptParm);
+			if (zlscript::CScriptVirtualMachine::GetInstance())
+			{
+				zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately("Error_CannotRunScript", m_scriptParm);
+			}
 			CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pMsg);
 		}
 		//auto pRoute = CScriptConnectMgr::GetInstance()->GetConnector(nRouteMode_ConnectID);
@@ -1297,8 +1334,13 @@ bool CScriptConnector::RouteMsg(CRouteFrontMsgReceiveState* pState)
 		//初始化
 		CScriptStack m_scriptParm;
 		ScriptVector_PushVar(m_scriptParm, pRoute);
-		zlscript::CScriptVirtualMachine machine;
-		machine.RunFunImmediately(strRouteInitScript, m_scriptParm);
+
+		//zlscript::CScriptVirtualMachine machine;
+		//machine.RunFunImmediately(strRouteInitScript, m_scriptParm);
+		if (zlscript::CScriptVirtualMachine::GetInstance())
+		{
+			zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(strRouteInitScript, m_scriptParm);
+		}
 	}
 
 	if (pRoute)

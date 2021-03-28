@@ -90,6 +90,7 @@ namespace zlscript
 #define ATTR_BASE_DOUBLE(val,flag,index) CScriptDoubleAttribute val{#val,flag,index,this};
 #define ATTR_BASE_STR(val,flag,index) CScriptStringAttribute val{#val,flag,index,this};
 #define ATTR_BASE_INT64_ARRAY(val,flag,index) CScriptInt64ArrayAttribute val{#val,flag,index,this};
+#define ATTR_BASE_INT64_MAP(val,flag,index) CScriptInt64toInt64MapAttribute val{#val,flag,index,this};
 #define ATTR_BASE_CLASS_POINT(val,flag,index) CScriptClassPointAttribute val{#val,flag,index,this};
 #define ATTR_BASE_CLASS_POINT_ARRAY(val,flag,index) CScriptClassPointArrayAttribute val{#val,flag,index,this};
 #define ATTR_BASE_CLASS_POINT_MAP(val,flag,index) CScriptInt64toClassPointMapAttribute val{#val,flag,index,this};
@@ -100,6 +101,7 @@ namespace zlscript
 #define ATTR_DOUBLE(val,index) ATTR_BASE_DOUBLE(val,CBaseScriptClassAttribute::E_FLAG_NONE,index);
 #define ATTR_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_NONE,index);
 #define ATTR_INT64_ARRAY(val,index) ATTR_BASE_INT64_ARRAY(val,CBaseScriptClassAttribute::E_FLAG_NONE,index);
+#define ATTR_INT64_MAP(val,index) ATTR_BASE_INT64_MAP(val,CBaseScriptClassAttribute::E_FLAG_NONE,index);
 
 #define ATTR_DB_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_DB,index);
 #define ATTR_DB_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_DB,index);
@@ -107,6 +109,7 @@ namespace zlscript
 #define ATTR_DB_DOUBLE(val,index) ATTR_BASE_DOUBLE(val,CBaseScriptClassAttribute::E_FLAG_DB,index);
 #define ATTR_DB_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_DB,index);
 #define ATTR_DB_INT64_ARRAY(val,index) ATTR_BASE_INT64_ARRAY(val,CBaseScriptClassAttribute::E_FLAG_DB,index);
+#define ATTR_DB_INT64_MAP(val,index) ATTR_BASE_INT64_MAP(val,CBaseScriptClassAttribute::E_FLAG_DB,index);
 
 	class CScriptPointInterface
 	{
