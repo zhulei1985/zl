@@ -60,6 +60,7 @@ namespace zlnetwork
 		virtual unsigned __int64 GetDataLen() = 0;
 
 		virtual void SetServer(bool val) { ; }
+		virtual bool IsServer() { return false; }
 		virtual void SetPassword(const char* str){}
 
 		virtual __int64 GetLastConnectID() { return 0; }
@@ -178,6 +179,10 @@ namespace zlnetwork
 		virtual void SetServer(bool val)
 		{
 			bServer = val;
+		}
+		bool IsServer()
+		{
+			return bServer;
 		}
 		void SetPassword(const char* str);
 	private:

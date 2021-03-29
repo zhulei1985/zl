@@ -407,6 +407,10 @@ namespace zlnetwork
 
 	int CNoneHeadProtocol::OnProcess()
 	{
+		if (m_pConnector == nullptr)
+		{
+			return E_RETURN_ERROR;
+		}
 		int nResult = E_RETURN_CONTINUE;
 		if (m_nState == E_CONNECT_GET_MSG_LEN)
 		{
@@ -476,6 +480,10 @@ namespace zlnetwork
 
 	int CInnerHeadProtocol::OnProcess()
 	{
+		if (m_pConnector == nullptr)
+		{
+			return E_RETURN_ERROR;
+		}
 		int nResult = E_RETURN_CONTINUE;
 		switch (m_nState)
 		{
@@ -605,6 +613,7 @@ namespace zlnetwork
 				m_pConnector->SendData(&vReSend[0], vReSend.size());
 
 				m_nState = E_CONNECT_GET_MSG_LEN;
+				return E_RETURN_SHAKE_HAND_COMPLETE;
 			}
 			else
 			{

@@ -14,8 +14,8 @@ bool CBaseMsgReceiveState::Send(CBaseScriptConnector* pClient)
 	std::vector<char> m_vBuff;
 	AddAllData2Bytes(pClient, m_vBuff);
 
-	pClient->SendMsg(&m_vBuff[0], m_vBuff.size());
-	return true;
+	return pClient->SendMsg(&m_vBuff[0], m_vBuff.size());
+	//return true;
 }
 void CBaseMsgReceiveState::SetGetDataFun(std::function<bool(std::vector<char>&, unsigned int)> fun)
 {

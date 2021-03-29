@@ -260,6 +260,18 @@ int CBaseScriptConnector::SetHeadProtocol2Script(CScriptRunState* pState)
 
 	SetHeadProtocol(pProtocol);
 	pState->ClearFunParam();
+	if (pProtocol->IsServer())
+	{
+		return ECALLBACK_FINISH;
+	}
+	else
+	{
+		if (pState->m_pMachine)
+		{
+			m_WaitCanSendStateID = AddReturnState(pState->m_pMachine->GetEventIndex(), pState->GetId());
+			return ECALLBACK_WAITING;
+		}
+	}
 	return ECALLBACK_FINISH;
 }
 
@@ -800,7 +812,7 @@ bool CScriptConnector::OnProcess()
 
 	//从接收队列里取出消息处理
 	std::vector<char> vOut;
-
+	m_LockProtocol.lock();
 	while (m_pHeadProtocol)
 	{
 		int nResult = m_pHeadProtocol->OnProcess();
@@ -842,6 +854,7 @@ bool CScriptConnector::OnProcess()
 					pOldConnect->Close();
 				}
 			}
+			m_bCanSend = true;
 			break;
 		case CBaseHeadProtocol::E_RETURN_ERROR:
 		default:
@@ -854,8 +867,13 @@ bool CScriptConnector::OnProcess()
 			break;
 		}
 	}
-
-
+	m_LockProtocol.unlock();
+	if (CanSend() && m_WaitCanSendStateID > 0)
+	{
+		CScriptStack parm;
+		ResultTo(parm, m_WaitCanSendStateID, 0);
+		m_WaitCanSendStateID = 0;
+	}
 	//if (pCurMsgReceive == nullptr)
 	//{
 	//	if (GetData(vOut, 1))
@@ -958,6 +976,10 @@ void CScriptConnector::OnDestroy()
 }
 bool CScriptConnector::SendMsg(char* pBuff, int len)
 {
+	if (m_bCanSend == false)
+	{
+		return false;
+	}
 	if (m_pHeadProtocol)
 	{
 		m_pHeadProtocol->SendHead(len);
@@ -1112,12 +1134,16 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal
 
 void CScriptConnector::SetHeadProtocol(CBaseHeadProtocol* pProtocol)
 {
+	m_bCanSend = false;
 	pProtocol->SetConnector(this);
+	m_LockProtocol.lock();
 	if (m_pHeadProtocol)
 	{
 		CHeadProtocolMgr::GetInstance()->Remove(m_pHeadProtocol);
+		m_pHeadProtocol = nullptr;
 	}
 	m_pHeadProtocol = pProtocol;
+	m_LockProtocol.unlock();
 }
 
 void CScriptConnector::Merge(CScriptConnector* pOldConnect)

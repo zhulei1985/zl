@@ -142,6 +142,10 @@ protected:
 	void RemoveReturnState(__int64 nID);
 
 	std::string m_strDisconnectScript;
+public:
+	virtual bool CanSend() { return true; }
+protected:
+	std::atomic_int64_t m_WaitCanSendStateID{ 0 };
 };
 class CScriptRouteConnector;
 class CScriptConnector : public CSocketConnector, public CBaseScriptConnector
@@ -184,6 +188,7 @@ protected:
 	bool m_bIsWebSocket;
 
 	CBaseHeadProtocol* m_pHeadProtocol;
+	std::mutex m_LockProtocol;
 	//当前正在处理的消息
 	CBaseMsgReceiveState* pCurMsgReceive;
 	
@@ -212,6 +217,13 @@ public:
 protected:
 	std::string strRouteInitScript;
 	std::map<__int64, CScriptRouteConnector*> m_mapRouteConnect;
+public:
+	bool CanSend()
+	{
+		return m_bCanSend;
+	}
+protected:
+	std::atomic_bool m_bCanSend{ false };
 };
 
 //路由模式下的链接
