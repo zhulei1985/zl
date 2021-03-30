@@ -198,7 +198,7 @@ namespace zlnetwork
 			result += "Upgrade: websocket\r\n\r\n";
 			m_pConnector->SendData(result.c_str(), result.size());
 			m_nState = E_CONNECT_GET_MSG_HEAD;
-			return E_RETURN_NEXT;
+			return E_RETURN_SHAKE_HAND_COMPLETE;
 		}
 		else
 		{
