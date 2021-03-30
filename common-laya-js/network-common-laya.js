@@ -70,6 +70,11 @@ export default class Connector
         
 	    this.E_SYNC_DOWN_PASSAGE = 68;//下行同步通道
         this.E_SYNC_UP_PASSAGE = 69;//上行同步通道
+
+        this.E_SYNC_FUN_RETURN = 71;
+
+        this.E_SYNC_DOWN_REMOVE = 71;//关闭下行同步通道
+        this.E_SYNC_UP_REMOVE = 72;//关闭上行同步通道
     
         this.EScriptVal_Int = 1;
 		this.EScriptVal_Double = 2;
@@ -144,6 +149,10 @@ export default class Connector
         case this.E_SYNC_DOWN_PASSAGE://下行同步通道
             break;
         case this.E_SYNC_UP_PASSAGE://上行同步通道
+            break;
+        case this.E_SYNC_DOWN_REMOVE://关闭下行同步通道
+            break;
+        case this.E_SYNC_UP_REMOVE://关闭上行同步通道
             break;
         }
         console.log(msg);
@@ -267,7 +276,7 @@ export default class Connector
             }
             else if (parmType == this.EScriptVal_ClassPointIndex)
             {
-                var classname = this.GetString(data);
+                //var classname = this.GetString(data);
                 var classtype = data.getByte();
                 var classindex = this.GetInt64(data);
                 console.log("class name="+classname+",type="+classtype+",index="+classindex);
@@ -324,7 +333,7 @@ export default class Connector
             }
             else if (parmType == this.EScriptVal_ClassPointIndex)
             {
-                var classname = this.GetString(data);
+                //var classname = this.GetString(data);
                 var classtype = data.getByte();
                 var classindex = this.GetInt64(data);
                 if (classtype == 0)
@@ -448,7 +457,7 @@ export default class Connector
         else if (typeof(parm) == 'object')
         {
             byte.writeByte(this.EScriptVal_ClassPointIndex);
-            this.AddString(byte,parm.strClassName);
+            //this.AddString(byte,parm.strClassName);
             if (parm.connectID == undefined || parm.connectID != this.connectID)
             {
                 if (!parm.CheckSync(this.connectID))
