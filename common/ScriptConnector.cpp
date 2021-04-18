@@ -133,6 +133,26 @@ int CBaseScriptConnector::RunScript2Script(CScriptRunState* pState)
 	return ECALLBACK_FINISH;
 }
 
+int CBaseScriptConnector::SetAllScriptLimit2Script(CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	int nVal = pState->PopIntVarFormStack();
+	if (nVal > 0)
+	{
+		m_bIgnoreScriptLimit = true;
+	}
+	else
+	{
+		m_bIgnoreScriptLimit = false;
+		m_mapScriptLimit.clear();
+	}
+	pState->ClearFunParam();
+	return ECALLBACK_FINISH;
+}
+
 int CBaseScriptConnector::SetScriptLimit2Script(CScriptRunState* pState)
 {
 	if (pState == nullptr)
@@ -350,6 +370,7 @@ void CBaseScriptConnector::OnInit()
 	CRouteEventMgr::GetInstance()->Register(GetEventIndex());
 	//nScriptEventIndex = CScriptEventMgr::GetInstance()->AssignID();
 	m_nReturnCount = 0;
+	m_bIgnoreScriptLimit = false;
 	m_mapReturnState.clear();
 	AddClassObject(this->GetScriptPointIndex(), this);
 
@@ -709,6 +730,10 @@ void CBaseScriptConnector::SetScriptLimit(std::string strName)
 
 bool CBaseScriptConnector::CheckScriptLimit(std::string strName)
 {
+	if (m_bIgnoreScriptLimit)
+	{
+		return true;
+	}
 	auto it = m_mapScriptLimit.find(strName);
 	if (it != m_mapScriptLimit.end())
 	{

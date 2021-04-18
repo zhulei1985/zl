@@ -551,6 +551,55 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 		}
 	}
 
+
+	while (vClassPoint.size() < nClassPointNum)
+	{
+		if (nCurParmType == -1)
+		{
+			nPos = 0;
+			if (m_GetData(vOut, 1))
+			{
+				nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		switch (nCurParmType)
+		{
+		case EScriptVal_ClassPoint:
+		{
+			if (m_GetData(vOut, 9))
+			{
+				nPos = 0;
+				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+				PointVarInfo pointVar;
+				if (cType == 0)
+				{
+					//本地类实例
+					pointVar = nClassID;
+				}
+				else
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+					pointVar = nIndex;
+				}
+				vClassPoint.push_back(pointVar);
+			}
+			return false;
+
+		}
+		break;
+		return false;
+		}
+		nCurParmType = -1;
+	}
+
 	if (nDataLen > 0)
 	{
 		if (m_GetData(vOut, nDataLen))
@@ -664,7 +713,12 @@ bool CSyncClassInfoMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClie
 	}
 	AddInt2Bytes(vBuff, m_pPoint->GetImageTier() + 1);
 	tagByteArray vDataBuff;
-	m_pPoint->AddAllData2Bytes(vDataBuff);
+	m_pPoint->AddAllData2Bytes(vDataBuff, vClassPoint);
+	AddInt2Bytes(vBuff, vClassPoint.size());
+	for (unsigned int i = 0; i < vClassPoint.size(); i++)
+	{
+		pClient->AddVar2Bytes(vBuff, &vClassPoint[i]);
+	}
 	AddData2Bytes(vBuff, vDataBuff);
 
 	return true;

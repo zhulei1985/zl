@@ -154,6 +154,9 @@ public:
 		nClassNameStringLen = -1;
 		nDataLen = -1;
 		m_pPoint = nullptr;
+
+		nCurParmType = -1;
+		nClassPointNum = -1;
 	}
 	int GetType()
 	{
@@ -171,6 +174,9 @@ public:
 		nDataLen = -1;
 		m_pPoint = nullptr;
 
+		nCurParmType = -1;
+		nClassPointNum = -1;
+
 		strClassName.clear();
 	}
 	virtual bool Recv(CScriptConnector*);
@@ -183,9 +189,12 @@ public:
 	int nTier;
 	std::string strClassName;
 	CSyncScriptPointInterface* m_pPoint;
+	std::vector<PointVarInfo> vClassPoint;
 private:
 	//以下是读取时的临时变量
 	int nClassNameStringLen;
+	int nCurParmType;
+	int nClassPointNum;
 	__int64 nClassID;//涉及到的类ID
 	int nDataLen;
 };

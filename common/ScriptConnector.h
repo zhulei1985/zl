@@ -31,6 +31,7 @@ public:
 	int IsConnect2Script(CScriptRunState* pState);
 	int RunScript2Script(CScriptRunState* pState);
 
+	int SetAllScriptLimit2Script(CScriptRunState* pState);
 	int SetScriptLimit2Script(CScriptRunState* pState);
 	int CheckScriptLimit2Script(CScriptRunState* pState);
 
@@ -125,6 +126,7 @@ public:
 protected:
 	//可用脚本，不再此表里的脚本函数不能执行，如果是路由模式，不在此表的脚本函数会转发给对应的链接
 	std::map<std::string, int> m_mapScriptLimit;
+	bool m_bIgnoreScriptLimit;
 
 	//注册的远程函数
 	std::set<std::string> m_setRemoteFunName;

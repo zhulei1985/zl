@@ -143,12 +143,13 @@ namespace zlscript
 		bool CheckDownSyncProcess(__int64);
 		void RemoveDownSyncProcess(__int64 processId);
 
-		virtual bool AddAllData2Bytes(std::vector<char>& vBuff);
+		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo>& vOutClassPoint);
 		virtual bool AddUpdateData2Bytes(std::vector<char>& vBuff);
 		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);
 
-		void ChangeScriptAttribute(short flag, CBaseScriptClassAttribute* pAttr);
-		void RegisterScriptClassAttr(short flag, CBaseScriptClassAttribute* pAttr);
+		void ChangeScriptAttribute(CBaseScriptClassAttribute* pAttr, StackVarInfo& old);
+		void RegisterScriptAttribute(CBaseScriptClassAttribute* pAttr);
+		void RemoveScriptAttribute(CBaseScriptClassAttribute* pAttr);
 
 		virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point);
 		virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index);

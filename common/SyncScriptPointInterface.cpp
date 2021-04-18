@@ -488,7 +488,7 @@ namespace zlscript
 			CScriptSuperPointerMgr::GetInstance()->AddPoint2Release(this->GetScriptPointIndex());
 		}
 	}
-	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff)
+	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo> &vOutClassPoint)
 	{
 		//std::lock_guard<std::mutex> Lock(m_FunLock);
 
@@ -504,7 +504,7 @@ namespace zlscript
 				att->AddData2Bytes(vBuff);
 			}
 		}
-
+		vOutClassPoint = m_vecSyncClassPoint;
 		return true;
 	}
 	bool CSyncScriptPointInterface::AddUpdateData2Bytes(std::vector<char>& vBuff)
@@ -547,24 +547,35 @@ namespace zlscript
 
 		return true;
 	}
-	void CSyncScriptPointInterface::ChangeScriptAttribute(short flag, CBaseScriptClassAttribute* pAttr)
+	void CSyncScriptPointInterface::ChangeScriptAttribute(CBaseScriptClassAttribute* pAttr, StackVarInfo& old)
 	{
-		CScriptPointInterface::ChangeScriptAttribute(flag, pAttr);
+		if (pAttr == nullptr)
+		{
+			return;
+		}
+		CScriptPointInterface::ChangeScriptAttribute(pAttr,old);
 		std::lock_guard<std::mutex> Lock(m_UpdateSyncAttLock);
-		if (flag & CBaseScriptClassAttribute::E_FLAG_SYNC)
+		if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_SYNC)
 		{
 			if (pAttr)
 				m_setUpdateSyncAttibute.insert(pAttr);
 		}
 	}
-	void CSyncScriptPointInterface::RegisterScriptClassAttr(short flag, CBaseScriptClassAttribute* pAttr)
+	void CSyncScriptPointInterface::RegisterScriptAttribute(CBaseScriptClassAttribute* pAttr)
 	{
-		CScriptPointInterface::RegisterScriptClassAttr(flag, pAttr);
-		if (flag & CBaseScriptClassAttribute::E_FLAG_SYNC)
+		if (pAttr == nullptr)
 		{
-			if (pAttr)
-				m_mapSyncAttributes[pAttr->m_index] = pAttr;
+			return;
 		}
+		CScriptPointInterface::RegisterScriptAttribute(pAttr);
+		if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_SYNC)
+		{
+			m_mapSyncAttributes[pAttr->m_index] = pAttr;
+		}
+	}
+	void CSyncScriptPointInterface::RemoveScriptAttribute(CBaseScriptClassAttribute* pAttr)
+	{
+		CScriptPointInterface::RemoveScriptAttribute(pAttr);
 	}
 	unsigned int CSyncScriptPointInterface::GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point)
 	{
