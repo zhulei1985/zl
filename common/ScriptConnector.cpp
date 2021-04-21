@@ -17,6 +17,7 @@ CBaseScriptConnector::CBaseScriptConnector()
 	RegisterClassFun(SetVal, this, &CBaseScriptConnector::SetVal2Script);
 	RegisterClassFun(GetVal, this, &CBaseScriptConnector::GetVal2Script);
 
+	RegisterClassFun(SetAllScriptLimit, this, &CBaseScriptConnector::SetAllScriptLimit2Script);
 	RegisterClassFun(SetScriptLimit, this, &CBaseScriptConnector::SetScriptLimit2Script);
 	RegisterClassFun(CheckScriptLimit, this, &CBaseScriptConnector::CheckScriptLimit2Script);
 
@@ -47,6 +48,7 @@ void CBaseScriptConnector::Init2Script()
 	RegisterClassFun1("SetVal", CBaseScriptConnector);
 	RegisterClassFun1("GetVal", CBaseScriptConnector);
 
+	RegisterClassFun1("SetAllScriptLimit", CBaseScriptConnector);
 	RegisterClassFun1("SetScriptLimit", CBaseScriptConnector);
 	RegisterClassFun1("CheckScriptLimit", CBaseScriptConnector);
 

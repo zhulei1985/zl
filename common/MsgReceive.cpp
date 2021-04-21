@@ -538,12 +538,12 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 			return false;
 		}
 	}
-	if (nDataLen == -1)
+	if (nClassPointNum == -1)
 	{
 		if (m_GetData(vOut, 4))
 		{
 			nPos = 0;
-			nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+			nClassPointNum = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
 		}
 		else
 		{
@@ -600,6 +600,18 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 		nCurParmType = -1;
 	}
 
+	if (nDataLen == -1)
+	{
+		if (m_GetData(vOut, 4))
+		{
+			nPos = 0;
+			nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+	}
 	if (nDataLen > 0)
 	{
 		if (m_GetData(vOut, nDataLen))
