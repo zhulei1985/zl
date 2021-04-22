@@ -192,6 +192,7 @@
     <ClCompile Include="..\script\class\zBinaryBuffer.cpp" />
     <ClCompile Include="..\script\class\zStringBuffer.cpp" />
     <ClCompile Include="Account.cpp" />
+    <ClCompile Include="DataBase.cpp" />
     <ClCompile Include="server_win32.cpp" />
     <ClCompile Include="TestClass.cpp" />
   </ItemGroup>
@@ -242,6 +243,7 @@
     <ClInclude Include="..\script\class\ZLScript.h" />
     <ClInclude Include="..\script\class\zStringBuffer.h" />
     <ClInclude Include="Account.h" />
+    <ClInclude Include="DataBase.h" />
     <ClInclude Include="TestClass.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

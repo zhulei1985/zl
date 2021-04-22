@@ -1,43 +1,8 @@
 //这个文件用于与服务器网络网络连接部分的接口
 import classCache from "./SyncClassCache.js"
 import FunCache from "./network-fun-mgr.js"
-function HashMap(){
-    this.map = {};
-}
-HashMap.prototype = {
-    put : function(key,value){
-        this.map[key] = value;
-    },
-    get : function(key)
-    {
-        if (this.map.hasOwnProperty(key))
-        {
-            return this.map[key];
-        }
-        return null;
-    },
-    remove : function(key)
-    {
-        if (this.map.hasOwnProperty(key))
-        {
-            return delete this.map[key];
-        }
-        return false;
-    },
-    removeAll : function()
-    {
+import HashMap from "./HashMap.js"
 
-    },
-    keySet : function()
-    {
-        var _keys = [];
-        for (var i in this.map)
-        {
-            _keys.push(i);
-        }
-        return _keys;
-    }
-};
 export default class Connector
 {
     constructor(ip, port)
@@ -279,7 +244,7 @@ export default class Connector
                 //var classname = this.GetString(data);
                 var classtype = data.getByte();
                 var classindex = this.GetInt64(data);
-                console.log("class name="+classname+",type="+classtype+",index="+classindex);
+                console.log("type="+classtype+",index="+classindex);
                 if (classtype == 0)
                 {
                     parm = classCache.GetClass(classindex);
@@ -369,7 +334,28 @@ export default class Connector
         msg.nRootServerID = data.getInt32();
         msg.nRootClassID = this.GetInt64(data);
         msg.nTier = data.getInt32();
-
+        var syncClass = [];
+        var syncClassNum = data.getInt32();
+        for (var i = 0; i < syncClassNum; i++)
+        {
+            var parmType = data.getByte();
+            if (parmType == this.EScriptVal_ClassPointIndex)
+            {
+                var parm;
+                var classtype = data.getByte();
+                var classindex = this.GetInt64(data);
+                if (classtype == 0)
+                {
+                    parm = classCache.GetClass(classindex);
+                }
+                else
+                {
+                    var Index = this.GetIndex4Image(classindex);
+                    parm = classCache.GetClass(Index);
+                }
+                syncClass.push(parm);
+            }
+        }
         msg.classPoint = null;
         var Index = this.GetIndex4Image(msg.nClassID);
         if (Index != 0)
@@ -404,7 +390,7 @@ export default class Connector
         if (msg.classPoint != null)
         {
             if ( msg.classPoint.DecodeData4Bytes instanceof Function ){
-                msg.classPoint.DecodeData4Bytes(this.Recvbyte);
+                msg.classPoint.DecodeData4Bytes(this.Recvbyte,syncClass);
             }
         }
         console.log("Recv_SyncClassInfo,end:");
@@ -430,12 +416,34 @@ export default class Connector
                 msg.classPoint = classCache.GetClass(Index);
             }
         }
+        var syncClass = [];
+        var syncClassNum = data.getInt32();
+        for (var i = 0; i < syncClassNum; i++)
+        {
+            var parmType = data.getByte();
+            if (parmType == this.EScriptVal_ClassPointIndex)
+            {
+                var parm;
+                var classtype = data.getByte();
+                var classindex = this.GetInt64(data);
+                if (classtype == 0)
+                {
+                    parm = classCache.GetClass(classindex);
+                }
+                else
+                {
+                    var Index = this.GetIndex4Image(classindex);
+                    parm = classCache.GetClass(Index);
+                }
+                syncClass.push(parm);
+            }
+        }
         console.log(msg.classPoint);
         var datalen = data.getInt32();
         if (msg.classPoint != null)
         {
             if ( msg.classPoint.DecodeData4Bytes instanceof Function ){
-                msg.classPoint.DecodeData4Bytes(this.Recvbyte);
+                msg.classPoint.DecodeData4Bytes(this.Recvbyte,syncClass);
             }
         }
         console.log("Recv_SyncClassData,end:");

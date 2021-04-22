@@ -119,6 +119,9 @@
     <ClCompile Include="..\script\class\TempScriptRunState.cpp">
       <Filter>script</Filter>
     </ClCompile>
+    <ClCompile Include="DataBase.cpp">
+      <Filter>class</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="network">
@@ -275,6 +278,9 @@
     </ClInclude>
     <ClInclude Include="..\script\class\TempScriptRunState.h">
       <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="DataBase.h">
+      <Filter>class</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
