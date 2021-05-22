@@ -51,7 +51,7 @@ namespace zlnetwork
 
 		virtual bool AddClient(const char* pIP, int Port, __int64 nConnectID);
 		virtual bool AddClient(CBaseConnector* pConn);
-
+		virtual bool RemoveClient(CBaseConnector* pConn);
 		virtual bool waitMsgAndClose();
 		virtual bool kickAll();
 		//这个Create是为client模式准备的

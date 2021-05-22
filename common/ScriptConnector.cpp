@@ -6,6 +6,235 @@
 #include <functional>
 #include "RouteEvent.h"
 
+CNetConnector::CNetConnector(std::string type, std::string flag, std::string password)
+{
+	m_pMaster = nullptr;
+	m_pHeadProtocol = nullptr;
+	SetHeadProtocol(type, flag, password);
+}
+CNetConnector::~CNetConnector()
+{
+	m_LockProtocol.lock();
+	if (m_pHeadProtocol)
+	{
+		CHeadProtocolMgr::GetInstance()->Remove(m_pHeadProtocol);
+	}
+	m_pHeadProtocol = nullptr;
+	m_LockProtocol.unlock();
+}
+
+void CNetConnector::OnInit()
+{
+	CSocketConnector::OnInit();
+}
+
+bool CNetConnector::OnProcess()
+{
+	if (CSocketConnector::OnProcess() == false)
+	{
+		return false;
+	}
+
+	//从接收队列里取出消息处理
+	std::vector<char> vOut;
+	m_LockProtocol.lock();
+	while (m_pHeadProtocol)
+	{
+		int nResult = m_pHeadProtocol->OnProcess();
+		switch (nResult)
+		{
+		case CBaseHeadProtocol::E_RETURN_COMPLETE:
+		{
+			if (m_pHeadProtocol->GetDataLen() > 0)
+			{
+				if (m_pHeadProtocol->GetData(vOut, 1))
+				{
+					int nPos = 0;
+					char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+
+					auto pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
+					if (pCurMsgReceive == nullptr)
+					{
+						//TODO 错误数据，关闭链接
+						Close();
+						break;
+					}
+					pCurMsgReceive->SetGetDataFun(std::bind(&CBaseHeadProtocol::GetData, m_pHeadProtocol, std::placeholders::_1, std::placeholders::_2));
+					if (pCurMsgReceive->Recv(m_pMaster) == true)
+					{
+						m_LockMsgList.lock();
+						m_listMsg.push_back(pCurMsgReceive);
+						m_LockMsgList.unlock();
+					}
+					else
+					{
+						//TODO 错误数据，关闭链接
+						Close();
+						break;
+					}
+				}
+			}
+		}
+		break;
+		case CBaseHeadProtocol::E_RETURN_CONTINUE:
+			break;
+		case CBaseHeadProtocol::E_RETURN_NEXT:
+			break;
+		case CBaseHeadProtocol::E_RETURN_SHAKE_HAND_COMPLETE:
+			if (m_pHeadProtocol->IsServer() && m_pHeadProtocol->GetLastConnectID() != 0)
+			{
+				//合并连接信息
+				auto pScriptConnector = CScriptConnectMgr::GetInstance()->GetSocketConnector(m_pHeadProtocol->GetLastConnectID());
+				if (pScriptConnector)
+				{
+					pScriptConnector->SetNetConnector(this);
+					this->SetMaster(pScriptConnector);
+				}
+			}
+			else
+			{
+				if (m_pMaster == nullptr)
+				{
+					//创建scriptconnector
+					CScriptConnector* pScriptConnector = new CScriptConnector();
+					if (pScriptConnector)
+					{
+						pScriptConnector->SetNetConnector(this);
+						this->SetMaster(pScriptConnector);
+						CScriptConnectMgr::GetInstance()->SetSockectConnector(pScriptConnector);
+					}
+				}
+			}
+			m_bCanSend = true;
+			break;
+		case CBaseHeadProtocol::E_RETURN_ERROR:
+		default:
+			//错误，中断连接
+			Close();
+			break;
+		}
+		if (nResult != CBaseHeadProtocol::E_RETURN_CONTINUE)
+		{
+			break;
+		}
+	}
+	m_LockProtocol.unlock();
+
+	if (m_pMaster)
+	{
+		m_pMaster->OnProcess();
+	}
+	return true;
+}
+
+void CNetConnector::OnDestroy()
+{
+	CSocketConnector::OnDestroy();
+	if (m_pMaster)
+	{
+		CScriptConnectMgr::GetInstance()->RemoveSocketConnect(m_pMaster->GetScriptPointIndex());
+		m_pMaster->SetNetConnector(nullptr);
+		m_pMaster = nullptr;
+	}
+}
+
+bool CNetConnector::SendMsg(char* pBuff, int len)
+{
+	if (!CanSend())
+	{
+		return false;
+	}
+	if (m_pHeadProtocol)
+	{
+		m_pHeadProtocol->SendHead(len);
+	}
+	CSocketConnector::SendData(pBuff, len);
+}
+
+void CNetConnector::SetMaster(CScriptConnector* pConnector)
+{
+	m_pMaster = pConnector;
+}
+
+bool CNetConnector::SetHeadProtocol(std::string& strName, std::string& flag, std::string& password)
+{
+	CBaseHeadProtocol* pProtocol = nullptr;
+	if (strName == "websocket")
+	{
+		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_WEBSOCKET);
+	}
+	else if (strName == "inner")
+	{
+		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_INNER);
+	}
+	else
+	{
+		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_NONE);
+	}
+
+	if (pProtocol)
+	{
+		if (flag == "server")
+		{
+			pProtocol->SetServer(true);
+		}
+		else
+		{
+			pProtocol->SetServer(false);
+		}
+	}
+
+	if (password.size() > 0)
+	{
+		pProtocol->SetPassword(password.c_str());
+	}
+	pProtocol->SetConnector(this);
+	m_LockProtocol.lock();
+	if (m_pHeadProtocol)
+	{
+		CHeadProtocolMgr::GetInstance()->Remove(m_pHeadProtocol);
+	}
+	m_pHeadProtocol = pProtocol;
+	m_LockProtocol.unlock();
+	return true;
+}
+
+unsigned int CNetConnector::GetMsgSize()
+{
+	std::lock_guard<std::mutex> Lock(m_LockMsgList);
+	return m_listMsg.size();
+}
+
+CBaseMsgReceiveState* CNetConnector::PopMsg()
+{
+	std::lock_guard<std::mutex> Lock(m_LockMsgList);
+	CBaseMsgReceiveState* pResult = m_listMsg.front();
+	m_listMsg.pop_front();
+	return pResult;
+}
+
+void CNetConnector::SetInitScrript(std::string str)
+{
+	strInitScript = str;
+}
+
+std::string& CNetConnector::GetInitScript()
+{
+	// TODO: 在此处插入 return 语句
+	return strInitScript;
+}
+
+void CNetConnector::SetDisconnectScrript(std::string str)
+{
+	strDisconnectScript = str;
+}
+
+std::string& CNetConnector::GetDisconnectScript()
+{
+	// TODO: 在此处插入 return 语句
+	return strDisconnectScript;
+}
+
 CBaseScriptConnector::CBaseScriptConnector()
 {
 	RegisterClassFun(GetID, this, &CBaseScriptConnector::GetID2Script);
@@ -26,7 +255,7 @@ CBaseScriptConnector::CBaseScriptConnector()
 	RegisterClassFun(SetRoute, this, &CBaseScriptConnector::SetRoute2Script);
 	RegisterClassFun(SetRouteInitScript, this, &CBaseScriptConnector::SetRouteInitScript2Script);
 
-	RegisterClassFun(SetHeadProtocol, this, &CBaseScriptConnector::SetHeadProtocol2Script);
+	//RegisterClassFun(SetHeadProtocol, this, &CBaseScriptConnector::SetHeadProtocol2Script);
 
 	RegisterClassFun(SetDisconnectScript, this, &CBaseScriptConnector::SetDisconnectScript2Script);
 }
@@ -56,7 +285,7 @@ void CBaseScriptConnector::Init2Script()
 
 	RegisterClassFun1("SetRoute", CBaseScriptConnector);
 	RegisterClassFun1("SetRouteInitScript", CBaseScriptConnector);
-	RegisterClassFun1("SetHeadProtocol", CBaseScriptConnector);
+	//RegisterClassFun1("SetHeadProtocol", CBaseScriptConnector);
 
 	RegisterClassFun1("SetDisconnectScript", CBaseScriptConnector);
 }
@@ -237,63 +466,6 @@ int CBaseScriptConnector::SetRouteInitScript2Script(CScriptRunState* pState)
 	std::string strScriptName = pState->PopCharVarFormStack();
 	SetRouteInitScript(strScriptName.c_str());
 	pState->ClearFunParam();
-	return ECALLBACK_FINISH;
-}
-
-int CBaseScriptConnector::SetHeadProtocol2Script(CScriptRunState* pState)
-{
-	if (pState == nullptr)
-	{
-		return ECALLBACK_ERROR;
-	}
-	CBaseHeadProtocol* pProtocol = nullptr;
-	std::string strName = pState->PopCharVarFormStack();
-	std::string strFlag = pState->PopCharVarFormStack();
-	std::string strPassword = pState->PopCharVarFormStack();
-	if (strName == "websocket")
-	{
-		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_WEBSOCKET);
-	}
-	else if (strName == "inner")
-	{
-		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_INNER);
-	}
-	else
-	{
-		pProtocol = CHeadProtocolMgr::GetInstance()->Create(E_HEAD_PROTOCOL_NONE);
-	}
-
-	if (pProtocol)
-	{
-		if (strFlag == "server")
-		{
-			pProtocol->SetServer(true);
-		}
-		else
-		{
-			pProtocol->SetServer(false);
-		}
-	}
-
-	if (strPassword.size() > 0)
-	{
-		pProtocol->SetPassword(strPassword.c_str());
-	}
-
-	SetHeadProtocol(pProtocol);
-	pState->ClearFunParam();
-	if (pProtocol->IsServer())
-	{
-		return ECALLBACK_FINISH;
-	}
-	else
-	{
-		if (pState->m_pMachine)
-		{
-			m_WaitCanSendStateID = AddReturnState(pState->m_pMachine->GetEventIndex(), pState->GetId());
-			return ECALLBACK_WAITING;
-		}
-	}
 	return ECALLBACK_FINISH;
 }
 
@@ -781,161 +953,104 @@ CScriptConnector::CScriptConnector()
 {
 	//m_nCurMsgLen = 0;
 
-	pCurMsgReceive = nullptr;
-	m_pHeadProtocol = nullptr;
+	//pCurMsgReceive = nullptr;
+	//m_pHeadProtocol = nullptr;
+	OnInit();
 }
 
 
 CScriptConnector::~CScriptConnector()
 {
+	OnDestroy();
 }
 
-int CScriptConnector::GetSocketPort()
-{
-	return CSocketConnector::GetPort();
-}
+//int CScriptConnector::GetSocketPort()
+//{
+//	return CSocketConnector::GetPort();
+//}
 bool CScriptConnector::IsSocketClosed()
 {
-	return CSocketConnector::IsSocketClosed();
-}
-
-void CScriptConnector::Close()
-{
-	CSocketConnector::Close();
-	tDisconnectTime = std::chrono::steady_clock::now();
-}
-
-bool CScriptConnector::CanDelete()
-{
-	if (CBaseConnector::CanDelete())
+	if (m_pNetConnector)
 	{
-		auto curTime = std::chrono::steady_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - tDisconnectTime);
-		if (duration.count() >= 1000)
-		{
-			return true;
-		}
-
-		if (m_nEventListIndex == 0)
-		{
-			return false;
-		}
-		return true;
+		return m_pNetConnector->IsSocketClosed();
 	}
-	return false;
+	return true;
 }
+//
+//void CScriptConnector::Close()
+//{
+//	CSocketConnector::Close();
+//	tDisconnectTime = std::chrono::steady_clock::now();
+//}
+//
+//bool CScriptConnector::CanDelete()
+//{
+//	if (CBaseConnector::CanDelete())
+//	{
+//		auto curTime = std::chrono::steady_clock::now();
+//		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - tDisconnectTime);
+//		if (duration.count() >= 1000)
+//		{
+//			return true;
+//		}
+//
+//		if (m_nEventListIndex == 0)
+//		{
+//			return false;
+//		}
+//		return true;
+//	}
+//	return false;
+//}
 
 void CScriptConnector::OnInit()
 {
-	CSocketConnector::OnInit();
 	CBaseScriptConnector::OnInit();
 }
 bool CScriptConnector::OnProcess()
 {
-	if (CSocketConnector::OnProcess() == false)
+	//if (CSocketConnector::OnProcess() == false)
+	//{
+	//	return false;
+	//}
+	if (m_pNetConnector == nullptr)
 	{
 		return false;
 	}
 
-	//从接收队列里取出消息处理
-	std::vector<char> vOut;
-	m_LockProtocol.lock();
-	while (m_pHeadProtocol)
-	{
-		int nResult = m_pHeadProtocol->OnProcess();
-		switch (nResult)
-		{
-		case CBaseHeadProtocol::E_RETURN_COMPLETE:
-			{
-				if (m_pHeadProtocol->GetDataLen() > 0)
-				{
-					if (m_pHeadProtocol->GetData(vOut, 1))
-					{
-						int nPos = 0;
-						char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-
-						pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
-						if (pCurMsgReceive == nullptr)
-						{
-							//TODO 错误数据，关闭链接
-							Close();
-							break;
-						}
-						pCurMsgReceive->SetGetDataFun(std::bind(&CBaseHeadProtocol::GetData,m_pHeadProtocol,  std::placeholders::_1, std::placeholders::_2));
-					}
-				}
-			}
-			break;
-		case CBaseHeadProtocol::E_RETURN_CONTINUE:
-			break;
-		case CBaseHeadProtocol::E_RETURN_NEXT:
-			break;
-		case CBaseHeadProtocol::E_RETURN_SHAKE_HAND_COMPLETE:
-			if (m_pHeadProtocol->GetLastConnectID() != 0)
-			{
-				//合并连接信息
-				auto pOldConnect = CScriptConnectMgr::GetInstance()->GetConnector(m_pHeadProtocol->GetLastConnectID());
-				Merge(pOldConnect);
-				if (!pOldConnect->IsSocketClosed())
-				{
-					pOldConnect->Close();
-				}
-			}
-			m_bCanSend = true;
-			break;
-		case CBaseHeadProtocol::E_RETURN_ERROR:
-		default:
-			//错误，中断连接
-			Close();
-			break;
-		}
-		if (nResult != CBaseHeadProtocol::E_RETURN_CONTINUE)
-		{
-			break;
-		}
-	}
-	m_LockProtocol.unlock();
 	if (CanSend() && m_WaitCanSendStateID > 0)
 	{
 		CScriptStack parm;
 		ResultTo(parm, m_WaitCanSendStateID, 0);
 		m_WaitCanSendStateID = 0;
 	}
-	//if (pCurMsgReceive == nullptr)
-	//{
-	//	if (GetData(vOut, 1))
-	//	{
-	//		int nPos = 0;
-	//		char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
 
-	//		pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
-	//		if (pCurMsgReceive == nullptr)
-	//		{
-	//			//TODO 错误数据，关闭链接
-	//		}
-	//	}
-	//}
-	if (pCurMsgReceive)
+	unsigned int nMsgSize = m_pNetConnector->GetMsgSize();
+	for (unsigned int i = 0; i < nMsgSize; i++)
 	{
-		if (pCurMsgReceive->Recv(this) == true)
+		auto pCurMsgReceive = m_pNetConnector->PopMsg();
+		if (pCurMsgReceive)
 		{
-			//返回true才需要释放消息
-			if (RunMsg(pCurMsgReceive))
+			if (pCurMsgReceive->Recv(this) == true)
 			{
-				CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
-				pCurMsgReceive = nullptr;
+				//返回true才需要释放消息
+				if (RunMsg(pCurMsgReceive))
+				{
+					CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
+					pCurMsgReceive = nullptr;
+				}
+				else
+				{
+					//错误,断开连接
+					CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
+					pCurMsgReceive = nullptr;
+				}
 			}
 			else
 			{
-				//错误,断开连接
-				CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pCurMsgReceive);
-				pCurMsgReceive = nullptr;
+				//TODO 错误数据，关闭链接
+				return false;
 			}
-		}
-		else
-		{
-			//TODO 错误数据，关闭链接
-			return false;
 		}
 	}
 	CBaseScriptConnector::OnProcess();
@@ -996,23 +1111,22 @@ bool CScriptConnector::OnProcess()
 }
 void CScriptConnector::OnDestroy()
 {
-	CSocketConnector::OnDestroy();
+	//CSocketConnector::OnDestroy();
 
 	CBaseScriptConnector::OnDestroy();
 
 }
 bool CScriptConnector::SendMsg(char* pBuff, int len)
 {
-	if (m_bCanSend == false)
+	if (m_pNetConnector == nullptr)
 	{
 		return false;
 	}
-	if (m_pHeadProtocol)
-	{
-		m_pHeadProtocol->SendHead(len);
-	}
-	CSocketConnector::SendData(pBuff, len);
-	return true;
+	//if (m_pHeadProtocol)
+	//{
+	//	m_pHeadProtocol->SendHead(len);
+	//}
+	return m_pNetConnector->SendMsg(pBuff, len);
 }
 
 bool CScriptConnector::SendMsg(CBaseMsgReceiveState* pMsg)
@@ -1159,19 +1273,41 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal
 	return true;
 }
 
-void CScriptConnector::SetHeadProtocol(CBaseHeadProtocol* pProtocol)
+void CScriptConnector::SetNetConnector(CNetConnector* pConnector)
 {
-	m_bCanSend = false;
-	pProtocol->SetConnector(this);
-	m_LockProtocol.lock();
-	if (m_pHeadProtocol)
+	if (m_pNetConnector == nullptr)
 	{
-		CHeadProtocolMgr::GetInstance()->Remove(m_pHeadProtocol);
-		m_pHeadProtocol = nullptr;
+		m_pNetConnector = pConnector;
+		//说明要初始化
+		CScriptStack m_scriptParm;
+		ScriptVector_PushVar(m_scriptParm, this);
+		if (zlscript::CScriptVirtualMachine::GetInstance())
+		{
+			zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(pConnector->GetInitScript(), m_scriptParm);
+		}
+
+		this->SetDisconnectScript(pConnector->GetDisconnectScript());
 	}
-	m_pHeadProtocol = pProtocol;
-	m_LockProtocol.unlock();
+	else
+	{
+		m_pNetConnector = pConnector;
+	}
+
 }
+
+//void CScriptConnector::SetHeadProtocol(CBaseHeadProtocol* pProtocol)
+//{
+//	m_bCanSend = false;
+//	pProtocol->SetConnector(this);
+//	m_LockProtocol.lock();
+//	if (m_pHeadProtocol)
+//	{
+//		CHeadProtocolMgr::GetInstance()->Remove(m_pHeadProtocol);
+//		m_pHeadProtocol = nullptr;
+//	}
+//	m_pHeadProtocol = pProtocol;
+//	m_LockProtocol.unlock();
+//}
 
 void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 {

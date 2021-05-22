@@ -20,10 +20,12 @@ int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CS
 		return ECALLBACK_ERROR;
 	}
 	int nPort = pState->PopIntVarFormStack();
+	std::string strType = pState->PopCharVarFormStack();
+	std::string strPassword = pState->PopCharVarFormStack();
 	std::string strScript = pState->PopCharVarFormStack();
 	std::string strDisconnectScript = pState->PopCharVarFormStack();
 	CScriptConnectMgr::GetInstance()->SetListen(nPort, CScriptConnectMgr::CreateNew);
-	CScriptConnectMgr::SetInitConnectScript(nPort, strScript, strDisconnectScript);
+	CScriptConnectMgr::SetInitConnectInfo(nPort, strType, strPassword, strScript, strDisconnectScript);
 	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
@@ -41,10 +43,36 @@ int NewConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CSc
 	}
 	std::string strIP = pState->PopCharVarFormStack();
 	int nPort = pState->PopIntVarFormStack();
+	std::string strType = pState->PopCharVarFormStack();
+	std::string strPassword = pState->PopCharVarFormStack();
 
-	auto pClient = CScriptConnectMgr::GetInstance()->NewConnector(strIP.c_str(), nPort);
+	auto pClient = CScriptConnectMgr::GetInstance()->NewConnector(strIP.c_str(), nPort, strType, strPassword);
 	pState->ClearFunParam();
 	pState->PushClassPointToStack(pClient);
+	return ECALLBACK_FINISH;
+}
+
+int RemoveConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState)
+{
+	if (pState == nullptr)
+	{
+		return ECALLBACK_ERROR;
+	}
+	PointVarInfo point = pState->PopClassPointFormStack();
+	if (point.pPoint)
+	{
+		auto pConnect = point.pPoint->GetPoint();
+		if (pConnect)
+		{
+			if (pConnect->IsInitScriptPointIndex())
+			{
+				CScriptSuperPointerMgr::GetInstance()->RemoveClassPoint(pConnect->GetScriptPointIndex());
+				pConnect->ClearScriptPointIndex();
+			}
+			delete pConnect;
+		}
+	}
+	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
 
@@ -92,7 +120,7 @@ int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CSc
 
 
 CScriptConnectMgr CScriptConnectMgr::s_Instance;
-std::map<int, CScriptConnectMgr::tagConnectScript> CScriptConnectMgr::m_mapInitConnectScript;
+std::map<int, CScriptConnectMgr::tagConnectInit> CScriptConnectMgr::m_mapInitConnectInfo;
 
 CScriptConnectMgr::CScriptConnectMgr()
 {
@@ -105,37 +133,37 @@ CScriptConnectMgr::~CScriptConnectMgr()
 
 CSocketConnector* CScriptConnectMgr::CreateNew(SOCKET sRemote, const char* pIP, int nPort)
 {
-	CScriptConnector* pConnector = new CScriptConnector;
-	if (pConnector == NULL)
-	{
-		return NULL;
-	}
 
-	pConnector->SetSocket(sRemote);
-	pConnector->SetIP(pIP);
-	pConnector->OnInit();
-	CScriptConnectMgr::GetInstance()->AddClient(pConnector);
-	printf("new connect: %s; all connect count: %d \n", pIP, CScriptConnectMgr::GetInstance()->GetConnectSize());
-
-	//执行初始化脚本
-	auto itScript = m_mapInitConnectScript.find(nPort);
-	if (itScript != m_mapInitConnectScript.end())
+	auto itScript = m_mapInitConnectInfo.find(nPort);
+	if (itScript != m_mapInitConnectInfo.end())
 	{
-		CScriptStack m_scriptParm;
-		ScriptVector_PushVar(m_scriptParm, pConnector);
-		//单独使用一个machine对象，会使全局变量无法共享
-		//要么使脚本的全局变量脱离单个machine通用，要么就使用主machine的实例
-		//zlscript::CScriptVirtualMachine machine;
-		//machine.RunFunImmediately(itScript->second.strInitScript, m_scriptParm);
-		if (zlscript::CScriptVirtualMachine::GetInstance())
+		CNetConnector* pConnector = 
+			new CNetConnector(itScript->second.strType,"server",itScript->second.strPassword);
+		if (pConnector == NULL)
 		{
-			zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(itScript->second.strInitScript, m_scriptParm);
+			return NULL;
 		}
 
-		pConnector->SetDisconnectScript(itScript->second.strDisconnectScript);
+		pConnector->SetSocket(sRemote);
+		pConnector->SetIP(pIP);
+		pConnector->OnInit();
+		CScriptConnectMgr::GetInstance()->AddClient(pConnector);
+		printf("new connect: %s; all connect count: %d \n", pIP, CScriptConnectMgr::GetInstance()->GetConnectSize());
+		pConnector->SetInitScrript(itScript->second.strInitScript);
+		pConnector->SetDisconnectScrript(itScript->second.strDisconnectScript);
+		//CScriptStack m_scriptParm;
+		//ScriptVector_PushVar(m_scriptParm, pConnector);
+		//if (zlscript::CScriptVirtualMachine::GetInstance())
+		//{
+		//	zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(itScript->second.strInitScript, m_scriptParm);
+		//}
+
+		//pConnector->SetDisconnectScript(itScript->second.strDisconnectScript);
+
+		return pConnector;
 	}
 
-	return pConnector;
+	return nullptr;
 }
 
 CScriptConnector* CScriptConnectMgr::GetConnector(__int64 nID)
@@ -148,7 +176,7 @@ CScriptConnector* CScriptConnectMgr::GetConnector(__int64 nID)
 	return nullptr;
 }
 
-CScriptConnector* CScriptConnectMgr::NewConnector(const char* pIP, int Port)
+CScriptConnector* CScriptConnectMgr::NewConnector(const char* pIP, int Port, std::string strType, std::string strPassword)
 {
 	if (pIP == nullptr)
 	{
@@ -156,7 +184,7 @@ CScriptConnector* CScriptConnectMgr::NewConnector(const char* pIP, int Port)
 	}
 	tagConnecter tagInfo;
 
-	CScriptConnector* pClient = new CScriptConnector;
+	CNetConnector* pClient = new CNetConnector(strType,"client", strPassword);
 	if (pClient)
 	{
 		pClient->SetIP(pIP);
@@ -170,18 +198,55 @@ CScriptConnector* CScriptConnectMgr::NewConnector(const char* pIP, int Port)
 		tagInfo.pConnector = pClient;
 		m_ConnecterLock.unlock();
 
-
+		CScriptConnector* pScriptConnector = new CScriptConnector();
+		if (pScriptConnector)
+		{
+			pScriptConnector->SetNetConnector(pClient);
+			pClient->SetMaster(pScriptConnector);
+		}
+		return pScriptConnector;
 	}
 
-	return pClient;
+	return nullptr;;
 }
 
-void CScriptConnectMgr::SetInitConnectScript(int nPort, std::string strScript, std::string strDisconnectScript)
+void CScriptConnectMgr::SetInitConnectInfo(int nPort, std::string strType, std::string strPassword,
+											std::string strScript, std::string strDisconnectScript)
 {
-	tagConnectScript script;
+	tagConnectInit script;
+	script.strType = strType;
+	script.strPassword = strPassword;
 	script.strInitScript = strScript;
 	script.strDisconnectScript = strDisconnectScript;
-	m_mapInitConnectScript[nPort] = script;
+	m_mapInitConnectInfo[nPort] = script;
+}
+
+void CScriptConnectMgr::SetSockectConnector(CScriptConnector* pConnector)
+{
+	//std::lock_guard<std::mutex> Lock(m_lockScriptConnector);
+	if (pConnector)
+	{
+		m_mapScriptConnector[pConnector->GetScriptPointIndex()] = pConnector->GetScriptPointIndex();
+	}
+}
+
+CScriptConnector* CScriptConnectMgr::GetSocketConnector(__int64 id)
+{
+	//std::lock_guard<std::mutex> Lock(m_lockScriptConnector);
+	auto it = m_mapScriptConnector.find(id);
+	if (it != m_mapScriptConnector.end())
+	{
+		if (it->second.pPoint)
+		{
+			return dynamic_cast<CScriptConnector*>(it->second.pPoint->GetPoint());
+		}
+	}
+	return nullptr;
+}
+
+void CScriptConnectMgr::RemoveSocketConnect(__int64 id)
+{
+	m_listRemoveScriptConnect.push_back(id);
 }
 
 __int64 CScriptConnectMgr::GetSyncIndex(int serverID, __int64 id)
@@ -249,6 +314,13 @@ void CScriptConnectMgr::removeSyncProcessID(__int64 processid)
 void CScriptConnectMgr::OnProcess()
 {
 	CSocketConnectorMgr::OnProcess();
+
+	auto itRemove = m_listRemoveScriptConnect.begin();
+	while (itRemove != m_listRemoveScriptConnect.end())
+	{
+		m_mapScriptConnector.erase(*itRemove);
+		itRemove = m_listRemoveScriptConnect.erase(itRemove);
+	}
 
 	auto curTime = std::chrono::steady_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - m_LastSendMsgTime);

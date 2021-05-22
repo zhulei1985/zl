@@ -15,6 +15,49 @@ enum E_SCRIPT_EVENT_TYPE_CONNECT
 	E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE = 100,//
 	E_SCRIPT_EVENT_TYPE_CONNECT_CHANGE,
 };
+class CNetConnector : public CSocketConnector
+{
+public:
+	CNetConnector(std::string type, std::string flag, std::string password);
+	~CNetConnector();
+
+	void OnInit();
+	bool OnProcess();
+	void OnDestroy();
+
+	bool SendMsg(char* pBuff, int len);
+public:
+	void SetMaster(CScriptConnector* pConnector);
+	bool SetHeadProtocol(std::string& strName, std::string& flag, std::string& password);
+
+	unsigned int GetMsgSize();
+	CBaseMsgReceiveState* PopMsg();
+private:
+	CBaseHeadProtocol* m_pHeadProtocol;
+	std::mutex m_LockProtocol;
+
+	bool m_bIsWebSocket;
+
+	CScriptConnector* m_pMaster;
+
+	std::list<CBaseMsgReceiveState*> m_listMsg;
+	std::mutex m_LockMsgList;
+public:
+	bool CanSend()
+	{
+		return m_bCanSend;
+	}
+protected:
+	std::atomic_bool m_bCanSend{ false };
+public:
+	void SetInitScrript(std::string str);
+	std::string& GetInitScript();
+	void SetDisconnectScrript(std::string str);
+	std::string &GetDisconnectScript();
+protected:
+	std::string strInitScript;
+	std::string strDisconnectScript;
+};
 class CBaseScriptConnector : public CScriptPointInterface, public CScriptExecFrame
 {
 public:
@@ -40,7 +83,7 @@ public:
 	int SetRoute2Script(CScriptRunState* pState);
 	int SetRouteInitScript2Script(CScriptRunState* pState);
 
-	int SetHeadProtocol2Script(CScriptRunState* pState);
+	//int SetHeadProtocol2Script(CScriptRunState* pState);
 
 	int GetVal2Script(CScriptRunState* pState);
 	int SetVal2Script(CScriptRunState* pState);
@@ -93,7 +136,7 @@ public:
 	virtual void EventRemoveRoute(__int64 nSendID, CScriptStack& ParmInfo);
 	virtual void EventChangeRoute(__int64 nSendID, CScriptStack& ParmInfo);
 
-	virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
+	//virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
 
 	void SetDisconnectScript(std::string val);
 public:
@@ -150,7 +193,7 @@ protected:
 	std::atomic_int64_t m_WaitCanSendStateID{ 0 };
 };
 class CScriptRouteConnector;
-class CScriptConnector : public CSocketConnector, public CBaseScriptConnector
+class CScriptConnector : public CBaseScriptConnector
 {
 public:
 	CScriptConnector();
@@ -161,10 +204,10 @@ public:
 	//	return CScriptExecFrame::GetEventIndex();
 	//}
 public:
-	virtual int GetSocketPort();
+	//virtual int GetSocketPort();
 	virtual bool IsSocketClosed();
-	virtual void Close();
-	bool CanDelete();
+	//virtual void Close();
+	//bool CanDelete();
 
 	virtual void OnInit();
 	bool OnProcess();
@@ -175,7 +218,8 @@ public:
 	bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
 	bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal);
 
-	void SetHeadProtocol(CBaseHeadProtocol* pProtocol);
+	void SetNetConnector(CNetConnector *pConnector);
+	//void SetHeadProtocol(CBaseHeadProtocol* pProtocol);
 
 	//virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
 	//virtual void SyncUpClassFunRun(CSyncScriptPointInterface* pPoint, std::string strFunName, CScriptStack& stack);
@@ -187,12 +231,13 @@ protected:
 	typedef std::function< int(CSocketConnector* pConnector)> StateFun;
 	std::map<int, StateFun> m_mapStateFun;
 
-	bool m_bIsWebSocket;
+	CNetConnector* m_pNetConnector{ nullptr };
+	//bool m_bIsWebSocket;
 
-	CBaseHeadProtocol* m_pHeadProtocol;
-	std::mutex m_LockProtocol;
+	//CBaseHeadProtocol* m_pHeadProtocol;
+	//std::mutex m_LockProtocol;
 	//当前正在处理的消息
-	CBaseMsgReceiveState* pCurMsgReceive;
+	//CBaseMsgReceiveState* pCurMsgReceive;
 	
 public://同步类的镜像索引
 	__int64 GetImage4Index(__int64);
@@ -219,13 +264,13 @@ public:
 protected:
 	std::string strRouteInitScript;
 	std::map<__int64, CScriptRouteConnector*> m_mapRouteConnect;
-public:
-	bool CanSend()
-	{
-		return m_bCanSend;
-	}
-protected:
-	std::atomic_bool m_bCanSend{ false };
+//public:
+//	bool CanSend()
+//	{
+//		return m_bCanSend;
+//	}
+//protected:
+//	std::atomic_bool m_bCanSend{ false };
 };
 
 //路由模式下的链接

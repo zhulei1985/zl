@@ -63,6 +63,7 @@ namespace zlnetwork
 		virtual bool IsServer() { return false; }
 		virtual void SetPassword(const char* str){}
 
+		virtual void SetLastConnectID(__int64 id){}
 		virtual __int64 GetLastConnectID() { return 0; }
 	protected:
 		CSocketConnector* m_pConnector;
@@ -175,6 +176,11 @@ namespace zlnetwork
 
 		int OnState_Init();
 		int OnState_Shake_Hand();
+
+		virtual void SetLastConnectID(__int64 id) {
+			nLastConnectID = id;
+		}
+		virtual __int64 GetLastConnectID() { return nLastConnectID; }
 	public:
 		virtual void SetServer(bool val)
 		{
@@ -192,7 +198,7 @@ namespace zlnetwork
 		int nMD5StringLen;
 		std::string strMD5String;
 
-		__int64 nLastConnectID;
+		__int64 nLastConnectID{ 0 };
 	};
 
 	class CHeadProtocolMgr

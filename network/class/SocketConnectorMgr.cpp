@@ -187,6 +187,23 @@ namespace zlnetwork
 		return true;
 	}
 
+	bool CSocketConnectorMgr::RemoveClient(CBaseConnector* pConn)
+	{
+		if (pConn == NULL)
+		{
+			return false;
+		}
+		std::lock_guard<std::mutex> Lock(m_ConnecterLock);
+		tagConnecter* pConnectInfo = NULL;
+		std::map<__int64, tagConnecter>::iterator it = m_mapConnector.find(pConn->GetID());
+		if (it != m_mapConnector.end())
+		{
+			m_mapConnector.erase(it);
+			return true;
+		}
+		return false;
+	}
+
 
 	bool CSocketConnectorMgr::waitMsgAndClose()
 	{

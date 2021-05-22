@@ -29,6 +29,7 @@ void InitNetworkConnect();
 int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
 int SetListenWebSocket2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
 int NewConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
+int RemoveConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
 int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
 
 using namespace zlnetwork;
@@ -50,7 +51,7 @@ public:
 
 public:
 	CScriptConnector* GetConnector(__int64 nID);
-	CScriptConnector* NewConnector(const char* pIP, int Port);
+	CScriptConnector* NewConnector(const char* pIP, int Port,std::string strType, std::string strPassword);
 public:
 	std::chrono::time_point<std::chrono::steady_clock> m_LastSendMsgTime;
 public:
@@ -63,15 +64,26 @@ private:
 
 	//通过监听端口建立的连接的初始化脚本
 public:
-	static void SetInitConnectScript(int nPort,std::string strScript, std::string strDisconnectScript);
+	static void SetInitConnectInfo(int nPort, std::string strType, std::string strPassword, 
+									std::string strScript, std::string strDisconnectScript);
+
+	void SetSockectConnector(CScriptConnector* pConnector);
+	CScriptConnector* GetSocketConnector(__int64 id);
+	void RemoveSocketConnect(__int64 id);
 public:
-	struct tagConnectScript
+	struct tagConnectInit
 	{
+		std::string strType;
+		std::string strPassword;
+
 		std::string strInitScript;
 		std::string strDisconnectScript;
 	};
 private:
-	static std::map<int, tagConnectScript> m_mapInitConnectScript;
+	static std::map<int, tagConnectInit> m_mapInitConnectInfo;
+	std::map<__int64, zlscript::PointVarInfo> m_mapScriptConnector;
+	std::list<__int64> m_listRemoveScriptConnect;
+	//std::mutex m_lockScriptConnector;
 
 	//同步类的判断，让不同连接创建的同一同步类的镜像不会重复建立
 public:
