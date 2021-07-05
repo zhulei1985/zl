@@ -147,6 +147,9 @@ int main()
 		strFilename += vFilename[i].c_str();
 		zlscript::LoadFile(strFilename.c_str());
 	}
+	zlscript::CScriptCodeLoader::GetInstance()->MakeICode2Code(0);
+	zlscript::CScriptCodeLoader::GetInstance()->ClearICode();
+	zlscript::CScriptCodeLoader::GetInstance()->PrintAllCode("debug.txt");
 	//zlscript::LoadFile("script/main.script");
 	g_nThreadRunState = 1;
 
