@@ -23,8 +23,12 @@ namespace zlscript
 		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 		return m_mapDownSyncProcess.empty();
 	}
-	int CSyncScriptPointInterface::RunFun(int id, CScriptRunState* pState)
+	int CSyncScriptPointInterface::RunFun(int id, CScriptCallState* pState)
 	{
+		if (pState == nullptr || pState->m_pMaster == nullptr || pState->m_pMaster->m_pMachine==nullptr)
+		{
+			return 0;
+		}
 		auto itSyncFlag = m_mapSyncFunFlag.find(id);
 		if (itSyncFlag != m_mapSyncFunFlag.end())
 		{
@@ -40,37 +44,38 @@ namespace zlscript
 				//std::lock_guard<std::mutex> _lock{ *m_FunLock };
 				//m_FunLock.lock();
 				{
-					CScriptBaseClassFunInfo* pFunInfo = GetClassFunInfo(id);
+					CBaseScriptClassFun* pFunInfo = GetClassFunInfo(id);
 					if (pFunInfo)
 					{
-						funName = pFunInfo->GetFunName();
+						funName = pFunInfo->m_name;
 					}
 				}
 				//m_FunLock.unlock();
 				ScriptVector_PushVar(tempStack, this);
 				ScriptVector_PushVar(tempStack, funName.c_str());
 				ScriptVector_PushVar(tempStack, (__int64)1);
-				ScriptVector_PushVar(tempStack, pState->GetId());
-				pState->CopyToStack(&tempStack, pState->GetParamNum());
-				//std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
-				if (!CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, pState->m_pMachine->GetEventIndex(), tempStack, GetProcessID()))
+				ScriptVector_PushVar(tempStack, pState->m_pMaster->GetId());
+				for (unsigned int i = 0; i < pState->m_stackRegister.size(); i++)
 				{
-					pState->ClearFunParam();
+					ScriptVector_PushVar(tempStack,pState->m_stackRegister.GetVal(i));
+				}
+				//std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
+				if (!CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, 
+					pState->m_pMaster->m_pMachine->GetEventIndex(), tempStack, GetProcessID()))
+				{
 					return ECALLBACK_ERROR;
 				}
-				//CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(GetProcessID());
-				//if (pClient)
-				//{
-				//	pClient->SyncUpClassFunRun(this, funName, tempStack);
-				//}
-				pState->ClearFunParam();
+
 				return ECALLBACK_WAITING;
 			}
 			else
 			{
 				std::string funName;
 				CScriptStack parmStack;
-				pState->CopyToStack(&parmStack, pState->GetParamNum());
+				for (unsigned int i = 0; i < pState->m_stackRegister.size(); i++)
+				{
+					ScriptVector_PushVar(parmStack, pState->m_stackRegister.GetVal(i));
+				}
 
 				//先执行本地数据
 				int nResult = 0;
@@ -78,16 +83,16 @@ namespace zlscript
 				//auto it = m_mapScriptClassFun.find(id);
 				//if (it != m_mapScriptClassFun.cend())
 				{
-					CScriptBaseClassFunInfo* pFunInfo = GetClassFunInfo(id);
+					CBaseScriptClassFun* pFunInfo = GetClassFunInfo(id);
 					if (pFunInfo)
 					{
 						nResult = pFunInfo->RunFun(pState);
-						funName = pFunInfo->GetFunName();
+						funName = pFunInfo->m_name;
 					}
 				}
 				//m_FunLock.unlock();
 
-				if (itSyncFlag->second >= 1)
+				if (itSyncFlag->second & CBaseScriptClassFun::E_FLAG_SYNC_RELAY_FUN)
 				{
 					CScriptStack tempStack;
 					ScriptVector_PushVar(tempStack, this);
@@ -107,7 +112,7 @@ namespace zlscript
 							continue;
 						}
 						//std::vector<char> vBuff;
-						if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_DOWN_SYNC_FUN, pState->m_pMachine->GetEventIndex(), tempStack, Syncit->first))
+						if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_DOWN_SYNC_FUN, pState->m_pMaster->m_pMachine->GetEventIndex(), tempStack, Syncit->first))
 						{
 							Syncit++;
 						}
@@ -144,7 +149,7 @@ namespace zlscript
 		return CScriptPointInterface::RunFun(id, pState);
 	}
 
-	int CSyncScriptPointInterface::SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64> &listRoute)
+	int CSyncScriptPointInterface::SyncUpRunFun(int nClassType, std::string strFun, CScriptCallState* pState, std::list<__int64> &listRoute)
 	{
 		if (GetProcessID() > 0)//不是根节点，继续往上发送
 		{
@@ -156,30 +161,30 @@ namespace zlscript
 			{
 				ScriptVector_PushVar(tempStack, *it);
 			}
-			pState->CopyToStack(&tempStack, pState->GetParamNum());
+			for (unsigned int i = 0; i < pState->m_stackRegister.size(); i++)
+			{
+				ScriptVector_PushVar(tempStack, pState->m_stackRegister.GetVal(i));
+			}
 
 			//std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 			if (!CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, 0, tempStack, GetProcessID()))
 			{
 
 			}
-			//CScriptConnector* pClient = CScriptConnectMgr::GetInstance()->GetConnector(GetProcessID());
-			//if (pClient)
-			//{
-			//	pClient->SyncUpClassFunRun(this->GetScriptPointIndex(), strFun, tempStack);
-			//}
-			pState->ClearFunParam();
 
 			return ECALLBACK_FINISH;
 		}
 		return SyncDownRunFun(nClassType, strFun, pState, listRoute);
 	}
 
-	int CSyncScriptPointInterface::SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64> &listRoute)
+	int CSyncScriptPointInterface::SyncDownRunFun(int nClassType, std::string strFun, CScriptCallState* pState, std::list<__int64> &listRoute)
 	{
 		std::string funName;
 		CScriptStack parmStack;
-		pState->CopyToStack(&parmStack, pState->GetParamNum());
+		for (unsigned int i = 0; i < pState->m_stackRegister.size(); i++)
+		{
+			ScriptVector_PushVar(parmStack, pState->m_stackRegister.GetVal(i));
+		}
 
 		//先执行本地数据
 		int nResult = 0;
@@ -191,11 +196,11 @@ namespace zlscript
 		//auto it = m_mapScriptClassFun.find(index);
 		//if (it != m_mapScriptClassFun.cend())
 		{
-			CScriptBaseClassFunInfo* pFunInfo = GetClassFunInfo(index);
+			CBaseScriptClassFun* pFunInfo = GetClassFunInfo(index);
 			if (pFunInfo)
 			{
 				nResult = pFunInfo->RunFun(pState);
-				funName = pFunInfo->GetFunName();
+				funName = pFunInfo->m_name;
 			}
 		}
 
@@ -213,7 +218,8 @@ namespace zlscript
 				ScriptVector_PushVar(returnStack, *it);
 			}
 			//TODO 压入返回值
-			pState->CopyToStack(&returnStack, 1);
+			ScriptVector_PushVar(returnStack, &pState->GetResult());
+
 			if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN_SYNC_FUN, 0, returnStack, nEventIndex))
 			{
 			}
@@ -576,6 +582,19 @@ namespace zlscript
 	void CSyncScriptPointInterface::RemoveScriptAttribute(CBaseScriptClassAttribute* pAttr)
 	{
 		CScriptPointInterface::RemoveScriptAttribute(pAttr);
+	}
+	void CSyncScriptPointInterface::RegisterScriptFun(CBaseScriptClassFun* pClassFun)
+	{
+		if (pClassFun == nullptr)
+		{
+			return;
+		}
+
+		CScriptPointInterface::RegisterScriptFun(pClassFun);
+		if (pClassFun->m_nFlag & CBaseScriptClassFun::E_FLAG_SYNC)
+		{
+			m_mapSyncFunFlag[pClassFun->m_index] = pClassFun->m_nFlag;
+		}
 	}
 	unsigned int CSyncScriptPointInterface::GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point)
 	{

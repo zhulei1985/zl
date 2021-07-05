@@ -41,7 +41,7 @@ void BackGroundThreadFun()
 	}
 }
 
-int UserInput(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
+int UserInput(CScriptVirtualMachine* pMachine, CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
@@ -51,18 +51,18 @@ int UserInput(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
 
 	std::cin.getline(strTemp, 1024);
 
-	pState->ClearFunParam();
-	pState->PushVarToStack(strTemp);
+	//pState->ClearFunParam();
+	pState->SetResult(strTemp);
 	return ECALLBACK_FINISH;
 }
-int ExecuteCommand(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
+int ExecuteCommand(CScriptVirtualMachine* pMachine, CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
 	std::vector<std::string> vStrings;
-	std::string strString = pState->PopCharVarFormStack();
+	std::string strString = pState->GetStringVarFormStack(0);
 	std::string strTemp;
 	for (size_t i = 0; i < strString.size(); i++)
 	{
@@ -90,16 +90,23 @@ int ExecuteCommand(CScriptVirtualMachine* pMachine, CScriptRunState* pState)
 	int nParmNum = pState->GetParamNum();
 	for (int i = 1; i < nParmNum; i++)
 	{
-		vOtherVar.push_back(pState->PopVarFormStack());
+		vOtherVar.push_back(pState->GetVarFormStack(i));
 	}
-	pState->ClearFunParam();
-	for (auto it = vOtherVar.rbegin(); it != vOtherVar.rend(); it++)
+	//pState->ClearFunParam();
+	CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->
+		GetClassMgr(CScriptSuperPointer<CScriptArray>::s_Info.nClassType);
+	if (pMgr)
 	{
-		pState->PushVarToStack(*it);
-	}
-	for (auto it = vStrings.rbegin(); it != vStrings.rend(); it++)
-	{
-		pState->PushVarToStack((*it).c_str());
+		CScriptArray* pArray = dynamic_cast<CScriptArray*>(pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE));
+		for (auto it = vOtherVar.rbegin(); it != vOtherVar.rend(); it++)
+		{
+			pArray->GetVars().push_back(*it);
+		}
+		for (auto it = vStrings.rbegin(); it != vStrings.rend(); it++)
+		{
+			pArray->GetVars().push_back((*it).c_str());
+		}
+		pState->SetClassPointResult(pArray);
 	}
 
 	return ECALLBACK_FINISH;

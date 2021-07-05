@@ -12,18 +12,18 @@ public:
 public:
 	static void Init2Script();
 
-	int SetAccountName2Script(CScriptRunState* pState);
-	int GetAccountName2Script(CScriptRunState* pState);
-	int SetPassword2Script(CScriptRunState* pState);
-	int GetPassword2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CAccount, SetAccountName);
+	CLASS_SCRIPT_FUN(CAccount, GetAccountName);
+	CLASS_SCRIPT_FUN(CAccount, SetPassword);
+	CLASS_SCRIPT_FUN(CAccount, GetPassword);
 
-	int SetNickName2Script(CScriptRunState* pState);
-	int GetNickName2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_SYNC_FUN(CAccount,SetNickName);
+	CLASS_SCRIPT_FUN(CAccount, GetNickName);
 
-	int GetVal2Script(CScriptRunState* pState);
-	int SetVal2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CAccount, GetVal);
+	CLASS_SCRIPT_FUN(CAccount, SetVal);
 
-	int MakeConnectString2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CAccount, MakeConnectString);
 public:
 	////virtual bool AddAllData2Bytes(std::vector<char>& vBuff);
 	////virtual bool DecodeData4Bytes(char* pBuff, int& pos, int len);

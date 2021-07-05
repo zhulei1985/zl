@@ -12,13 +12,12 @@ void CTestClass::Init2Script()
 {
 }
 
-int CTestClass::Fun12Script(CScriptRunState* pState)
+int CTestClass::Fun12Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
 
-	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }

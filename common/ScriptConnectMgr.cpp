@@ -13,52 +13,52 @@ void InitNetworkConnect()
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("GetConnector", GetConnector2Script);
 }
 
-int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState)
+int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	int nPort = pState->PopIntVarFormStack();
-	std::string strType = pState->PopCharVarFormStack();
-	std::string strPassword = pState->PopCharVarFormStack();
-	std::string strScript = pState->PopCharVarFormStack();
-	std::string strDisconnectScript = pState->PopCharVarFormStack();
+	int nPort = pState->GetIntVarFormStack(0);
+	std::string strType = pState->GetStringVarFormStack(1);
+	std::string strPassword = pState->GetStringVarFormStack(2);
+	std::string strScript = pState->GetStringVarFormStack(3);
+	std::string strDisconnectScript = pState->GetStringVarFormStack(4);
 	CScriptConnectMgr::GetInstance()->SetListen(nPort, CScriptConnectMgr::CreateNew);
 	CScriptConnectMgr::SetInitConnectInfo(nPort, strType, strPassword, strScript, strDisconnectScript);
-	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
 
-int SetListenWebSocket2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState)
+int SetListenWebSocket2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState)
 {
 	return 0;
 }
 
-int NewConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState)
+int NewConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string strIP = pState->PopCharVarFormStack();
-	int nPort = pState->PopIntVarFormStack();
-	std::string strType = pState->PopCharVarFormStack();
-	std::string strPassword = pState->PopCharVarFormStack();
+	std::string strIP = pState->GetStringVarFormStack(0);
+	int nPort = pState->GetIntVarFormStack(1);
+	std::string strType = pState->GetStringVarFormStack(2);
+	std::string strPassword = pState->GetStringVarFormStack(3);
 
 	auto pClient = CScriptConnectMgr::GetInstance()->NewConnector(strIP.c_str(), nPort, strType, strPassword);
-	pState->ClearFunParam();
-	pState->PushClassPointToStack(pClient);
+
+	pState->SetClassPointResult(pClient);
 	return ECALLBACK_FINISH;
 }
 
-int RemoveConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState)
+int RemoveConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	PointVarInfo point = pState->PopClassPointFormStack();
+	PointVarInfo point = pState->GetClassPointFormStack(0);
 	if (point.pPoint)
 	{
 		auto pConnect = point.pPoint->GetPoint();
@@ -72,20 +72,20 @@ int RemoveConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::
 			delete pConnect;
 		}
 	}
-	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
 
-int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState)
+int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	__int64 nID = pState->PopIntVarFormStack();
+	__int64 nID = pState->GetIntVarFormStack(0);
 	auto pClient = CScriptConnectMgr::GetInstance()->GetConnector(nID);
-	pState->ClearFunParam();
-	pState->PushClassPointToStack(pClient);
+
+	pState->SetClassPointResult(pClient);
 	return ECALLBACK_FINISH;
 }
 

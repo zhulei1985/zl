@@ -1127,23 +1127,32 @@ bool CSyncUpMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	//将参数放入临时状态中
 	CTempScriptRunState TempState;
-	TempState.CopyFromStack(&m_scriptParm);
-	//下传过来的数据，说明接收方只是镜像
-	__int64 nIndex = nClassID;// pClient->GetIndex4Image(nClassID);
-
-	PointVarInfo pointVar = nIndex;
-	auto pPoint = pointVar.pPoint;
-	if (pPoint)
+	CACHE_NEW(CScriptCallState, pCallState, &TempState);
+	if (pCallState)
 	{
-		pPoint->Lock();
-		auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
-		if (pMaster)
+		for (unsigned int i = 0; i < m_scriptParm.size(); i++)
 		{
-			m_listRoute.push_back(pClient->GetEventIndex());
-			pMaster->SyncUpRunFun(pPoint->GetType(), strFunName, &TempState, m_listRoute);
+			pCallState->PushVarToStack(*m_scriptParm.GetVal(i));
 		}
-		pPoint->Unlock();
+
+		//下传过来的数据，说明接收方只是镜像
+		__int64 nIndex = nClassID;// pClient->GetIndex4Image(nClassID);
+
+		PointVarInfo pointVar = nIndex;
+		auto pPoint = pointVar.pPoint;
+		if (pPoint)
+		{
+			pPoint->Lock();
+			auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+			if (pMaster)
+			{
+				m_listRoute.push_back(pClient->GetEventIndex());
+				pMaster->SyncUpRunFun(pPoint->GetType(), strFunName, pCallState, m_listRoute);
+			}
+			pPoint->Unlock();
+		}
 	}
+	CACHE_DELETE(pCallState);
 	return true;
 }
 
@@ -1369,23 +1378,31 @@ bool CSyncDownMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	//将参数放入临时状态中
 	CTempScriptRunState TempState;
-	TempState.CopyFromStack(&m_scriptParm);
-	//下传过来的数据，说明接收方只是镜像
-	__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-	PointVarInfo pointVar = nIndex;
-	auto pPoint = pointVar.pPoint;
-	if (pPoint)
+	CACHE_NEW(CScriptCallState, pCallState, &TempState);
+	if (pCallState)
 	{
-		pPoint->Lock();
-		auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
-		if (pMaster)
+		for (unsigned int i = 0; i < m_scriptParm.size(); i++)
 		{
-			std::list<__int64> listRoute;
-			pMaster->SyncDownRunFun(pPoint->GetType(), strFunName, &TempState, listRoute);
+			pCallState->PushVarToStack(*m_scriptParm.GetVal(i));
 		}
-		pPoint->Unlock();
+		//下传过来的数据，说明接收方只是镜像
+		__int64 nIndex = pClient->GetIndex4Image(nClassID);
+
+		PointVarInfo pointVar = nIndex;
+		auto pPoint = pointVar.pPoint;
+		if (pPoint)
+		{
+			pPoint->Lock();
+			auto pMaster = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+			if (pMaster)
+			{
+				std::list<__int64> listRoute;
+				pMaster->SyncDownRunFun(pPoint->GetType(), strFunName, pCallState, listRoute);
+			}
+			pPoint->Unlock();
+		}
 	}
+	CACHE_DELETE(pCallState);
 	return true;
 }
 

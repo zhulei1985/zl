@@ -26,7 +26,6 @@
 #include "ScriptClassMgr.h"
 #include "ScriptClassAttributes.h"
 #include "ScriptPointInterface.h"
-#include "StackVarInfo.h"
 namespace zlscript
 {
 	inline void InitScript()

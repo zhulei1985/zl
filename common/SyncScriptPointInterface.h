@@ -46,25 +46,14 @@ namespace zlscript
 #define ATTR_SYNC_AND_DB_UNIQUE_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index);
 #define ATTR_SYNC_AND_DB_UNIQUE_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index);
 #define ATTR_SYNC_AND_DB_UNIQUE_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index);
-//
-//#define INIT_SYNC_ATTRIBUTE(index,val) \
-//	m_mapSyncAttributes[index] = &val; \
-//	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC,index,this);
-//
-//#define INIT_SYNC_AND_DB_ATTRIBUTE(index,val) \
-//	m_mapSyncAttributes[index] = &val; \
-//	m_mapDBAttributes[#val] = &val; \
-//	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB,index,this);
-//
-//#define INIT_SYNC_AND_DB_ATTRIBUTE_UNIQUE(index,val) \
-//	m_mapSyncAttributes[index] = &val; \
-//	m_mapDBAttributes[#val] = &val; \
-//	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index,this);
-//
-//#define INIT_SYNC_AND_DB_ATTRIBUTE_PRIMARY(index,val) \
-//	m_mapSyncAttributes[index] = &val; \
-//	m_mapDBAttributes[#val] = &val; \
-//	val.init(CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY,index,this);
+
+#define CLASS_SCRIPT_SYNC_FUN(classname,funname) \
+	int funname##2Script(CScriptCallState* pState); \
+	CBaseScriptClassFun funname##Fun{#funname,std::bind(&classname::funname##2Script,this,std::placeholders::_1),this,CBaseScriptClassFun::E_FLAG_SYNC };
+
+#define CLASS_SCRIPT_SYNC_RELAY_FUN(classname,funname) \
+	int funname##2Script(CScriptCallState* pState); \
+	CBaseScriptClassFun funname##Fun{#funname,std::bind(&classname::funname##2Script,this,std::placeholders::_1),this,CBaseScriptClassFun::E_FLAG_SYNC|CBaseScriptClassFun::E_FLAG_SYNC_RELAY_FUN };
 
 
 	class CSyncScriptPointInterface : public CScriptPointInterface
@@ -74,14 +63,15 @@ namespace zlscript
 		virtual ~CSyncScriptPointInterface();
 
 		virtual bool CanRelease();
+
 	public:
-		virtual void SetSyncFun(int id, int type)
-		{
-			m_mapSyncFunFlag[id] = type;
-		}
-		int RunFun(int id, CScriptRunState* pState);
-		virtual int SyncUpRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64>&);
-		virtual int SyncDownRunFun(int nClassType, std::string strFun, CScriptRunState* pState, std::list<__int64>&);
+		//virtual void SetSyncFun(int id, int type)
+		//{
+		//	m_mapSyncFunFlag[id] = type;
+		//}
+		int RunFun(int id, CScriptCallState* pState);
+		virtual int SyncUpRunFun(int nClassType, std::string strFun, CScriptCallState* pState, std::list<__int64>&);
+		virtual int SyncDownRunFun(int nClassType, std::string strFun, CScriptCallState* pState, std::list<__int64>&);
 
 		//同步类数据，如果有上层节点，向上层节点发送，没有上层节点，向下层节点发送
 		//void SyncClassData();
@@ -151,6 +141,8 @@ namespace zlscript
 		void RegisterScriptAttribute(CBaseScriptClassAttribute* pAttr);
 		void RemoveScriptAttribute(CBaseScriptClassAttribute* pAttr);
 
+		void RegisterScriptFun(CBaseScriptClassFun* pClassFun);
+
 		virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point);
 		virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index);
 	protected:
@@ -180,35 +172,35 @@ namespace zlscript
 		std::mutex m_UpdateSyncAttLock;
 	};
 
-//type 值为0表示不会要求下级节点执行此类函数
-#define RegisterSyncClassFun(name, p, fun, type) \
-	{ \
-		struct CScript_##name##_ClassFunInfo :public CScriptBaseClassFunInfo \
-		{ \
-			std::function< int (CScriptRunState *)> m_fun; \
-			int RunFun(CScriptRunState *pState) \
-			{ \
-				return m_fun(pState); \
-			} \
-			CScriptBaseClassFunInfo* Copy() \
-			{ \
-				CScript_##name##_ClassFunInfo* pInfo = new CScript_##name##_ClassFunInfo; \
-				if (pInfo) \
-				{ \
-					pInfo->vParmeterInfo = this->vParmeterInfo; \
-				} \
-				return pInfo; \
-			} \
-			const char* GetFunName() \
-			{ \
-				return #name; \
-			} \
-		}; \
-		CScript_##name##_ClassFunInfo *pInfo = new CScript_##name##_ClassFunInfo; \
-		pInfo->m_fun = std::bind(fun,p,std::placeholders::_1); \
-		int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(p); \
-		int index = CScriptSuperPointerMgr::GetInstance()->GetClassFunIndex(nClassType,#name); \
-		p->SetFun(index,pInfo); \
-		p->SetSyncFun(index,type); \
-	}
+////type 值为0表示不会要求下级节点执行此类函数
+//#define RegisterSyncClassFun(name, p, fun, type) \
+//	{ \
+//		struct CScript_##name##_ClassFunInfo :public CScriptBaseClassFunInfo \
+//		{ \
+//			std::function< int (CScriptRunState *)> m_fun; \
+//			int RunFun(CScriptRunState *pState) \
+//			{ \
+//				return m_fun(pState); \
+//			} \
+//			CScriptBaseClassFunInfo* Copy() \
+//			{ \
+//				CScript_##name##_ClassFunInfo* pInfo = new CScript_##name##_ClassFunInfo; \
+//				if (pInfo) \
+//				{ \
+//					pInfo->vParmeterInfo = this->vParmeterInfo; \
+//				} \
+//				return pInfo; \
+//			} \
+//			const char* GetFunName() \
+//			{ \
+//				return #name; \
+//			} \
+//		}; \
+//		CScript_##name##_ClassFunInfo *pInfo = new CScript_##name##_ClassFunInfo; \
+//		pInfo->m_fun = std::bind(fun,p,std::placeholders::_1); \
+//		int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(p); \
+//		int index = CScriptSuperPointerMgr::GetInstance()->GetClassFunIndex(nClassType,#name); \
+//		p->SetFun(index,pInfo); \
+//		p->SetSyncFun(index,type); \
+//	}
 }

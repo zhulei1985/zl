@@ -67,29 +67,28 @@ public:
 	static void Init2Script();
 
 	//这个GetID现在发现有些多余，脚本中直接就以脚本指针索引即可
-	int GetID2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, GetID);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, GetPort);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, Close);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, IsConnect);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, RunScript);
 
-	int GetPort2Script(CScriptRunState* pState);
-	int Close2Script(CScriptRunState* pState);
-	int IsConnect2Script(CScriptRunState* pState);
-	int RunScript2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetAllScriptLimit);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetScriptLimit);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, CheckScriptLimit);
 
-	int SetAllScriptLimit2Script(CScriptRunState* pState);
-	int SetScriptLimit2Script(CScriptRunState* pState);
-	int CheckScriptLimit2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetRemoteFunction);
 
-	int SetRemoteFunction2Script(CScriptRunState* pState);
-
-	int SetRoute2Script(CScriptRunState* pState);
-	int SetRouteInitScript2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetRoute);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetRouteInitScript);
 
 	//int SetHeadProtocol2Script(CScriptRunState* pState);
 
-	int GetVal2Script(CScriptRunState* pState);
-	int SetVal2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, GetVal);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetVal);
 
-	int Merge2Script(CScriptRunState* pState);
-	int SetDisconnectScript2Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, Merge);
+	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetDisconnectScript);
 public:
 	//virtual __int64 GetID()
 	//{
@@ -102,12 +101,14 @@ public:
 	virtual void OnInit();
 	virtual bool OnProcess();
 	virtual void OnDestroy();
-	virtual bool SendMsg(char* pBuff, int len)=0;
-	virtual bool SendMsg(CBaseMsgReceiveState* pMsg)=0;
+	virtual bool SendMsg(char* pBuff, int len) { return false; }
+	virtual bool SendMsg(CBaseMsgReceiveState* pMsg) { return false; }
 	virtual bool RunMsg(CBaseMsgReceiveState* pMsg);
 
-	virtual bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal) = 0;
-	virtual bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo *pVal) = 0;
+	virtual bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal) { return false; }
+	virtual bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal) {
+		return false;
+	}
 
 	virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
 	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack, std::list<__int64> listRoute);
@@ -140,6 +141,10 @@ public:
 
 	void SetDisconnectScript(std::string val);
 public:
+	virtual void RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex) {}
+	//"我"向"别人"返回执行脚本的结果
+	virtual void ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex) {}
+
 	//"我"是指本连接对应的进程
 
 	//"别人"要求"我"执行脚本
@@ -159,9 +164,13 @@ protected:
 
 	//这个链接处理的镜像类
 public:
-	virtual __int64 GetImage4Index(__int64) = 0;
-	virtual __int64 GetIndex4Image(__int64) = 0;
-	virtual void SetImageAndIndex(__int64 nImageID, __int64 nLoaclID) = 0;
+	virtual __int64 GetImage4Index(__int64) {
+		return 0;
+	}
+	virtual __int64 GetIndex4Image(__int64) {
+		return 0;
+	}
+	virtual void SetImageAndIndex(__int64 nImageID, __int64 nLoaclID){}
 public:
 	void SetScriptLimit(std::string strName);
 	bool CheckScriptLimit(std::string strName);
@@ -192,6 +201,7 @@ public:
 protected:
 	std::atomic_int64_t m_WaitCanSendStateID{ 0 };
 };
+
 class CScriptRouteConnector;
 class CScriptConnector : public CBaseScriptConnector
 {

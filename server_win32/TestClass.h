@@ -12,8 +12,8 @@ public:
 public:
 	static void Init2Script();
 
-	int Fun12Script(CScriptRunState* pState);
-
+	//int Fun12Script(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CTestClass, Fun1);
 public:
 	//virtual bool AddAllData2Bytes(std::vector<char> vBuff);
 	//virtual bool DecodeData4Bytes(char* pBuff, int& pos, int len);

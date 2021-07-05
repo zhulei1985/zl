@@ -237,27 +237,6 @@ std::string& CNetConnector::GetDisconnectScript()
 
 CBaseScriptConnector::CBaseScriptConnector()
 {
-	RegisterClassFun(GetID, this, &CBaseScriptConnector::GetID2Script);
-	RegisterClassFun(GetPort, this, &CBaseScriptConnector::GetPort2Script);
-
-	RegisterClassFun(Close, this, &CBaseScriptConnector::Close2Script);
-	RegisterClassFun(IsConnect, this, &CBaseScriptConnector::IsConnect2Script);
-	RegisterClassFun(RunScript, this, &CBaseScriptConnector::RunScript2Script);
-	RegisterClassFun(SetVal, this, &CBaseScriptConnector::SetVal2Script);
-	RegisterClassFun(GetVal, this, &CBaseScriptConnector::GetVal2Script);
-
-	RegisterClassFun(SetAllScriptLimit, this, &CBaseScriptConnector::SetAllScriptLimit2Script);
-	RegisterClassFun(SetScriptLimit, this, &CBaseScriptConnector::SetScriptLimit2Script);
-	RegisterClassFun(CheckScriptLimit, this, &CBaseScriptConnector::CheckScriptLimit2Script);
-
-	RegisterClassFun(SetRemoteFunction, this, &CBaseScriptConnector::SetRemoteFunction2Script);
-
-	RegisterClassFun(SetRoute, this, &CBaseScriptConnector::SetRoute2Script);
-	RegisterClassFun(SetRouteInitScript, this, &CBaseScriptConnector::SetRouteInitScript2Script);
-
-	//RegisterClassFun(SetHeadProtocol, this, &CBaseScriptConnector::SetHeadProtocol2Script);
-
-	RegisterClassFun(SetDisconnectScript, this, &CBaseScriptConnector::SetDisconnectScript2Script);
 }
 
 CBaseScriptConnector::~CBaseScriptConnector()
@@ -267,94 +246,74 @@ CBaseScriptConnector::~CBaseScriptConnector()
 void CBaseScriptConnector::Init2Script()
 {
 	RegisterClassType("Connector", CBaseScriptConnector);
-
-	RegisterClassFun1("GetID", CBaseScriptConnector);
-	RegisterClassFun1("GetPort", CBaseScriptConnector);
-
-	RegisterClassFun1("Close", CBaseScriptConnector);
-	RegisterClassFun1("IsConnect", CBaseScriptConnector);
-	RegisterClassFun1("RunScript", CBaseScriptConnector);
-	RegisterClassFun1("SetVal", CBaseScriptConnector);
-	RegisterClassFun1("GetVal", CBaseScriptConnector);
-
-	RegisterClassFun1("SetAllScriptLimit", CBaseScriptConnector);
-	RegisterClassFun1("SetScriptLimit", CBaseScriptConnector);
-	RegisterClassFun1("CheckScriptLimit", CBaseScriptConnector);
-
-	RegisterClassFun1("SetRemoteFunction", CBaseScriptConnector);
-
-	RegisterClassFun1("SetRoute", CBaseScriptConnector);
-	RegisterClassFun1("SetRouteInitScript", CBaseScriptConnector);
-	//RegisterClassFun1("SetHeadProtocol", CBaseScriptConnector);
-
-	RegisterClassFun1("SetDisconnectScript", CBaseScriptConnector);
 }
 
-int CBaseScriptConnector::GetID2Script(CScriptRunState* pState)
+int CBaseScriptConnector::GetID2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
 
-	pState->ClearFunParam();
-	pState->PushVarToStack(GetEventIndex());
+	//pState->ClearFunParam();
+	pState->SetResult(GetEventIndex());
 	return ECALLBACK_FINISH;
 }
-int CBaseScriptConnector::GetPort2Script(CScriptRunState* pState)
+int CBaseScriptConnector::GetPort2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
 
-	pState->ClearFunParam();
-	pState->PushVarToStack(GetSocketPort());
+	pState->SetResult((__int64)GetSocketPort());
 	return ECALLBACK_FINISH;
 }
-int CBaseScriptConnector::Close2Script(CScriptRunState* pState)
+int CBaseScriptConnector::Close2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
 	this->Close();
-	pState->ClearFunParam();
 
 	return ECALLBACK_FINISH;
 }
-int CBaseScriptConnector::IsConnect2Script(CScriptRunState* pState)
+int CBaseScriptConnector::IsConnect2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
 
-	pState->ClearFunParam();
-	pState->PushVarToStack(IsSocketClosed() ? 0 : 1);
+	pState->SetResult((__int64)(IsSocketClosed() ? 0 : 1));
 	return ECALLBACK_FINISH;
 }
-int CBaseScriptConnector::RunScript2Script(CScriptRunState* pState)
+int CBaseScriptConnector::RunScript2Script(CScriptCallState* pState)
 {
-	if (pState == nullptr)
+	if (pState == nullptr && pState->m_pMaster)
 	{
 		return ECALLBACK_ERROR;
 	}
-	int nParmNum = pState->GetParamNum() - 2;
+	int nParmNum = pState->GetParamNum();
 	CScriptStack parm;
 	__int64 nEventIndex = 0;
 	__int64 nReturnID = 0;
-	if (pState->m_pMachine)
-		nEventIndex = pState->m_pMachine->GetEventIndex();
-	int nIsWaiting = pState->PopIntVarFormStack();//是否等待调用函数完成
+	if (pState->m_pMaster->m_pMachine)
+		nEventIndex = pState->m_pMaster->m_pMachine->GetEventIndex();
+	int nIsWaiting = pState->GetIntVarFormStack(0);//是否等待调用函数完成
 	if (nIsWaiting > 0)
-		nReturnID = (__int64)pState->GetId();
-	std::string strScriptFunName = pState->PopCharVarFormStack();
-	pState->CopyToStack(&parm, nParmNum);
+		nReturnID = (__int64)pState->m_pMaster->GetId();
+	std::string strScriptFunName = pState->GetStringVarFormStack(1);
+	//pState->CopyToStack(&parm, nParmNum);
+	for (int i = 2; i < nParmNum; i++)
+	{
+		auto var = pState->GetVarFormStack(i);
+		parm.push(var);
+	}
 	RunFrom(strScriptFunName, parm, nReturnID, nEventIndex);
 
 
-	pState->ClearFunParam();
 	if (nIsWaiting > 0)
 	{
 		return ECALLBACK_WAITING;
@@ -364,13 +323,13 @@ int CBaseScriptConnector::RunScript2Script(CScriptRunState* pState)
 	return ECALLBACK_FINISH;
 }
 
-int CBaseScriptConnector::SetAllScriptLimit2Script(CScriptRunState* pState)
+int CBaseScriptConnector::SetAllScriptLimit2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	int nVal = pState->PopIntVarFormStack();
+	int nVal = pState->GetIntVarFormStack(0);
 	if (nVal > 0)
 	{
 		m_bIgnoreScriptLimit = true;
@@ -380,18 +339,17 @@ int CBaseScriptConnector::SetAllScriptLimit2Script(CScriptRunState* pState)
 		m_bIgnoreScriptLimit = false;
 		m_mapScriptLimit.clear();
 	}
-	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
 
-int CBaseScriptConnector::SetScriptLimit2Script(CScriptRunState* pState)
+int CBaseScriptConnector::SetScriptLimit2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string strName = pState->PopCharVarFormStack();
-	int nVal = pState->PopIntVarFormStack();
+	std::string strName = pState->GetStringVarFormStack(0);
+	int nVal = pState->GetIntVarFormStack(1);
 	if (nVal > 0)
 	{
 		SetScriptLimit(strName);
@@ -400,35 +358,35 @@ int CBaseScriptConnector::SetScriptLimit2Script(CScriptRunState* pState)
 	{
 		RemoveScriptLimit(strName);
 	}
-	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
-int CBaseScriptConnector::CheckScriptLimit2Script(CScriptRunState* pState)
+int CBaseScriptConnector::CheckScriptLimit2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string strName = pState->PopCharVarFormStack();
+	std::string strName = pState->GetStringVarFormStack(0);
 	bool bCheck = CheckScriptLimit(strName);
-	pState->ClearFunParam();
-	pState->PushVarToStack(bCheck ? 1 : 0);
+
+	pState->SetResult((__int64)(bCheck ? 1 : 0));
 	return ECALLBACK_FINISH;
 }
-int CBaseScriptConnector::SetRemoteFunction2Script(CScriptRunState* pState)
+int CBaseScriptConnector::SetRemoteFunction2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string strName = pState->PopCharVarFormStack();
+	std::string strName = pState->GetStringVarFormStack(0);
 	CScriptExecCodeMgr::GetInstance()->SetRemoteFunction(strName, GetEventIndex());
 	m_setRemoteFunName.insert(strName);
-	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
 
-int CBaseScriptConnector::SetRoute2Script(CScriptRunState* pState)
+int CBaseScriptConnector::SetRoute2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
@@ -440,7 +398,7 @@ int CBaseScriptConnector::SetRoute2Script(CScriptRunState* pState)
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE, GetEventIndex(), scriptParm, nRouteMode_ConnectID);
 	}
 	nRouteMode_ConnectID = 0;
-	auto pointVal = pState->PopClassPointFormStack();
+	auto pointVal = pState->GetClassPointFormStack(0);
 	CScriptBasePointer* pPoint = pointVal.pPoint;
 	if (pPoint)
 	{
@@ -452,56 +410,51 @@ int CBaseScriptConnector::SetRoute2Script(CScriptRunState* pState)
 		}
 		pPoint->Unlock();
 	}
-
-	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
 
-int CBaseScriptConnector::SetRouteInitScript2Script(CScriptRunState* pState)
+int CBaseScriptConnector::SetRouteInitScript2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string strScriptName = pState->PopCharVarFormStack();
+	std::string strScriptName = pState->GetStringVarFormStack(0);
 	SetRouteInitScript(strScriptName.c_str());
-	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
 
-int CBaseScriptConnector::GetVal2Script(CScriptRunState* pState)
+int CBaseScriptConnector::GetVal2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string str = pState->PopCharVarFormStack();
+	std::string str = pState->GetStringVarFormStack(0);
 
-	pState->ClearFunParam();
 	auto it = m_mapData.find(str);
 	if (it != m_mapData.end())
 	{
-		pState->PushVarToStack(it->second);
+		pState->SetResult(it->second);
 		return ECALLBACK_FINISH;
 	}
 	pState->PushEmptyVarToStack();
 	return ECALLBACK_FINISH;
 }
 
-int CBaseScriptConnector::SetVal2Script(CScriptRunState* pState)
+int CBaseScriptConnector::SetVal2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string str = pState->PopCharVarFormStack();
-	m_mapData[str] = pState->PopVarFormStack();
+	std::string str = pState->GetStringVarFormStack(0);
+	m_mapData[str] = pState->GetVarFormStack(1);
 
-	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
 
-int CBaseScriptConnector::Merge2Script(CScriptRunState* pState)
+int CBaseScriptConnector::Merge2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
@@ -509,7 +462,7 @@ int CBaseScriptConnector::Merge2Script(CScriptRunState* pState)
 	}
 	CScriptConnector* pMain = dynamic_cast<CScriptConnector*>(this);
 	CScriptConnector* pOld = nullptr;
-	auto pointVal = pState->PopClassPointFormStack();
+	auto pointVal = pState->GetClassPointFormStack(0);
 	CScriptBasePointer* pPoint = pointVal.pPoint;
 	if (pPoint)
 	{
@@ -522,19 +475,18 @@ int CBaseScriptConnector::Merge2Script(CScriptRunState* pState)
 		pPoint->Unlock();
 	}
 	//TODO 两者必须都是CScriptConnector,否则报错
-	pState->ClearFunParam();
 	return ECALLBACK_FINISH;
 }
 
-int CBaseScriptConnector::SetDisconnectScript2Script(CScriptRunState* pState)
+int CBaseScriptConnector::SetDisconnectScript2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string val = pState->PopCharVarFormStack();
+	std::string val = pState->GetStringVarFormStack(0);
 	SetDisconnectScript(val);
-	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
 
@@ -869,14 +821,16 @@ void CBaseScriptConnector::RunFrom(std::string funName, CScriptStack& pram, __in
 	}
 	msg.strScriptFunName = funName;
 
-	//倒过来压栈
-	int nParmNum = (int)pram.size();
-	for (int i = nParmNum-1; i >= 0; i--)
-	{
-		auto pVar = pram.GetVal(i);
-		if (pVar)
-			msg.m_scriptParm.push(*pVar);
-	}
+	////倒过来压栈
+	//int nParmNum = (int)pram.size();
+	//for (int i = nParmNum-1; i >= 0; i--)
+	//{
+	//	auto pVar = pram.GetVal(i);
+	//	if (pVar)
+	//		msg.m_scriptParm.push(*pVar);
+	//}
+	//不再倒过来压栈
+	msg.m_scriptParm = pram;
 
 	SendMsg(&msg);
 }
@@ -886,13 +840,13 @@ void CBaseScriptConnector::ResultFrom(CScriptStack& pram, __int64 nReturnID)
 	CReturnMsgReceiveState msg;
 	msg.nReturnID = nReturnID;
 
-	//倒过来压栈
-	for (int i = pram.size() - 1; i >= 0; i--)
-	{
-		auto pVal = pram.GetVal(i);
-		if (pVal)
-			msg.m_scriptParm.push(*pVal);
-	}
+	////倒过来压栈
+	//for (int i = pram.size() - 1; i >= 0; i--)
+	//{
+	//	auto pVal = pram.GetVal(i);
+	//	if (pVal)
+	//		msg.m_scriptParm.push(*pVal);
+	//}
 	msg.m_scriptParm = pram;
 	SendMsg(&msg);
 }
@@ -1444,10 +1398,17 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 	else
 	{
 		CTempScriptRunState tempState;
-		tempState.PushVarToStack(funName.c_str());
-		tempState.PushVarToStack("Error_CannotRunScript");
-		tempState.PushVarToStack(0);
-		RunScript2Script(&tempState);
+		CACHE_NEW(CScriptCallState, pCallState, &tempState);
+		if (pCallState)
+		{
+			pCallState->PushVarToStack(funName.c_str());
+			pCallState->PushVarToStack("Error_CannotRunScript");
+			pCallState->PushVarToStack(0);
+
+			RunScript2Script(pCallState);
+		}
+
+		CACHE_DELETE(pCallState);
 	}
 }
 
@@ -1703,10 +1664,17 @@ void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int
 			//转发失败，需要转发的目标不存在，取消路由状态
 			nRouteMode_ConnectID = 0;
 			CTempScriptRunState tempState;
-			tempState.PushVarToStack(funName.c_str());
-			tempState.PushVarToStack("Error_CannotRunScript");
-			tempState.PushVarToStack(0);
-			RunScript2Script(&tempState);
+			CACHE_NEW(CScriptCallState, pCallState, &tempState);
+			if (pCallState)
+			{
+				pCallState->PushVarToStack(funName.c_str());
+				pCallState->PushVarToStack("Error_CannotRunScript");
+				pCallState->PushVarToStack(0);
+
+				RunScript2Script(pCallState);
+			}
+
+			CACHE_DELETE(pCallState);
 			CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pMsg);
 		}
 		//auto pRoute = CScriptConnectMgr::GetInstance()->GetConnector(nRouteMode_ConnectID);
@@ -1733,10 +1701,17 @@ void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int
 	else
 	{
 		CTempScriptRunState tempState;
-		tempState.PushVarToStack(funName.c_str());
-		tempState.PushVarToStack("Error_CannotRunScript");
-		tempState.PushVarToStack(0);
-		RunScript2Script(&tempState);
+		CACHE_NEW(CScriptCallState, pCallState, &tempState);
+		if (pCallState)
+		{
+			pCallState->PushVarToStack(funName.c_str());
+			pCallState->PushVarToStack("Error_CannotRunScript");
+			pCallState->PushVarToStack(0);
+
+			RunScript2Script(pCallState);
+		}
+
+		CACHE_DELETE(pCallState);
 	}
 }
 

@@ -26,11 +26,11 @@
 
 void InitNetworkConnect();
 
-int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
-int SetListenWebSocket2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
-int NewConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
-int RemoveConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
-int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptRunState* pState);
+int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState);
+int SetListenWebSocket2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState);
+int NewConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState);
+int RemoveConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState);
+int GetConnector2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState);
 
 using namespace zlnetwork;
 class CScriptConnector;

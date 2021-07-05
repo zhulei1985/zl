@@ -3,16 +3,6 @@
 
 CDataBase::CDataBase()
 {
-	AddClassObject(this->GetScriptPointIndex(), this);
-
-	RegisterClassFun(InitDB, this, &CDataBase::InitDB2Script);
-	RegisterClassFun(InitTable, this, &CDataBase::InitTable2Script);
-	RegisterClassFun(Query, this, &CDataBase::Query2Script);
-	RegisterClassFun(QueryArray, this, &CDataBase::QueryArray2Script);
-	RegisterClassFun(Save, this, &CDataBase::Save2Script);
-	RegisterClassFun(Delete, this, &CDataBase::Delete2Script);
-	RegisterClassFun(Ping, this, &CDataBase::Ping2Script);
-	RegisterClassFun(Close, this, &CDataBase::Close2Scipt);
 #ifndef NO_SQL
 	mysql_init(&mysql);
 #endif
@@ -31,28 +21,20 @@ void CDataBase::Init2Script()
 {
 	RegisterClassType("CDataBase", CDataBase);
 
-	RegisterClassFun1("InitDB", CDataBase);
-	RegisterClassFun1("InitTable", CDataBase);
-	RegisterClassFun1("Query", CDataBase);
-	RegisterClassFun1("QueryArray", CDataBase);
-	RegisterClassFun1("Save", CDataBase);
-	RegisterClassFun1("Delete", CDataBase);
-	RegisterClassFun1("Ping", CDataBase);
-	RegisterClassFun1("Close", CDataBase);
 }
 
 
-int CDataBase::InitDB2Script(CScriptRunState* pState)
+int CDataBase::InitDB2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string host = pState->PopCharVarFormStack();
-	std::string acc = pState->PopCharVarFormStack();
-	std::string pwd = pState->PopCharVarFormStack();
-	std::string dbname = pState->PopCharVarFormStack();
-	int port = pState->PopIntVarFormStack();
+	std::string host = pState->GetStringVarFormStack(0);
+	std::string acc = pState->GetStringVarFormStack(1);
+	std::string pwd = pState->GetStringVarFormStack(2);
+	std::string dbname = pState->GetStringVarFormStack(3);
+	int port = pState->GetIntVarFormStack(4);
 	int bResult = 1;
 #ifdef NO_SQL
 	bResult = 0;
@@ -67,19 +49,18 @@ int CDataBase::InitDB2Script(CScriptRunState* pState)
 		mysql_options(&mysql, MYSQL_OPT_RECONNECT, &value);
 	}
 #endif
-	pState->ClearFunParam();
-	pState->PushVarToStack(bResult);
+	pState->SetResult((__int64)bResult);
 	return ECALLBACK_FINISH;
 }
 
-int CDataBase::InitTable2Script(CScriptRunState* pState)
+int CDataBase::InitTable2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
 	std::string strSql = "CREATE TABLE IF NOT EXISTS ";
-	std::string strClassName = pState->PopCharVarFormStack();
+	std::string strClassName = pState->GetStringVarFormStack(0);
 #ifdef NO_SQL
 	CScriptSuperPointerMgr::GetInstance()->SetClassDBIdCount(strClassName, 1);
 #else
@@ -231,42 +212,33 @@ int CDataBase::InitTable2Script(CScriptRunState* pState)
 		}
 	}
 #endif
-	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
 
-int CDataBase::Query2Script(CScriptRunState* pState)
+int CDataBase::Query2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	std::string strClassName = pState->PopCharVarFormStack();
-	std::string strFieldName = pState->PopCharVarFormStack();
-	StackVarInfo Val = pState->PopVarFormStack();
+	std::string strClassName = pState->GetStringVarFormStack(0);
+	std::string strFieldName = pState->GetStringVarFormStack(1);
+	StackVarInfo Val = pState->GetVarFormStack(2);
 	auto cache = Query4Sql(strClassName, strFieldName, Val);
 	//if (cache.bInit)
 	{
-		pState->ClearFunParam();
 		auto it = cache.setIndex.begin();
 		if (it != cache.setIndex.end())
 		{
-			pState->PushClassPointToStack((*it).pPoint);
+			pState->SetClassPointResult((*it).pPoint);
 		}
-		else
-		{
-			pState->PushEmptyVarToStack();
-		}
-		return ECALLBACK_FINISH;
 	}
 
-
-	pState->ClearFunParam();
-	pState->PushEmptyVarToStack();
 	return ECALLBACK_FINISH;
 }
 
-int CDataBase::QueryArray2Script(CScriptRunState* pState)
+int CDataBase::QueryArray2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
@@ -281,9 +253,9 @@ int CDataBase::QueryArray2Script(CScriptRunState* pState)
 	}
 	if (pArray)
 	{
-		std::string strClassName = pState->PopCharVarFormStack();
-		std::string strFieldName = pState->PopCharVarFormStack();
-		StackVarInfo Val = pState->PopVarFormStack();
+		std::string strClassName = pState->GetStringVarFormStack(0);
+		std::string strFieldName = pState->GetStringVarFormStack(1);
+		StackVarInfo Val = pState->GetVarFormStack(2);
 		std::lock_guard<std::mutex> Lock(m_Lock);
 		auto cache = Query4Sql(strClassName, strFieldName, Val);
 		auto it = cache.setIndex.begin();
@@ -292,12 +264,12 @@ int CDataBase::QueryArray2Script(CScriptRunState* pState)
 			pArray->GetVars().push_back((*it).pPoint);
 		}
 	}
-	pState->ClearFunParam();
-	pState->PushClassPointToStack(pArray);
+
+	pState->SetClassPointResult(pArray);
 	return ECALLBACK_FINISH;
 }
 
-int CDataBase::Save2Script(CScriptRunState* pState)
+int CDataBase::Save2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
@@ -305,7 +277,7 @@ int CDataBase::Save2Script(CScriptRunState* pState)
 	}
 	std::string strHeadSql = "INSERT INTO ";
 	std::string strValSql = "VALUE(";
-	PointVarInfo pointVar = pState->PopClassPointFormStack();
+	PointVarInfo pointVar = pState->GetClassPointFormStack(0);
 #ifdef NO_SQL
 	CScriptBasePointer* pPoint = pointVar.pPoint;
 	if (pPoint)
@@ -372,17 +344,17 @@ int CDataBase::Save2Script(CScriptRunState* pState)
 		}
 	}
 #endif
-	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
 
-int CDataBase::Delete2Script(CScriptRunState* pState)
+int CDataBase::Delete2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
 		return ECALLBACK_ERROR;
 	}
-	PointVarInfo pointVar = pState->PopClassPointFormStack();
+	PointVarInfo pointVar = pState->GetClassPointFormStack(0);
 	bool bOk = false;
 	std::string strSql = "DELETE FROM ";
 #ifdef NO_SQL
@@ -445,12 +417,11 @@ int CDataBase::Delete2Script(CScriptRunState* pState)
 		}
 	}
 #endif
-	pState->ClearFunParam();
-	pState->PushVarToStack((__int64)(bOk ? 1 : 0));
+	pState->SetResult((__int64)(bOk ? 1 : 0));
 	return ECALLBACK_FINISH;
 }
 
-int CDataBase::Ping2Script(CScriptRunState* pState)
+int CDataBase::Ping2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
@@ -466,12 +437,12 @@ int CDataBase::Ping2Script(CScriptRunState* pState)
 		m_Lock.unlock();
 	}
 #endif
-	pState->ClearFunParam();
-	pState->PushVarToStack(nResult);
+
+	pState->SetResult((__int64)nResult);
 	return ECALLBACK_FINISH;
 }
 
-int CDataBase::Close2Scipt(CScriptRunState* pState)
+int CDataBase::Close2Script(CScriptCallState* pState)
 {
 	if (pState == nullptr)
 	{
@@ -483,7 +454,7 @@ int CDataBase::Close2Scipt(CScriptRunState* pState)
 #else
 	mysql_close(&mysql);
 #endif
-	pState->ClearFunParam();
+
 	return ECALLBACK_FINISH;
 }
 

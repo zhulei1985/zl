@@ -19,14 +19,14 @@ public:
 public:
 	static void Init2Script();
 
-	int InitDB2Script(CScriptRunState* pState);
-	int InitTable2Script(CScriptRunState* pState);
-	int Query2Script(CScriptRunState* pState);
-	int QueryArray2Script(CScriptRunState* pState);
-	int Save2Script(CScriptRunState* pState);
-	int Delete2Script(CScriptRunState* pState);
-	int Ping2Script(CScriptRunState* pState);
-	int Close2Scipt(CScriptRunState* pState);
+	CLASS_SCRIPT_FUN(CDataBase, InitDB);
+	CLASS_SCRIPT_FUN(CDataBase, InitTable);
+	CLASS_SCRIPT_FUN(CDataBase, Query);
+	CLASS_SCRIPT_FUN(CDataBase, QueryArray);
+	CLASS_SCRIPT_FUN(CDataBase, Save);
+	CLASS_SCRIPT_FUN(CDataBase, Delete);
+	CLASS_SCRIPT_FUN(CDataBase, Ping);
+	CLASS_SCRIPT_FUN(CDataBase, Close);
 public:
 	virtual void ChangeScriptAttribute(CBaseScriptClassAttribute* pAttr, StackVarInfo& old);
 	virtual void RegisterScriptAttribute(CBaseScriptClassAttribute* pAttr);
