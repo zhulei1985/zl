@@ -98,13 +98,14 @@ int ExecuteCommand(CScriptVirtualMachine* pMachine, CScriptCallState* pState)
 	if (pMgr)
 	{
 		CScriptArray* pArray = dynamic_cast<CScriptArray*>(pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE));
-		for (auto it = vOtherVar.rbegin(); it != vOtherVar.rend(); it++)
-		{
-			pArray->GetVars().push_back(*it);
-		}
-		for (auto it = vStrings.rbegin(); it != vStrings.rend(); it++)
+		
+		for (auto it = vStrings.begin(); it != vStrings.end(); it++)
 		{
 			pArray->GetVars().push_back((*it).c_str());
+		}
+		for (auto it = vOtherVar.begin(); it != vOtherVar.end(); it++)
+		{
+			pArray->GetVars().push_back(*it);
 		}
 		pState->SetClassPointResult(pArray);
 	}

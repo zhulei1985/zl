@@ -86,7 +86,24 @@ void main()
 		}
 		else
 		{
-			RunScript(0,ExecuteCommand(str,pClient));
+			CArray Commands = ExecuteCommand(str);
+			if (Commands->GetSize() == 1)
+			{
+				RunScript(0,Commands->Get(0),pClient);
+			}
+			else if (Commands->GetSize() == 2)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),pClient);
+			}
+			else if (Commands->GetSize() == 3)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),Commands->Get(2),pClient);
+			}
+			else if (Commands->GetSize() == 4)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),Commands->Get(2),Commands->Get(3),pClient);
+			}
+			//RunScript(0,ExecuteCommand(str,pClient));
 			//pClient->RunScript(0,ExecuteCommand(str));
 		}
 

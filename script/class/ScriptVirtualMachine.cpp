@@ -646,19 +646,18 @@ namespace zlscript
 
 	void CScriptVirtualMachine::RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
 	{
-		CScriptStack m_scriptParm;
-
 		//ScriptVector_PushVar(m_scriptParm, GetEventIndex());
-		ScriptVector_PushVar(m_scriptParm, nReturnID);
+		ScriptVector_PushVar(pram, funName.c_str());
+		ScriptVector_PushVar(pram, nReturnID);
 
 
-		ScriptVector_PushVar(m_scriptParm, funName.c_str());
-		for (unsigned int i = 0; i < pram.size(); i++)
-		{
 
-			ScriptVector_PushVar(m_scriptParm, pram.GetVal(i));
-		}
-		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), m_scriptParm, nEventIndex);
+		//for (unsigned int i = 0; i < pram.size(); i++)
+		//{
+
+		//	ScriptVector_PushVar(m_scriptParm, pram.GetVal(i));
+		//}
+		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), pram, nEventIndex);
 	}
 	void CScriptVirtualMachine::ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
 	{

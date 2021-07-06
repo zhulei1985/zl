@@ -1333,16 +1333,17 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 {
 	if (CheckScriptLimit(funName))
 	{
-		CScriptStack scriptParm;
-		ScriptVector_PushVar(scriptParm, nReturnID);
-		ScriptVector_PushVar(scriptParm, funName.c_str());
-		for (unsigned int i = 0; i < pram.size(); i++)
-		{
-			auto p = pram.GetVal(i);
-			if (p)
-				scriptParm.push(*p);
-		}
+		CScriptStack scriptParm = pram;
 		ScriptVector_PushVar(scriptParm, this);
+		ScriptVector_PushVar(scriptParm, funName.c_str());
+		ScriptVector_PushVar(scriptParm, nReturnID);
+		//for (unsigned int i = 0; i < pram.size(); i++)
+		//{
+		//	auto p = pram.GetVal(i);
+		//	if (p)
+		//		scriptParm.push(*p);
+		//}
+		//ScriptVector_PushVar(scriptParm, this);
 		//读取完成，执行结果
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
 	}
@@ -1352,12 +1353,13 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 		CScriptMsgReceiveState* pMsg = (CScriptMsgReceiveState*)CMsgReceiveMgr::GetInstance()->CreateRceiveState(E_RUN_SCRIPT);
 		pMsg->nReturnID = nReturnID;
 		pMsg->strScriptFunName = funName;
-		for (unsigned int i = 0; i < pram.size(); i++)
-		{
-			auto pVar = pram.GetVal(i);
-			if (pVar)
-				pMsg->m_scriptParm.push(*pVar);
-		}
+		pMsg->m_scriptParm = pram;
+		//for (unsigned int i = 0; i < pram.size(); i++)
+		//{
+		//	auto pVar = pram.GetVal(i);
+		//	if (pVar)
+		//		pMsg->m_scriptParm.push(*pVar);
+		//}
 		if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
 		{
 			//转发失败，需要转发的目标不存在，取消路由状态

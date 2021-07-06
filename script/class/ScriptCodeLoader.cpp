@@ -689,18 +689,23 @@ namespace zlscript
 		GetNewWord(VarTypeWord);
 		strVarType = VarTypeWord.word;
 
-		int nVarType = m_mapDicVarTypeToICode[strVarType];
+		int nVarType = 0;
 		if (m_mapDicVarTypeToICode.find(strVarType) == m_mapDicVarTypeToICode.end())
 		{
-			if (CScriptSuperPointerMgr::GetInstance()->GetClassType(strVarType))
+			int ClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strVarType);
+			if (ClassType == 0)
 			{
 				AddErrorInfo(
 					VarTypeWord.nSourceWordsIndex,
 					"LoadDefineFunState(var type error)");
 				return ECompile_ERROR;
 			}
+			nVarType = EScriptVal_ClassPoint;
 		}
-
+		else
+		{
+			nVarType = m_mapDicVarTypeToICode[strVarType];
+		}
 		GetNewWord(NameWord);
 		strName = NameWord.word;
 
