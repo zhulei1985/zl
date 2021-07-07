@@ -1492,6 +1492,11 @@ bool CSyncFunReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 
 		switch (nCurParmType)
 		{
+		case EScriptVal_None:
+		{
+			ScriptVector_PushEmptyVar(m_scriptParm);
+		}
+		break;
 		case EScriptVal_Int:
 		{
 			nPos = 0;

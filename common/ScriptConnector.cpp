@@ -610,14 +610,14 @@ void CBaseScriptConnector::SyncUpClassFunRun(__int64 classID, std::string strFun
 	msg.strFunName = strFunName;
 	msg.nClassID = classID;
 	msg.m_listRoute = listRoute;
-	//倒过来压栈
-	for (int i = stack.size() - 1; i >= 0; i--)
-	{
-		auto pVal = stack.GetVal(i);
-		if (pVal)
-			msg.m_scriptParm.push(*pVal);
-	}
-
+	////倒过来压栈
+	//for (int i = stack.size() - 1; i >= 0; i--)
+	//{
+	//	auto pVal = stack.GetVal(i);
+	//	if (pVal)
+	//		msg.m_scriptParm.push(*pVal);
+	//}
+	msg.m_scriptParm = stack;
 	SendMsg(&msg);
 }
 
@@ -627,13 +627,14 @@ void CBaseScriptConnector::SyncDownClassFunRun(__int64 classID, std::string strF
 	CSyncDownMsgReceiveState msg;
 	msg.strFunName = strFunName;
 	msg.nClassID = classID;
-	//倒过来压栈
-	for (int i = stack.size() - 1; i >= 0; i--)
-	{
-		auto pVal = stack.GetVal(i);
-		if (pVal)
-			msg.m_scriptParm.push(*pVal);
-	}
+	////倒过来压栈
+	//for (int i = stack.size() - 1; i >= 0; i--)
+	//{
+	//	auto pVal = stack.GetVal(i);
+	//	if (pVal)
+	//		msg.m_scriptParm.push(*pVal);
+	//}
+	msg.m_scriptParm = stack;
 	SendMsg(&msg);
 }
 
@@ -683,45 +684,48 @@ void CBaseScriptConnector::SendChangeRoute(__int64 oldid, __int64 newid)
 
 void CBaseScriptConnector::EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	__int64 nReturnID = ScriptStack_GetInt(ParmInfo);
-
+	__int64 nReturnID = GetInt_StackVar(ParmInfo.GetVal(0));
+	ParmInfo.pop_front(1);
 	ResultFrom(ParmInfo, nReturnID);
 }
 
 void CBaseScriptConnector::EventRunFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	__int64 nReturnID = ScriptStack_GetInt(ParmInfo);
-	std::string funName = ScriptStack_GetString(ParmInfo);
-
+	__int64 nReturnID = GetInt_StackVar(ParmInfo.GetVal(0));
+	std::string funName = GetString_StackVar(ParmInfo.GetVal(0));
+	ParmInfo.pop_front(2);
 	RunFrom(funName, ParmInfo, nReturnID, nSendID);
 }
 
 void CBaseScriptConnector::EventUpSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
-	std::string funName = ScriptStack_GetString(ParmInfo);
-	__int64 nRouteNum = ScriptStack_GetInt(ParmInfo);
+	__int64 nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
+	std::string funName = GetString_StackVar(ParmInfo.GetVal(1));
+	__int64 nRouteNum = GetInt_StackVar(ParmInfo.GetVal(2));
 	std::list<__int64> listRoute;
 	if (nRouteNum == 1)
 	{
 		//路径第一个值是远程调用返回机制的返回值
-		__int64 nStateID = ScriptStack_GetInt(ParmInfo);
+		__int64 nStateID = GetInt_StackVar(ParmInfo.GetVal(3));
 		listRoute.push_back(AddReturnState(nSendID,nStateID));
+		ParmInfo.pop_front(4);
 	}
 	else
 	{
 		for (__int64 i = 0; i < nRouteNum; i++)
 		{
-			listRoute.push_back(ScriptStack_GetInt(ParmInfo));
+			listRoute.push_back(GetInt_StackVar(ParmInfo.GetVal(3+i)));
 		}
+		ParmInfo.pop_front(3+nRouteNum);
 	}
 	SyncUpClassFunRun(nClassID, funName, ParmInfo, listRoute);
 }
 
 void CBaseScriptConnector::EventDownSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
-	std::string funName = ScriptStack_GetString(ParmInfo);
+	__int64 nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
+	std::string funName = GetString_StackVar(ParmInfo.GetVal(1));
+	ParmInfo.pop_front(2);
 	SyncDownClassFunRun(nClassID, funName, ParmInfo);
 }
 
@@ -732,19 +736,19 @@ void CBaseScriptConnector::EventUpSyncData(__int64 nSendID, CScriptStack& ParmIn
 void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo)
 {
 	CSyncClassDataReceiveState msg;
-	msg.nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
+	msg.nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
 	tagByteArray data;
-	ScriptStack_GetBinary(ParmInfo, msg.vData);
+	GetBinary_StackVar(ParmInfo.GetVal(1), msg.vData);
 	__int64 nNum = ScriptStack_GetInt(ParmInfo);
 	if (nNum > 0)
 	{
 		msg.vClassPoint.resize(nNum);
 		for (__int64 i = 0; i < nNum; i++)
 		{
-			auto& var = ParmInfo.top();
-			if (var.cType == EScriptVal_ClassPoint)
+			auto var = ParmInfo.GetVal(2+i);
+			if (var && var->cType == EScriptVal_ClassPoint)
 			{
-				msg.vClassPoint[i] = var.pPoint;
+				msg.vClassPoint[i] = var->pPoint;
 			}
 			else
 			{
@@ -754,33 +758,33 @@ void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, CScriptStack& Parm
 		}
 	}
 
-
 	SendMsg(&msg);
 }
 
 void CBaseScriptConnector::EventReturnSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
 {
 	CSyncFunReturnMsgReceiveState msg;
-	__int64 nRouteNum = ScriptStack_GetInt(ParmInfo);
+	__int64 nRouteNum = GetInt_StackVar(ParmInfo.GetVal(0));
 	std::list<__int64> listRoute;
 	for (__int64 i = 0; i < nRouteNum; i++)
 	{
-		msg.m_listRoute.push_back(ScriptStack_GetInt(ParmInfo));
+		msg.m_listRoute.push_back(GetInt_StackVar(ParmInfo.GetVal(1+i)));
 	}
+	ParmInfo.pop_front(1 + nRouteNum);
 	msg.m_scriptParm = ParmInfo;
 	SendMsg(&msg);
 }
 
 void CBaseScriptConnector::EventRemoveUpSync(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
+	__int64 nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
 
 	SendRemoveSyncUp(nClassID);
 }
 
 void CBaseScriptConnector::EventRemoveDownSync(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	__int64 nClassID = ScriptStack_GetClassPointIndex(ParmInfo);
+	__int64 nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
 
 	SendRemoveSyncDown(nClassID);
 }
@@ -793,7 +797,7 @@ void CBaseScriptConnector::EventRemoveRoute(__int64 nSendID, CScriptStack& ParmI
 
 void CBaseScriptConnector::EventChangeRoute(__int64 nSendID, CScriptStack& ParmInfo)
 {
-	__int64 nOldConnectID = ScriptStack_GetInt(ParmInfo);
+	__int64 nOldConnectID = GetInt_StackVar(ParmInfo.GetVal(0));
 	//__int64 nNewConnectID = ScriptStack_GetInt(ParmInfo);
 	SendChangeRoute(nOldConnectID, nSendID);
 }
@@ -1333,17 +1337,18 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 {
 	if (CheckScriptLimit(funName))
 	{
-		CScriptStack scriptParm = pram;
-		ScriptVector_PushVar(scriptParm, this);
-		ScriptVector_PushVar(scriptParm, funName.c_str());
+
+		CScriptStack scriptParm;
 		ScriptVector_PushVar(scriptParm, nReturnID);
-		//for (unsigned int i = 0; i < pram.size(); i++)
-		//{
-		//	auto p = pram.GetVal(i);
-		//	if (p)
-		//		scriptParm.push(*p);
-		//}
-		//ScriptVector_PushVar(scriptParm, this);
+		ScriptVector_PushVar(scriptParm, funName.c_str());
+		for (unsigned int i = 0; i < pram.size(); i++)
+		{
+			auto p = pram.GetVal(i);
+			if (p)
+				scriptParm.push(*p);
+		}
+		ScriptVector_PushVar(scriptParm, this);
+
 		//读取完成，执行结果
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
 	}

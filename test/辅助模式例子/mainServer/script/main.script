@@ -1,15 +1,15 @@
 void InitConnector(Connector pConnector)
 {
-	pConnector->SetHeadProtocol("inner","server","123456");
+
 }
 void InitAssistConnector(Connector pConnector)
 {
-	pConnector->SetHeadProtocol("inner","server","123456");
 	print("辅助服务器连接");
 	pConnector->SetScriptLimit("SetRemoteFun",1);
 }
 void SetRemoteFun(string FunName, Connector pConnector)
 {
+	print("连接"+pConnector->GetID()+"开始辅助执行函数"+FunName);
 	pConnector->SetRemoteFunction(FunName);
 }
 
@@ -19,9 +19,9 @@ void main()
 	CData pData = GetData("Data");
 
 	//9999给客户端用
-	SetListenPort(9999,"InitConnector");
+	SetListenPort(9999,"inner","123456","InitConnector");
 	//10000端口给辅助服务器用
-	SetListenPort(10000,"InitAssistConnector");
+	SetListenPort(10000,"inner","123456","InitAssistConnector");
 	print("启动完成");
 
 	while(1)
