@@ -2,7 +2,15 @@ HashMap mapAccount = nullptr;
 CArray ConnectorArray = nullptr;
 void InitConnector(Connector pConnector)
 {
-	pConnector->SetHeadProtocol("inner","server","123456");
+	//pConnector->SetHeadProtocol("inner","server","123456");
+	pConnector->SetScriptLimit("Error_CannotRunScript",1);
+	//pConnector->SetScriptLimit("RegisterAccount",1);
+	//pConnector->SetScriptLimit("LoginAccount",1);
+	pConnector->SetRouteInit("InitRouteConnector");
+}
+void InitRouteConnector(Connector pConnector)
+{
+	//pConnector->SetHeadProtocol("inner","server","123456");
 	pConnector->SetScriptLimit("Error_CannotRunScript",1);
 	pConnector->SetScriptLimit("RegisterAccount",1);
 	pConnector->SetScriptLimit("LoginAccount",1);
@@ -17,11 +25,12 @@ void RegisterAccount(string strAccount, string password, Connector pConnector)
 		pConnector->RunScript(0,"RegisterFail",pAccount);
 		return;
 	}
+	print("注册----1");
 	pAccount = new CAccount;
 	pAccount->SetAccountName(strAccount);
 	pAccount->SetPassword(password);
 	pAccount->SetNickName(strAccount);
-
+	print("注册----2");
 	pAccount->SetVal("connect",pConnector);
 	pConnector->SetVal("account",pAccount);
 	mapAccount->SetVal(strAccount,pAccount);
@@ -29,6 +38,7 @@ void RegisterAccount(string strAccount, string password, Connector pConnector)
 	pConnector->RunScript(0,"LoginSuccess",pAccount);
 	pConnector->SetScriptLimit("Talk",1);
 	ConnectorArray->Add(pConnector);
+	print("注册----完成");
 }
 void LoginAccount(string strAccount, string password, Connector pConnector)
 {
@@ -83,6 +93,6 @@ void main()
 	InitData("Data");
 	mapAccount = new HashMap;
 	ConnectorArray = new CArray;
-	SetListenPort(9999,"InitConnector");
+	SetListenPort(9999,"inner","123456","InitConnector");
 	print("启动完成");
 }

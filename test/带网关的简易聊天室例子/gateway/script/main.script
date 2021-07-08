@@ -1,7 +1,6 @@
+Connector pServerConnector = nullptr;
 void InitConnector(Connector pConnector)
 {
-	pConnector->SetHeadProtocol("inner","server","123456");
-	Connector pServerConnector = GetVal4Data("Data","ServerConnector");
 	pConnector->SetRoute(pServerConnector);
 }
 
@@ -10,10 +9,9 @@ void main()
 	//初始化数据
 	InitData("Data");
 
-	SetListenPort(9998,"InitConnector");
+	SetListenPort(9998,"inner","123456","InitConnector");
 
-	Connector pClient = NewConnector("127.0.0.1",9999);
-	pClient ->SetHeadProtocol("inner","client","123456");
-	SetVal2Data("Data","ServerConnector",pClient);
+	pServerConnector = NewConnector("127.0.0.1",9999, "inner","123456");
+
 	print("启动完成");
 }

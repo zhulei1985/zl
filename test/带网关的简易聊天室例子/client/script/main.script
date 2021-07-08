@@ -55,18 +55,19 @@ void SetNick(string name, Connector pClient)
 	print("尝试设置昵称");
 	//CAccount pAccount = GetVal4Data("Account","a");
 	pMyAccount->SetNickName(name);
+	print("设置昵称为"+pMyAccount->GetNickName());
 }
 void main()
 {
-	Connector pClient = NewConnector("127.0.0.1",9999);
-	pClient->SetHeadProtocol("inner","client","123456");
+	print("启动");
+	Connector pClient = NewConnector("127.0.0.1",9998, "inner","123456");
 	pClient->SetScriptLimit("Error_CannotRunScript",1);
 	pClient->SetScriptLimit("RegisterFail",1);
 	pClient->SetScriptLimit("LoginFail",1);
 	pClient->SetScriptLimit("RegisterSuccess",1);
 	pClient->SetScriptLimit("LoginSuccess",1);
 	pClient->SetScriptLimit("SendMessage",1);
-
+	print("初始化连接");
 	while (pClient->IsConnect()==0)
 	{
 		wait(1);
@@ -85,7 +86,24 @@ void main()
 		}
 		else
 		{
-			RunScript(0,ExecuteCommand(str,pClient));
+			CArray Commands = ExecuteCommand(str);
+			if (Commands->GetSize() == 1)
+			{
+				RunScript(0,Commands->Get(0),pClient);
+			}
+			else if (Commands->GetSize() == 2)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),pClient);
+			}
+			else if (Commands->GetSize() == 3)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),Commands->Get(2),pClient);
+			}
+			else if (Commands->GetSize() == 4)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),Commands->Get(2),Commands->Get(3),pClient);
+			}
+			//RunScript(0,ExecuteCommand(str,pClient));
 			//pClient->RunScript(0,ExecuteCommand(str));
 		}
 
