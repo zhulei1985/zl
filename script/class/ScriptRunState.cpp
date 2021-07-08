@@ -436,7 +436,7 @@ namespace zlscript
 		}
 		return nReturn;
 	}
-	int CScriptRunState::CallFun_Script(CScriptVirtualMachine* pMachine, int FunIndex, CScriptStack& ParmStack, int nParmNum, bool bIsBreak)
+	int CScriptRunState::CallFun_Script(CScriptVirtualMachine* pMachine, int FunIndex, CScriptStack& ParmStack, int nParmNum,char cRegisterIndex, bool bIsBreak)
 	{
 		int nReturn = ECALLBACK_FINISH;
 		{
@@ -448,6 +448,7 @@ namespace zlscript
 
 				if (pBlock)
 				{
+					pBlock->m_cReturnRegisterIndex = cRegisterIndex;
 					//提取参数
 					int nOffset = ParmStack.size() - nParmNum;
 					if (nOffset < 0)

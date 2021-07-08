@@ -783,7 +783,7 @@ namespace zlscript
 					//	m_stackRegister.pop();
 					//}
 					//运行回调函数
-					switch (m_pMaster->CallFun_Script(pMachine, code.dwPos, m_stackRegister, code.cExtend))
+					switch (m_pMaster->CallFun_Script(pMachine, code.dwPos, m_stackRegister, code.cExtend, code.cSign))
 					{
 					case ECALLBACK_ERROR:
 						nResult = ERESULT_ERROR;
