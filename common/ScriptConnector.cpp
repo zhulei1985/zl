@@ -373,18 +373,18 @@ int CBaseScriptConnector::CheckScriptLimit2Script(CScriptCallState* pState)
 	pState->SetResult((__int64)(bCheck ? 1 : 0));
 	return ECALLBACK_FINISH;
 }
-int CBaseScriptConnector::SetRemoteFunction2Script(CScriptCallState* pState)
-{
-	if (pState == nullptr)
-	{
-		return ECALLBACK_ERROR;
-	}
-	std::string strName = pState->GetStringVarFormStack(0);
-	CScriptExecCodeMgr::GetInstance()->SetRemoteFunction(strName, GetEventIndex());
-	m_setRemoteFunName.insert(strName);
-
-	return ECALLBACK_FINISH;
-}
+//int CBaseScriptConnector::SetRemoteFunction2Script(CScriptCallState* pState)
+//{
+//	if (pState == nullptr)
+//	{
+//		return ECALLBACK_ERROR;
+//	}
+//	std::string strName = pState->GetStringVarFormStack(0);
+//	CScriptExecCodeMgr::GetInstance()->SetRemoteFunction(strName, GetEventIndex());
+//	m_setRemoteFunName.insert(strName);
+//
+//	return ECALLBACK_FINISH;
+//}
 
 int CBaseScriptConnector::SetRoute2Script(CScriptCallState* pState)
 {

@@ -77,7 +77,7 @@ public:
 	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetScriptLimit);
 	CLASS_SCRIPT_FUN(CBaseScriptConnector, CheckScriptLimit);
 
-	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetRemoteFunction);
+	//CLASS_SCRIPT_FUN(CBaseScriptConnector, SetRemoteFunction);
 
 	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetRoute);
 	CLASS_SCRIPT_FUN(CBaseScriptConnector, SetRouteInitScript);
