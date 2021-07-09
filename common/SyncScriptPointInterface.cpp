@@ -126,18 +126,7 @@ namespace zlscript
 
 				else
 				{
-					m_UpdateSyncAttLock.lock();
-					if (!m_setUpdateSyncAttibute.empty())
-					{
-						//同步属性有更新
-						std::vector<char> vBuff;
-						AddUpdateData2Bytes(vBuff);
-						int pos = 0;
-						SyncDownClassData(&vBuff[0], pos, vBuff.size(), m_vecSyncClassPoint);
-						//m_setUpdateSyncAttibute.clear();
-						ClearUpdateSyncAttibute();
-					}
-					m_UpdateSyncAttLock.unlock();
+					UpdataSyncAttibute();
 				}
 
 				return nResult;
@@ -270,18 +259,7 @@ namespace zlscript
 			}
 			else
 			{
-				m_UpdateSyncAttLock.lock();
-				if (m_setUpdateSyncAttibute.size() > 0)
-				{
-					//同步属性有更新
-					std::vector<char> vBuff;
-					AddUpdateData2Bytes(vBuff);
-					int pos = 0;
-					SyncDownClassData(&vBuff[0], pos, vBuff.size(), m_vecSyncClassPoint);
-					//m_setUpdateSyncAttibute.clear();
-					ClearUpdateSyncAttibute();
-				}
-				m_UpdateSyncAttLock.unlock();
+				UpdataSyncAttibute();
 			}
 
 		}
@@ -615,6 +593,20 @@ namespace zlscript
 			return m_vecDecodeSyncClassPoint[index];
 		}
 		return PointVarInfo();
+	}
+	void CSyncScriptPointInterface::UpdataSyncAttibute()
+	{
+		m_UpdateSyncAttLock.lock();
+		if (!m_setUpdateSyncAttibute.empty())
+		{
+			//同步属性有更新
+			std::vector<char> vBuff;
+			AddUpdateData2Bytes(vBuff);
+			int pos = 0;
+			SyncDownClassData(&vBuff[0], pos, vBuff.size(), m_vecSyncClassPoint);
+			ClearUpdateSyncAttibute();
+		}
+		m_UpdateSyncAttLock.unlock();
 	}
 	void CSyncScriptPointInterface::ClearUpdateSyncAttibute()
 	{

@@ -145,6 +145,8 @@ namespace zlscript
 
 		virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point);
 		virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index);
+	public:
+		void UpdataSyncAttibute();
 	protected:
 		void ClearUpdateSyncAttibute();
 	protected:
