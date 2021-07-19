@@ -930,7 +930,14 @@ bool CScriptConnector::IsSocketClosed()
 {
 	if (m_pNetConnector)
 	{
-		return m_pNetConnector->IsSocketClosed();
+		if (!m_pNetConnector->IsSocketClosed())
+		{
+			if (!m_pNetConnector->CanSend())
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 	return true;
 }

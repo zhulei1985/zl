@@ -107,6 +107,11 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 
 		switch (nCurParmType)
 		{
+		case EScriptVal_None:
+		{
+			ScriptVector_PushEmptyVar(m_scriptParm);
+		}
+		break;
 		case EScriptVal_Int:
 		{
 			nPos = 0;
@@ -237,6 +242,7 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 bool CScriptMsgReceiveState::Run(CBaseScriptConnector* pClient)
 {
 	//对连接可执行的脚本做限制
+	printf("远程调用函数:%s\n", strScriptFunName.c_str());
 	pClient->RunTo(strScriptFunName, m_scriptParm, nReturnID, 0);
 
 	return true;
@@ -309,6 +315,9 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 
 		switch (nCurParmType)
 		{
+		case EScriptVal_None:
+			ScriptVector_PushEmptyVar(m_scriptParm);
+			break;
 		case EScriptVal_Int:
 		{
 			nPos = 0;
@@ -999,6 +1008,9 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 
 		switch (nCurParmType)
 		{
+		case EScriptVal_None:
+			ScriptVector_PushEmptyVar(m_scriptParm);
+			break;
 		case EScriptVal_Int:
 		{
 			nPos = 0;
@@ -1251,6 +1263,9 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 
 		switch (nCurParmType)
 		{
+		case EScriptVal_None:
+			ScriptVector_PushEmptyVar(m_scriptParm);
+			break;
 		case EScriptVal_Int:
 		{
 			nPos = 0;
