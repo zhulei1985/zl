@@ -133,6 +133,7 @@ namespace zlscript
 		bool CheckDownSyncProcess(__int64);
 		void RemoveDownSyncProcess(__int64 processId);
 
+		virtual bool AddData2Bytes(std::vector<char>& vBuff);
 		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo>& vOutClassPoint);
 		virtual bool AddUpdateData2Bytes(std::vector<char>& vBuff);
 		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);
@@ -145,8 +146,15 @@ namespace zlscript
 
 		virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point);
 		virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index);
-	public:
-		void UpdataSyncAttibute();
+
+		void SetDecodeSyncClassPoints(std::vector<PointVarInfo>& vIn)
+		{
+			m_vecDecodeSyncClassPoint = vIn;
+		}
+		void ClearDecodeSyncClassPoints()
+		{
+			m_vecDecodeSyncClassPoint.clear();
+		}
 	protected:
 		void ClearUpdateSyncAttibute();
 	protected:

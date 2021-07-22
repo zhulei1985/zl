@@ -27,10 +27,10 @@ namespace zlscript
 
 		static void Init2Script();
 
-		int Set2Script(CScriptRunState* pState);
-		int Get2Script(CScriptRunState* pState);
-		int Add2Script(CScriptRunState* pState);
-		int Dec2Script(CScriptRunState* pState);
+		CLASS_SCRIPT_FUN(CScriptAtomicInt, Set);
+		CLASS_SCRIPT_FUN(CScriptAtomicInt, Get);
+		CLASS_SCRIPT_FUN(CScriptAtomicInt, Add);
+		CLASS_SCRIPT_FUN(CScriptAtomicInt, Dec);
 
 	public:
 		std::mutex m_FunLock;

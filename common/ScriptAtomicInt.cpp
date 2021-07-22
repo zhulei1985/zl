@@ -7,10 +7,6 @@ namespace zlscript
 		m_nValue = 0;
 
 		AddClassObject(this->GetScriptPointIndex(), this);
-		RegisterClassFun(Set, this, &CScriptAtomicInt::Set2Script);
-		RegisterClassFun(Get, this, &CScriptAtomicInt::Get2Script);
-		RegisterClassFun(Add, this, &CScriptAtomicInt::Add2Script);
-		RegisterClassFun(Dec, this, &CScriptAtomicInt::Dec2Script);
 	}
 	CScriptAtomicInt::~CScriptAtomicInt()
 	{
@@ -19,36 +15,32 @@ namespace zlscript
 	{
 		RegisterClassType("CAtomicInt", CScriptAtomicInt);
 
-		RegisterClassFun1("Set", CScriptAtomicInt);
-		RegisterClassFun1("Get", CScriptAtomicInt);
-		RegisterClassFun1("Add", CScriptAtomicInt);
-		RegisterClassFun1("Dec", CScriptAtomicInt);
 	}
-	int CScriptAtomicInt::Set2Script(CScriptRunState* pState)
+	int CScriptAtomicInt::Set2Script(CScriptCallState* pState)
 	{
 		if (pState == nullptr)
 		{
 			return ECALLBACK_ERROR;
 		}
 		m_FunLock.lock();
-		m_nValue = pState->PopIntVarFormStack();
+		m_nValue = pState->GetIntVarFormStack(0);
 		m_FunLock.unlock();
-		pState->ClearFunParam();
+		//pState->ClearFunParam();
 
 		return ECALLBACK_FINISH;
 	}
-	int CScriptAtomicInt::Get2Script(CScriptRunState* pState)
+	int CScriptAtomicInt::Get2Script(CScriptCallState* pState)
 	{
 		if (pState == nullptr)
 		{
 			return ECALLBACK_ERROR;
 		}
-		pState->ClearFunParam();
+		//pState->ClearFunParam();
 		std::lock_guard<std::mutex> Lock(m_FunLock);
-		pState->PushVarToStack(m_nValue);
+		pState->SetResult(m_nValue);
 		return ECALLBACK_FINISH;
 	}
-	int CScriptAtomicInt::Add2Script(CScriptRunState* pState)
+	int CScriptAtomicInt::Add2Script(CScriptCallState* pState)
 	{
 		if (pState == nullptr)
 		{
@@ -58,14 +50,14 @@ namespace zlscript
 		__int64 nVal = 1;
 		if (pState->GetParamNum() > 0)
 		{
-			nVal = pState->PopIntVarFormStack();
+			nVal = pState->GetIntVarFormStack(0);
 		}
 		m_nValue += nVal;
-		pState->ClearFunParam();
-		pState->PushVarToStack(m_nValue);
+		//pState->ClearFunParam();
+		pState->SetResult(m_nValue);
 		return ECALLBACK_FINISH;
 	}
-	int CScriptAtomicInt::Dec2Script(CScriptRunState* pState)
+	int CScriptAtomicInt::Dec2Script(CScriptCallState* pState)
 	{
 		if (pState == nullptr)
 		{
@@ -75,11 +67,11 @@ namespace zlscript
 		__int64 nVal = 1;
 		if (pState->GetParamNum() > 0)
 		{
-			nVal = pState->PopIntVarFormStack();
+			nVal = pState->GetIntVarFormStack(0);
 		}
 		m_nValue -= nVal;
-		pState->ClearFunParam();
-		pState->PushVarToStack(m_nValue);
+		//pState->ClearFunParam();
+		pState->SetResult(m_nValue);
 		return ECALLBACK_FINISH;
 	}
 }

@@ -25,6 +25,8 @@ namespace zlscript
 		EScriptVal_String,
 		//EScriptVal_ClassPointIndex,
 		EScriptVal_ClassPoint,
+
+		EScriptVal_ClassData,
 		EScriptVal_Binary,
 	};
 }

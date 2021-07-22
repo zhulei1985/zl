@@ -25,12 +25,29 @@ namespace zlnetwork
 {
 	CBaseHeadProtocol::CBaseHeadProtocol() : m_curMsgData(MAX_MSG_LEN)
 	{
-
+		m_nBigDataIndex = 0;
 	}
 
 	bool CBaseHeadProtocol::GetData(std::vector<char>& vBuff, unsigned int len)
 	{
-		return m_curMsgData.Get(vBuff,len);
+		return m_curMsgData.Get(vBuff, len);
+	}
+
+	bool CBaseHeadProtocol::GetBigData(std::vector<char>& vBuff, unsigned int len)
+	{
+		if (m_BigMsgData.size() - len > m_nBigDataIndex)
+		{
+			memcpy(&vBuff[0], &m_BigMsgData[m_nBigDataIndex], len);
+			m_nBigDataIndex += len;
+		}
+		return false;
+	}
+
+	void CBaseHeadProtocol::ClearBigData()
+	{
+		m_BigMsgData.clear();
+		std::vector<char>().swap(m_BigMsgData);
+		m_nBigDataIndex = 0;
 	}
 
 	CWebSocketHeadProtocol::CWebSocketHeadProtocol()
@@ -75,7 +92,7 @@ namespace zlnetwork
 
 	int CWebSocketHeadProtocol::OnState_Init()
 	{
-		m_pConnector->GetData2(m_vReadTempBuf,512);
+		m_pConnector->GetData2(m_vReadTempBuf, 512);
 		if (m_vReadTempBuf.size() == 0)
 		{
 			return E_RETURN_NEXT;
@@ -220,7 +237,7 @@ namespace zlnetwork
 			m_nDataLen = 0;
 			//if (GetDataLenMode() > 0)
 			//{
-				m_nState = E_CONNECT_GET_MSG_LEN;
+			m_nState = E_CONNECT_GET_MSG_LEN;
 			//}
 			//else if (HasMask())
 			//{
@@ -250,7 +267,7 @@ namespace zlnetwork
 				return E_RETURN_NEXT;
 			}
 		}
-		else if(GetDataLenMode() == 2)
+		else if (GetDataLenMode() == 2)
 		{
 			if (m_pConnector->GetData(m_vReadTempBuf, 8))
 			{
@@ -299,7 +316,7 @@ namespace zlnetwork
 		}
 
 		m_nState = E_CONNECT_GET_MSG_BODY;
-		
+
 		return E_RETURN_CONTINUE;
 	}
 
@@ -318,7 +335,18 @@ namespace zlnetwork
 					m_vReadTempBuf[i] = m_vReadTempBuf[i] ^ m_Mask[(m_nMaskIndex++) % 4];
 				}
 			}
-			m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
+			if (IsFin() == false || GetDataLen() > MAX_MSG_LEN / 2 || m_BigMsgData.size() > 0)
+			{
+				for (unsigned int i = 0; i < m_vReadTempBuf.size(); i++)
+				{
+					m_BigMsgData.push_back(m_vReadTempBuf[i]);
+				}
+			}
+			else
+			{
+				m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
+			}
+
 
 			if (m_nCurLoadedDataLen >= GetDataLen())
 			{
@@ -328,7 +356,7 @@ namespace zlnetwork
 				else
 				{
 					//TODO 消息合并
-					return E_RETURN_COMPLETE;
+					return E_RETURN_NEXT;
 				}
 			}
 		}
@@ -369,7 +397,7 @@ namespace zlnetwork
 
 	bool CWebSocketHeadProtocol::IsFin()
 	{
-		return cHeadFlag1 >> 7 ? true:false;
+		return cHeadFlag1 >> 7 ? true : false;
 	}
 
 	char CWebSocketHeadProtocol::GetOpcode()
@@ -379,7 +407,7 @@ namespace zlnetwork
 
 	bool CWebSocketHeadProtocol::HasMask()
 	{
-		return cHeadFlag2>>7?true:false;
+		return cHeadFlag2 >> 7 ? true : false;
 	}
 
 	char CWebSocketHeadProtocol::GetDataLenMode()
@@ -442,8 +470,21 @@ namespace zlnetwork
 		m_pConnector->GetData2(m_vReadTempBuf, m_nDataLen - m_nCurLoadedDataLen);
 		m_nCurLoadedDataLen += m_vReadTempBuf.size();
 
+
 		if (m_vReadTempBuf.size() > 0)
-			m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
+		{
+			if (m_nDataLen > MAX_MSG_LEN / 2)
+			{
+				for (unsigned int i = 0; i < m_vReadTempBuf.size(); i++)
+				{
+					m_BigMsgData.push_back(m_vReadTempBuf[i]);
+				}
+			}
+			else
+			{
+				m_curMsgData.Push(&m_vReadTempBuf[0], m_vReadTempBuf.size());
+			}
+		}
 
 		if (m_nCurLoadedDataLen >= m_nDataLen)
 		{
@@ -513,7 +554,7 @@ namespace zlnetwork
 		if (bServer)
 		{
 			tagByteArray vBuff;
-			if (m_pConnector->GetData(vBuff, headword.size()+8))
+			if (m_pConnector->GetData(vBuff, headword.size() + 8))
 			{
 				int i = 0;
 				for (; i < (int)headword.size(); i++)
@@ -641,7 +682,7 @@ namespace zlnetwork
 	}
 	CBaseHeadProtocol* CHeadProtocolMgr::Create(int nType)
 	{
-		CBaseHeadProtocol *pProtocol = nullptr;
+		CBaseHeadProtocol* pProtocol = nullptr;
 		switch (nType)
 		{
 		case E_HEAD_PROTOCOL_WEBSOCKET:

@@ -126,7 +126,18 @@ namespace zlscript
 
 				else
 				{
-					UpdataSyncAttibute();
+					m_UpdateSyncAttLock.lock();
+					if (!m_setUpdateSyncAttibute.empty())
+					{
+						//同步属性有更新
+						std::vector<char> vBuff;
+						AddUpdateData2Bytes(vBuff);
+						int pos = 0;
+						SyncDownClassData(&vBuff[0], pos, vBuff.size(), m_vecSyncClassPoint);
+						//m_setUpdateSyncAttibute.clear();
+						ClearUpdateSyncAttibute();
+					}
+					m_UpdateSyncAttLock.unlock();
 				}
 
 				return nResult;
@@ -259,7 +270,18 @@ namespace zlscript
 			}
 			else
 			{
-				UpdataSyncAttibute();
+				m_UpdateSyncAttLock.lock();
+				if (m_setUpdateSyncAttibute.size() > 0)
+				{
+					//同步属性有更新
+					std::vector<char> vBuff;
+					AddUpdateData2Bytes(vBuff);
+					int pos = 0;
+					SyncDownClassData(&vBuff[0], pos, vBuff.size(), m_vecSyncClassPoint);
+					//m_setUpdateSyncAttibute.clear();
+					ClearUpdateSyncAttibute();
+				}
+				m_UpdateSyncAttLock.unlock();
 			}
 
 		}
@@ -472,10 +494,8 @@ namespace zlscript
 			CScriptSuperPointerMgr::GetInstance()->AddPoint2Release(this->GetScriptPointIndex());
 		}
 	}
-	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo> &vOutClassPoint)
+	bool CSyncScriptPointInterface::AddData2Bytes(std::vector<char>& vBuff)
 	{
-		//std::lock_guard<std::mutex> Lock(m_FunLock);
-
 		AddUShort2Bytes(vBuff, m_mapSyncAttributes.size());
 		auto it = m_mapSyncAttributes.cbegin();
 		for (; it != m_mapSyncAttributes.cend(); it++)
@@ -488,6 +508,13 @@ namespace zlscript
 				att->AddData2Bytes(vBuff);
 			}
 		}
+		return false;
+	}
+	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo> &vOutClassPoint)
+	{
+		//std::lock_guard<std::mutex> Lock(m_FunLock);
+		AddData2Bytes(vBuff);
+		
 		vOutClassPoint = m_vecSyncClassPoint;
 		return true;
 	}
@@ -593,20 +620,6 @@ namespace zlscript
 			return m_vecDecodeSyncClassPoint[index];
 		}
 		return PointVarInfo();
-	}
-	void CSyncScriptPointInterface::UpdataSyncAttibute()
-	{
-		m_UpdateSyncAttLock.lock();
-		if (!m_setUpdateSyncAttibute.empty())
-		{
-			//同步属性有更新
-			std::vector<char> vBuff;
-			AddUpdateData2Bytes(vBuff);
-			int pos = 0;
-			SyncDownClassData(&vBuff[0], pos, vBuff.size(), m_vecSyncClassPoint);
-			ClearUpdateSyncAttibute();
-		}
-		m_UpdateSyncAttLock.unlock();
 	}
 	void CSyncScriptPointInterface::ClearUpdateSyncAttibute()
 	{

@@ -156,6 +156,15 @@ namespace zlscript
 
 		unsigned int GetClassFunIndex(std::string name);
 		CBaseScriptClassFun* GetClassFunInfo(unsigned int id);
+
+		virtual bool AddData2Bytes(std::vector<char>& vBuff)
+		{
+			return true;
+		}
+		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len)
+		{
+			return true;
+		}
 	protected:
 		//用于所有脚本可用的类实例索引，作用范围是本地
 		__int64 m_nScriptPointIndex;

@@ -65,6 +65,13 @@ namespace zlnetwork
 
 		virtual void SetLastConnectID(__int64 id){}
 		virtual __int64 GetLastConnectID() { return 0; }
+
+		virtual bool IsBigMsg()
+		{
+			return !m_BigMsgData.empty();
+		}
+		bool GetBigData(std::vector<char>&, unsigned int);
+		void ClearBigData();
 	protected:
 		CSocketConnector* m_pConnector;
 		int m_nState;
@@ -73,6 +80,9 @@ namespace zlnetwork
 		std::vector<char> m_vReadShakeHandDataBuf;
 
 		CByteRingBuffer m_curMsgData;
+
+		std::vector<char> m_BigMsgData;
+		unsigned int m_nBigDataIndex;
 	};
 
 	class CWebSocketHeadProtocol : public CBaseHeadProtocol

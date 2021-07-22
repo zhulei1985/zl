@@ -45,7 +45,37 @@ bool CNetConnector::OnProcess()
 		{
 		case CBaseHeadProtocol::E_RETURN_COMPLETE:
 		{
-			if (m_pHeadProtocol->GetDataLen() > 0)
+			if (m_pHeadProtocol->IsBigMsg())
+			{
+				if (m_pHeadProtocol->GetBigData(vOut, 1))
+				{
+					int nPos = 0;
+					char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+
+					auto pCurMsgReceive = CMsgReceiveMgr::GetInstance()->CreateRceiveState(cType);
+					if (pCurMsgReceive == nullptr)
+					{
+						//TODO 错误数据，关闭链接
+						Close();
+						break;
+					}
+					pCurMsgReceive->SetGetDataFun(std::bind(&CBaseHeadProtocol::GetBigData, m_pHeadProtocol, std::placeholders::_1, std::placeholders::_2));
+					if (pCurMsgReceive->Recv(m_pMaster) == true)
+					{
+						m_LockMsgList.lock();
+						m_listMsg.push_back(pCurMsgReceive);
+						m_LockMsgList.unlock();
+					}
+					else
+					{
+						//TODO 错误数据，关闭链接
+						Close();
+						break;
+					}
+				}
+				m_pHeadProtocol->ClearBigData();
+			}
+			else if (m_pHeadProtocol->GetDataLen() > 0)
 			{
 				if (m_pHeadProtocol->GetData(vOut, 1))
 				{
@@ -149,6 +179,7 @@ bool CNetConnector::SendMsg(char* pBuff, int len)
 		m_pHeadProtocol->SendHead(len);
 	}
 	CSocketConnector::SendData(pBuff, len);
+	return true;
 }
 
 void CNetConnector::SetMaster(CScriptConnector* pConnector)
@@ -996,7 +1027,7 @@ bool CScriptConnector::OnProcess()
 		auto pCurMsgReceive = m_pNetConnector->PopMsg();
 		if (pCurMsgReceive)
 		{
-			if (pCurMsgReceive->Recv(this) == true)
+			//if (pCurMsgReceive->Recv(this) == true)
 			{
 				//返回true才需要释放消息
 				if (RunMsg(pCurMsgReceive))
@@ -1011,11 +1042,11 @@ bool CScriptConnector::OnProcess()
 					pCurMsgReceive = nullptr;
 				}
 			}
-			else
-			{
-				//TODO 错误数据，关闭链接
-				return false;
-			}
+			//else
+			//{
+			//	//TODO 错误数据，关闭链接
+			//	return false;
+			//}
 		}
 	}
 	CBaseScriptConnector::OnProcess();
@@ -1135,17 +1166,17 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 		AddChar2Bytes(vBuff, EScriptVal_Binary);
 		unsigned int size = 0;
 		const char* pStr = StackVarInfo::s_binPool.GetBinary(pVal->Int64, size);
-		AddData2Bytes(vBuff, pStr, size);
+		::AddData2Bytes(vBuff, pStr, size);
 	}
 	case EScriptVal_ClassPoint:
 	{
-		AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
 		auto pPoint = pVal->pPoint;
 		if (pPoint)
 		{
 			auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
 			if (pSyncPoint)
 			{
+				AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
 				pPoint->Lock();
 				//AddString2Bytes(vBuff, (char*)pPoint->ClassName());
 				if (pPoint->GetPoint())
@@ -1177,7 +1208,28 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal
 			else
 			{
 				//错误，没有找到对象或是非同步性对象
+				auto pNoSyncPoint = pPoint->GetPoint();
+				if (pNoSyncPoint)
+				{
+					AddChar2Bytes(vBuff, EScriptVal_ClassData);
+					tagByteArray vClassData;
+					pPoint->Lock();
+					AddString2Bytes(vBuff, (char*)pPoint->ClassName());
+					pNoSyncPoint->AddData2Bytes(vClassData);
+					pPoint->Unlock();
+					::AddData2Bytes(vBuff, vClassData);
+				}
+				else
+				{
+					//TODO 错误
+					AddChar2Bytes(vBuff, EScriptVal_None);
+				}
 			}
+		}
+		else
+		{
+			//TODO 错误
+			AddChar2Bytes(vBuff, EScriptVal_None);
 		}
 	}
 	break;
@@ -1194,13 +1246,14 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal
 	{
 		return false;
 	}
-	AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
+
 	auto pPoint = pVal->pPoint;
 	if (pPoint)
 	{
 		auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
 		if (pSyncPoint)
 		{
+			AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
 			pPoint->Lock();
 			//AddString2Bytes(vBuff, (char*)pPoint->ClassName());
 			if (pPoint->GetPoint())
@@ -1232,8 +1285,30 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal
 		else
 		{
 			//错误，没有找到对象或是非同步性对象
-			return false;
+			auto pNoSyncPoint = pPoint->GetPoint();
+			if (pNoSyncPoint)
+			{
+				AddChar2Bytes(vBuff, EScriptVal_ClassData);
+				tagByteArray vClassData;
+				pPoint->Lock();
+				AddString2Bytes(vBuff, (char*)pPoint->ClassName());
+				pNoSyncPoint->AddData2Bytes(vClassData);
+				pPoint->Unlock();
+				::AddData2Bytes(vBuff, vClassData);
+			}
+			else
+			{
+				//TODO 错误
+				AddChar2Bytes(vBuff, EScriptVal_None);
+				return false;
+			}
 		}
+	}
+	else
+	{
+		//TODO 错误
+		AddChar2Bytes(vBuff, EScriptVal_None);
+		return false;
 	}
 	return true;
 }

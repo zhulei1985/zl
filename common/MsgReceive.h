@@ -30,6 +30,7 @@ class CBaseScriptConnector;
 #include <functional>
 using namespace zlscript;
 
+// 原来想的是可以边接受边解码消息，现在放弃这个想法，所有消息还是接受完成再解码
 class CBaseMsgReceiveState
 {
 public:
@@ -57,10 +58,6 @@ public:
 	{
 		//nEventListIndex = -1;
 		nReturnID = -1;
-		nScriptFunNameLen = -1;
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
 	}
 	int GetType()
 	{
@@ -70,13 +67,9 @@ public:
 	{
 		//nEventListIndex = -1;
 		nReturnID = -1;
-		nScriptFunNameLen = -1;
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
 
 		strScriptFunName.clear();
-		strClassName.clear();
+
 		while (m_scriptParm.size())
 			m_scriptParm.pop();
 	}
@@ -89,13 +82,7 @@ public:
 
 	std::string strScriptFunName;//脚本名
 	CScriptStack m_scriptParm;
-protected:
-	//以下是读取时的临时变量
-	int nScriptFunNameLen;
-	int nScriptParmNum;
-	int nCurParmType;
-	int nStringLen;
-	std::string strClassName;
+
 };
 
 class CReturnMsgReceiveState : public CBaseMsgReceiveState
@@ -103,11 +90,7 @@ class CReturnMsgReceiveState : public CBaseMsgReceiveState
 public:
 	CReturnMsgReceiveState()
 	{
-		//nEventListIndex = -1;
 		nReturnID = -1;
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
 	}
 	int GetType()
 	{
@@ -115,12 +98,8 @@ public:
 	}
 	virtual void Clear()
 	{
-		//nEventListIndex = -1;
 		nReturnID = -1;
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
-		strClassName.clear();
+
 		while (m_scriptParm.size())
 			m_scriptParm.pop();
 	}
@@ -128,16 +107,9 @@ public:
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	//int nEventListIndex;//脚本执行器的ID
 	__int64 nReturnID;//脚本执行状态的ID
 	CScriptStack m_scriptParm;
-protected:
-	//以下是读取时的临时变量
 
-	int nScriptParmNum;
-	int nCurParmType;
-	int nStringLen;
-	std::string strClassName;
 };
 
 class CSyncClassInfoMsgReceiveState : public CBaseMsgReceiveState
@@ -145,18 +117,11 @@ class CSyncClassInfoMsgReceiveState : public CBaseMsgReceiveState
 public:
 	CSyncClassInfoMsgReceiveState()
 	{
-		nClassID = -1;
-
 		nRootServerID = -1;
 		nRootClassID = -1;
 		nTier = -1;
 
-		nClassNameStringLen = -1;
-		nDataLen = -1;
 		m_pPoint = nullptr;
-
-		nCurParmType = -1;
-		nClassPointNum = -1;
 	}
 	int GetType()
 	{
@@ -164,20 +129,14 @@ public:
 	}
 	virtual void Clear()
 	{
-		nClassID = -1;
-
 		nRootServerID = -1;
 		nRootClassID = -1;
 		nTier = -1;
 
-		nClassNameStringLen = -1;
-		nDataLen = -1;
 		m_pPoint = nullptr;
 
-		nCurParmType = -1;
-		nClassPointNum = -1;
-
 		strClassName.clear();
+		vClassPoint.clear();
 	}
 	virtual bool Recv(CScriptConnector*);
 	virtual bool Run(CBaseScriptConnector* pClient);
@@ -190,13 +149,7 @@ public:
 	std::string strClassName;
 	CSyncScriptPointInterface* m_pPoint;
 	std::vector<PointVarInfo> vClassPoint;
-private:
-	//以下是读取时的临时变量
-	int nClassNameStringLen;
-	int nCurParmType;
-	int nClassPointNum;
-	__int64 nClassID;//涉及到的类ID
-	int nDataLen;
+
 };
 class CSyncClassDataReceiveState : public CBaseMsgReceiveState
 {
@@ -204,16 +157,20 @@ public:
 	CSyncClassDataReceiveState()
 	{
 		nClassID = -1;
-		nCurParmType = -1;
-		nClassNameStringLen = -1;
-		nClassPointNum = -1;
-		nDataLen = -1;
 
 		strClassName.clear();
 	}
 	int GetType()
 	{
 		return E_SYNC_CLASS_DATA;
+	}
+	virtual void Clear()
+	{
+		nClassID = 0;
+
+		strClassName.clear();
+		vClassPoint.clear();
+		vData.clear();
 	}
 	virtual bool Recv(CScriptConnector*);
 	virtual bool Run(CBaseScriptConnector* pClient);
@@ -224,12 +181,6 @@ public:
 	__int64 nClassID;//类ID
 	std::vector<char> vData;//同步数据
 	std::vector<PointVarInfo> vClassPoint;
-private:
-	//以下是读取时的临时变量
-	int nClassNameStringLen;
-	int nCurParmType;
-	int nClassPointNum;
-	int nDataLen;
 };
 //需要记录到根节点的路径，以便根节点执行完了函数后将返回值传给发起调用的子节点
 class CSyncUpMsgReceiveState : public CBaseMsgReceiveState
@@ -238,13 +189,6 @@ public:
 	CSyncUpMsgReceiveState()
 	{
 		nClassID = -1;
-
-		nFunNameStringLen = -1;
-
-		nRouteNum = -1;
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
 	}
 	int GetType()
 	{
@@ -253,15 +197,7 @@ public:
 	virtual void Clear()
 	{
 		nClassID = -1;
-
-		nFunNameStringLen = -1;
-
-		nRouteNum = -1;
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
 		strFunName.clear();
-		strClassName.clear();
 		while (m_scriptParm.size())
 			m_scriptParm.pop();
 	}
@@ -275,14 +211,6 @@ public:
 	CScriptStack m_scriptParm;
 
 	std::list<__int64> m_listRoute;//路径
-protected:
-	//以下是读取时的临时变量
-	int nRouteNum;
-	int nFunNameStringLen;
-	int nScriptParmNum;
-	int nCurParmType;
-	int nStringLen;
-	std::string strClassName;
 };
 class CSyncDownMsgReceiveState : public CBaseMsgReceiveState
 {
@@ -291,11 +219,6 @@ public:
 	{
 		nClassID = -1;
 
-		nFunNameStringLen = -1;
-
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
 	}
 	int GetType()
 	{
@@ -305,13 +228,7 @@ public:
 	{
 		nClassID = -1;
 
-		nFunNameStringLen = -1;
-
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
 		strFunName.clear();
-		strClassName.clear();
 		while (m_scriptParm.size())
 			m_scriptParm.pop();
 	}
@@ -323,13 +240,6 @@ public:
 	std::string strFunName;
 	CScriptStack m_scriptParm;
 
-protected:
-	//以下是读取时的临时变量
-	int nFunNameStringLen;
-	int nScriptParmNum;
-	int nCurParmType;
-	int nStringLen;
-	std::string strClassName;
 };
 class CSyncFunReturnMsgReceiveState : public CBaseMsgReceiveState
 {
@@ -343,11 +253,11 @@ public:
 	}
 	virtual void Clear()
 	{
-		nRouteNum = -1;
-		nScriptParmNum = -1;
-		nCurParmType = -1;
-		nStringLen = -1;
-		strClassName.clear();
+		//nRouteNum = -1;
+		//nScriptParmNum = -1;
+		//nCurParmType = -1;
+		//nStringLen = -1;
+		//strClassName.clear();
 		while (m_scriptParm.size())
 			m_scriptParm.pop();
 		while (!m_scriptParm.empty())
@@ -364,13 +274,13 @@ public:
 	CScriptStack m_scriptParm;
 	std::list<__int64> m_listRoute;//路径
 
-protected:
-	//以下是读取时的临时变量
-	int nRouteNum;
-	int nScriptParmNum;
-	int nCurParmType;
-	int nStringLen;
-	std::string strClassName;
+//protected:
+//	//以下是读取时的临时变量
+//	int nRouteNum;
+//	int nScriptParmNum;
+//	int nCurParmType;
+//	int nStringLen;
+//	std::string strClassName;
 };
 //E_SYNC_DOWN_REMOVE,//移除下行同步
 class CSyncDownRemoveMsgReceiveState : public CBaseMsgReceiveState
