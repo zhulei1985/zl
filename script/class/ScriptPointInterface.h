@@ -150,18 +150,24 @@ namespace zlscript
 		virtual void RemoveScriptAttribute(CBaseScriptClassAttribute* pAttr);
 
 		virtual void RegisterScriptFun(CBaseScriptClassFun* pClassFun);
-
-		virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point) { return 0; }
-		virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index) { return PointVarInfo(); }
-
 		unsigned int GetClassFunIndex(std::string name);
 		CBaseScriptClassFun* GetClassFunInfo(unsigned int id);
 
-		virtual bool AddData2Bytes(std::vector<char>& vBuff)
+		//virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point) { return 0; }
+		//virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index) { return PointVarInfo(); }
+
+		bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal, std::vector<PointVarInfo>& vOutClassPoint);
+		bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal, std::vector<PointVarInfo>& vOutClassPoint);
+
+		StackVarInfo DecodeVar4Bytes(char* pBuff, int& pos, unsigned int len, std::vector<PointVarInfo>& vOutClassPoint);
+		PointVarInfo DecodePointVar4Bytes(char* pBuff, int& pos, unsigned int len, std::vector<PointVarInfo>& vOutClassPoint);
+
+		//vOutClassPoint 当成员变量中包含了可用于脚本的类实例指针时，将指针放入vOutClassPoint单独进行传递
+		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo>& vOutClassPoint)
 		{
 			return true;
 		}
-		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len)
+		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len, std::vector<PointVarInfo>& vOutClassPoint)
 		{
 			return true;
 		}

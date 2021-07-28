@@ -130,10 +130,11 @@ namespace zlscript
 					if (!m_setUpdateSyncAttibute.empty())
 					{
 						//同步属性有更新
+						std::vector<PointVarInfo> vClassPoint;
 						std::vector<char> vBuff;
-						AddUpdateData2Bytes(vBuff);
+						AddUpdateData2Bytes(vBuff, vClassPoint);
 						int pos = 0;
-						SyncDownClassData(&vBuff[0], pos, vBuff.size(), m_vecSyncClassPoint);
+						SyncDownClassData(&vBuff[0], pos, vBuff.size(), vClassPoint);
 						//m_setUpdateSyncAttibute.clear();
 						ClearUpdateSyncAttibute();
 					}
@@ -274,10 +275,11 @@ namespace zlscript
 				if (m_setUpdateSyncAttibute.size() > 0)
 				{
 					//同步属性有更新
+					std::vector<PointVarInfo> vClassPoint;
 					std::vector<char> vBuff;
-					AddUpdateData2Bytes(vBuff);
+					AddUpdateData2Bytes(vBuff, vClassPoint);
 					int pos = 0;
-					SyncDownClassData(&vBuff[0], pos, vBuff.size(), m_vecSyncClassPoint);
+					SyncDownClassData(&vBuff[0], pos, vBuff.size(), vClassPoint);
 					//m_setUpdateSyncAttibute.clear();
 					ClearUpdateSyncAttibute();
 				}
@@ -328,9 +330,9 @@ namespace zlscript
 	{
 		int startPos = pos;
 		//解码数据
-		m_vecDecodeSyncClassPoint = vClassPoint;
-		DecodeData4Bytes((char*)pBuff, pos, len);
-		m_vecDecodeSyncClassPoint.clear();
+		//m_vecDecodeSyncClassPoint = vClassPoint;
+		DecodeData4Bytes((char*)pBuff, pos, len, vClassPoint);
+		//m_vecDecodeSyncClassPoint.clear();
 		//发送同步消息给下层节点
 		CScriptStack tempStack;
 		ScriptVector_PushVar(tempStack, this);
@@ -494,8 +496,25 @@ namespace zlscript
 			CScriptSuperPointerMgr::GetInstance()->AddPoint2Release(this->GetScriptPointIndex());
 		}
 	}
-	bool CSyncScriptPointInterface::AddData2Bytes(std::vector<char>& vBuff)
+	//bool CSyncScriptPointInterface::AddData2Bytes(std::vector<char>& vBuff)
+	//{
+	//	AddUShort2Bytes(vBuff, m_mapSyncAttributes.size());
+	//	auto it = m_mapSyncAttributes.cbegin();
+	//	for (; it != m_mapSyncAttributes.cend(); it++)
+	//	{
+	//		CBaseScriptClassAttribute* att = it->second;
+	//		if (att)
+	//		{
+	//			AddUShort2Bytes(vBuff, it->first);
+	//			//AddUChar2Bytes(vBuff, att->type);
+	//			att->AddData2Bytes(vBuff);
+	//		}
+	//	}
+	//	return false;
+	//}
+	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo> &vOutClassPoint)
 	{
+		//std::lock_guard<std::mutex> Lock(m_FunLock);
 		AddUShort2Bytes(vBuff, m_mapSyncAttributes.size());
 		auto it = m_mapSyncAttributes.cbegin();
 		for (; it != m_mapSyncAttributes.cend(); it++)
@@ -505,20 +524,13 @@ namespace zlscript
 			{
 				AddUShort2Bytes(vBuff, it->first);
 				//AddUChar2Bytes(vBuff, att->type);
-				att->AddData2Bytes(vBuff);
+				att->AddData2Bytes(vBuff, vOutClassPoint);
 			}
 		}
-		return false;
-	}
-	bool CSyncScriptPointInterface::AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo> &vOutClassPoint)
-	{
-		//std::lock_guard<std::mutex> Lock(m_FunLock);
-		AddData2Bytes(vBuff);
-		
-		vOutClassPoint = m_vecSyncClassPoint;
+	
 		return true;
 	}
-	bool CSyncScriptPointInterface::AddUpdateData2Bytes(std::vector<char>& vBuff)
+	bool CSyncScriptPointInterface::AddUpdateData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo>& vOutClassPoint)
 	{
 		//在此函数之外加锁
 		//std::lock_guard<std::mutex> Lock(m_UpdateSyncAttLock);
@@ -531,12 +543,12 @@ namespace zlscript
 			{
 				AddUShort2Bytes(vBuff, att->m_index);
 				//AddUChar2Bytes(vBuff, att->type);
-				att->AddChangeData2Bytes(vBuff);
+				att->AddChangeData2Bytes(vBuff, vOutClassPoint);
 			}
 		}
 		return true;
 	}
-	bool CSyncScriptPointInterface::DecodeData4Bytes(char* pBuff, int& pos, unsigned int len)
+	bool CSyncScriptPointInterface::DecodeData4Bytes(char* pBuff, int& pos, unsigned int len, std::vector<PointVarInfo>& vOutClassPoint)
 	{
 		//std::lock_guard<std::mutex> Lock(m_FunLock);
 		unsigned short size = DecodeBytes2Short(pBuff, pos, len);
@@ -551,7 +563,7 @@ namespace zlscript
 				CBaseScriptClassAttribute* att = it->second;
 				if (att)
 				{
-					att->DecodeData4Bytes(pBuff, pos, len);
+					att->DecodeData4Bytes(pBuff, pos, len, vOutClassPoint);
 				}
 			}
 		}
@@ -601,26 +613,26 @@ namespace zlscript
 			m_mapSyncFunFlag[pClassFun->m_index] = pClassFun->m_nFlag;
 		}
 	}
-	unsigned int CSyncScriptPointInterface::GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point)
-	{
-		for (unsigned int i = 0; i < m_vecSyncClassPoint.size(); i++)
-		{
-			if (m_vecSyncClassPoint[i].pPoint == point)
-			{
-				return i;
-			}
-		}
-		m_vecSyncClassPoint.push_back(point);
-		return m_vecSyncClassPoint.size()-1;
-	}
-	PointVarInfo CSyncScriptPointInterface::GetSyncInfo_Index2ClassPoint(unsigned int index)
-	{
-		if (m_vecDecodeSyncClassPoint.size() > index)
-		{
-			return m_vecDecodeSyncClassPoint[index];
-		}
-		return PointVarInfo();
-	}
+	//unsigned int CSyncScriptPointInterface::GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point)
+	//{
+	//	for (unsigned int i = 0; i < m_vecSyncClassPoint.size(); i++)
+	//	{
+	//		if (m_vecSyncClassPoint[i].pPoint == point)
+	//		{
+	//			return i;
+	//		}
+	//	}
+	//	m_vecSyncClassPoint.push_back(point);
+	//	return m_vecSyncClassPoint.size()-1;
+	//}
+	//PointVarInfo CSyncScriptPointInterface::GetSyncInfo_Index2ClassPoint(unsigned int index)
+	//{
+	//	if (m_vecDecodeSyncClassPoint.size() > index)
+	//	{
+	//		return m_vecDecodeSyncClassPoint[index];
+	//	}
+	//	return PointVarInfo();
+	//}
 	void CSyncScriptPointInterface::ClearUpdateSyncAttibute()
 	{
 		//在此函数之外加锁
@@ -635,6 +647,6 @@ namespace zlscript
 			}
 		}
 		m_setUpdateSyncAttibute.clear();
-		m_vecSyncClassPoint.clear();
+		//m_vecSyncClassPoint.clear();
 	}
 }

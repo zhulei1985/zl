@@ -133,10 +133,10 @@ namespace zlscript
 		bool CheckDownSyncProcess(__int64);
 		void RemoveDownSyncProcess(__int64 processId);
 
-		virtual bool AddData2Bytes(std::vector<char>& vBuff);
+		//virtual bool AddData2Bytes(std::vector<char>& vBuff);
 		virtual bool AddAllData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo>& vOutClassPoint);
-		virtual bool AddUpdateData2Bytes(std::vector<char>& vBuff);
-		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len);
+		virtual bool AddUpdateData2Bytes(std::vector<char>& vBuff, std::vector<PointVarInfo>& vOutClassPoint);
+		virtual bool DecodeData4Bytes(char* pBuff, int& pos, unsigned int len, std::vector<PointVarInfo>& vOutClassPoint);
 
 		void ChangeScriptAttribute(CBaseScriptClassAttribute* pAttr, StackVarInfo& old);
 		void RegisterScriptAttribute(CBaseScriptClassAttribute* pAttr);
@@ -144,17 +144,17 @@ namespace zlscript
 
 		void RegisterScriptFun(CBaseScriptClassFun* pClassFun);
 
-		virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point);
-		virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index);
+		//virtual unsigned int GetSyncInfo_ClassPoint2Index(CScriptBasePointer* point);
+		//virtual PointVarInfo GetSyncInfo_Index2ClassPoint(unsigned int index);
 
-		void SetDecodeSyncClassPoints(std::vector<PointVarInfo>& vIn)
-		{
-			m_vecDecodeSyncClassPoint = vIn;
-		}
-		void ClearDecodeSyncClassPoints()
-		{
-			m_vecDecodeSyncClassPoint.clear();
-		}
+		//void SetDecodeSyncClassPoints(std::vector<PointVarInfo>& vIn)
+		//{
+		//	m_vecDecodeSyncClassPoint = vIn;
+		//}
+		//void ClearDecodeSyncClassPoints()
+		//{
+		//	m_vecDecodeSyncClassPoint.clear();
+		//}
 	protected:
 		void ClearUpdateSyncAttibute();
 	protected:
@@ -174,8 +174,8 @@ namespace zlscript
 		
 		std::set<CBaseScriptClassAttribute*> m_setUpdateSyncAttibute;
 
-		std::vector<PointVarInfo> m_vecSyncClassPoint;//需要同步的脚本类指针
-		std::vector<PointVarInfo> m_vecDecodeSyncClassPoint;//需要同步的脚本类指针
+		//std::vector<PointVarInfo> m_vecSyncClassPoint;//需要同步的脚本类指针
+		//std::vector<PointVarInfo> m_vecDecodeSyncClassPoint;//需要同步的脚本类指针
 
 		std::mutex m_SyncProcessLock;
 

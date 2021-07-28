@@ -623,6 +623,18 @@ bool CBaseScriptConnector::RunMsg(CBaseMsgReceiveState* pMsg)
 }
 
 
+void CBaseScriptConnector::SendNoSyncClassMsg(std::string strClassName, CScriptPointInterface* pPoint)
+{
+	if (pPoint == nullptr)
+	{
+		return;
+	}
+	CNoSyncClassInfoMsgReceiveState msg;
+	msg.strClassName = strClassName;
+	msg.m_pPoint = pPoint;
+	SendMsg(&msg);
+}
+
 void CBaseScriptConnector::SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint)
 {
 	if (pPoint == nullptr)
@@ -1134,120 +1146,115 @@ bool CScriptConnector::SendMsg(CBaseMsgReceiveState* pMsg)
 	return false;
 }
 
-bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal)
-{
-	if (!pVal)
-	{
-		return false;
-	}
-	switch (pVal->cType)
-	{
-	case EScriptVal_Int:
-	{
-		AddChar2Bytes(vBuff, EScriptVal_Int);
-		AddInt642Bytes(vBuff, pVal->Int64);
-	}
-	break;
-	case EScriptVal_Double:
-	{
-		AddChar2Bytes(vBuff, EScriptVal_Double);
-		AddDouble2Bytes(vBuff, pVal->Double);
-	}
-	break;
-	case EScriptVal_String:
-	{
-		AddChar2Bytes(vBuff, EScriptVal_String);
-		const char* pStr = StackVarInfo::s_strPool.GetString(pVal->Int64);
-		AddString2Bytes(vBuff, (char*)pStr);
-	}
-	break;
-	case EScriptVal_Binary:
-	{
-		AddChar2Bytes(vBuff, EScriptVal_Binary);
-		unsigned int size = 0;
-		const char* pStr = StackVarInfo::s_binPool.GetBinary(pVal->Int64, size);
-		::AddData2Bytes(vBuff, pStr, size);
-	}
-	case EScriptVal_ClassPoint:
-	{
-		auto pPoint = pVal->pPoint;
-		if (pPoint)
-		{
-			auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
-			if (pSyncPoint)
-			{
-				AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
-				pPoint->Lock();
-				//AddString2Bytes(vBuff, (char*)pPoint->ClassName());
-				if (pPoint->GetPoint())
-				{
-					//if (pSyncPoint->GetProcessID() == GetEventIndex())
-					if (pSyncPoint->CheckUpSyncProcess(GetEventIndex()))
-					{
-						//如果这个类实例是本连接对应的镜像
-						AddChar2Bytes(vBuff, 0);
-						__int64 nImageIndex = GetImage4Index(pPoint->GetPoint()->GetScriptPointIndex());
-						AddInt642Bytes(vBuff, nImageIndex);
-					}
-					else
-					{
-						AddChar2Bytes(vBuff, 1);
-						if (!pSyncPoint->CheckDownSyncProcess(this->GetEventIndex()))
-						{
-							//新同步
-							pSyncPoint->AddDownSyncProcess(this->GetEventIndex());
-							//发送消息
-							SendSyncClassMsg(pPoint->ClassName(), pSyncPoint);
-						}
-						AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
-					}
-					//AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
-				}
-				pPoint->Unlock();
-			}
-			else
-			{
-				//错误，没有找到对象或是非同步性对象
-				auto pNoSyncPoint = pPoint->GetPoint();
-				if (pNoSyncPoint)
-				{
-					AddChar2Bytes(vBuff, EScriptVal_ClassData);
-					tagByteArray vClassData;
-					pPoint->Lock();
-					AddString2Bytes(vBuff, (char*)pPoint->ClassName());
-					pNoSyncPoint->AddData2Bytes(vClassData);
-					pPoint->Unlock();
-					::AddData2Bytes(vBuff, vClassData);
-				}
-				else
-				{
-					//TODO 错误
-					AddChar2Bytes(vBuff, EScriptVal_None);
-				}
-			}
-		}
-		else
-		{
-			//TODO 错误
-			AddChar2Bytes(vBuff, EScriptVal_None);
-		}
-	}
-	break;
-	default:
-		AddChar2Bytes(vBuff, EScriptVal_None);
-		break;
-	}
-	return true;
-}
+//bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal)
+//{
+//	if (!pVal)
+//	{
+//		return false;
+//	}
+//	switch (pVal->cType)
+//	{
+//	case EScriptVal_Int:
+//	{
+//		AddChar2Bytes(vBuff, EScriptVal_Int);
+//		AddInt642Bytes(vBuff, pVal->Int64);
+//	}
+//	break;
+//	case EScriptVal_Double:
+//	{
+//		AddChar2Bytes(vBuff, EScriptVal_Double);
+//		AddDouble2Bytes(vBuff, pVal->Double);
+//	}
+//	break;
+//	case EScriptVal_String:
+//	{
+//		AddChar2Bytes(vBuff, EScriptVal_String);
+//		const char* pStr = StackVarInfo::s_strPool.GetString(pVal->Int64);
+//		AddString2Bytes(vBuff, (char*)pStr);
+//	}
+//	break;
+//	case EScriptVal_Binary:
+//	{
+//		AddChar2Bytes(vBuff, EScriptVal_Binary);
+//		unsigned int size = 0;
+//		const char* pStr = StackVarInfo::s_binPool.GetBinary(pVal->Int64, size);
+//		::AddData2Bytes(vBuff, pStr, size);
+//	}
+//	case EScriptVal_ClassPoint:
+//	{
+//		auto pPoint = pVal->pPoint;
+//		if (pPoint)
+//		{
+//			auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
+//			if (pSyncPoint)
+//			{
+//				AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
+//				pPoint->Lock();
+//				//AddString2Bytes(vBuff, (char*)pPoint->ClassName());
+//				if (pPoint->GetPoint())
+//				{
+//					//if (pSyncPoint->GetProcessID() == GetEventIndex())
+//					if (pSyncPoint->CheckUpSyncProcess(GetEventIndex()))
+//					{
+//						//如果这个类实例是本连接对应的镜像
+//						AddChar2Bytes(vBuff, 0);
+//						__int64 nImageIndex = GetImage4Index(pPoint->GetPoint()->GetScriptPointIndex());
+//						AddInt642Bytes(vBuff, nImageIndex);
+//					}
+//					else
+//					{
+//						AddChar2Bytes(vBuff, 1);
+//						if (!pSyncPoint->CheckDownSyncProcess(this->GetEventIndex()))
+//						{
+//							//新同步
+//							pSyncPoint->AddDownSyncProcess(this->GetEventIndex());
+//							//发送消息
+//							SendSyncClassMsg(pPoint->ClassName(), pSyncPoint);
+//						}
+//						AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+//					}
+//					//AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+//				}
+//				pPoint->Unlock();
+//			}
+//			else
+//			{
+//				//错误，没有找到对象或是非同步性对象
+//				auto pNoSyncPoint = pPoint->GetPoint();
+//				if (pNoSyncPoint)
+//				{
+//					AddChar2Bytes(vBuff, EScriptVal_ClassData);
+//					tagByteArray vClassData;
+//					pPoint->Lock();
+//					AddString2Bytes(vBuff, (char*)pPoint->ClassName());
+//					pNoSyncPoint->AddAllData2Bytes(vClassData);
+//					pPoint->Unlock();
+//					::AddData2Bytes(vBuff, vClassData);
+//				}
+//				else
+//				{
+//					//TODO 错误
+//					AddChar2Bytes(vBuff, EScriptVal_None);
+//				}
+//			}
+//		}
+//		else
+//		{
+//			//TODO 错误
+//			AddChar2Bytes(vBuff, EScriptVal_None);
+//		}
+//	}
+//	break;
+//	default:
+//		AddChar2Bytes(vBuff, EScriptVal_None);
+//		break;
+//	}
+//	return true;
+//}
 
-bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal)
+bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, CScriptBasePointer* pPoint)
 {
-	if (!pVal)
-	{
-		return false;
-	}
 
-	auto pPoint = pVal->pPoint;
 	if (pPoint)
 	{
 		auto pSyncPoint = dynamic_cast<CSyncScriptPointInterface*>(pPoint->GetPoint());
@@ -1255,10 +1262,6 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal
 		{
 			AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
 			pPoint->Lock();
-			//AddString2Bytes(vBuff, (char*)pPoint->ClassName());
-			if (pPoint->GetPoint())
-			{
-				//if (pSyncPoint->GetProcessID() == GetEventIndex())
 				if (pSyncPoint->CheckUpSyncProcess(GetEventIndex()))
 				{
 					//如果这个类实例是本连接对应的镜像
@@ -1276,11 +1279,10 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal
 						//发送消息
 						SendSyncClassMsg(pPoint->ClassName(), pSyncPoint);
 					}
-					AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
+					AddInt642Bytes(vBuff, pSyncPoint->GetScriptPointIndex());
 				}
-				//AddInt642Bytes(vBuff, pPoint->GetPoint()->GetScriptPointIndex());
-			}
-			pPoint->Unlock();
+				pPoint->Unlock();
+
 		}
 		else
 		{
@@ -1288,13 +1290,13 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal
 			auto pNoSyncPoint = pPoint->GetPoint();
 			if (pNoSyncPoint)
 			{
-				AddChar2Bytes(vBuff, EScriptVal_ClassData);
-				tagByteArray vClassData;
+				AddChar2Bytes(vBuff, EScriptVal_ClassPoint);
+				AddChar2Bytes(vBuff, 2);
 				pPoint->Lock();
-				AddString2Bytes(vBuff, (char*)pPoint->ClassName());
-				pNoSyncPoint->AddData2Bytes(vClassData);
+				//发送消息
+				SendNoSyncClassMsg(pPoint->ClassName(), pNoSyncPoint);
+				AddInt642Bytes(vBuff, pNoSyncPoint->GetScriptPointIndex());
 				pPoint->Unlock();
-				::AddData2Bytes(vBuff, vClassData);
 			}
 			else
 			{
@@ -1303,6 +1305,8 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal
 				return false;
 			}
 		}
+
+		pPoint->Unlock();
 	}
 	else
 	{
@@ -1414,6 +1418,43 @@ void CScriptConnector::SetImageAndIndex(__int64 nImageID, __int64 nLoaclID)
 	m_mapClassIndex2Image[nLoaclID] = nImageID;
 }
 
+
+PointVarInfo CScriptConnector::MakeNoSyncImage(std::string strClassName, __int64 index)
+{
+	auto it = m_mapNoSyncImage.find(index);
+	if (it != m_mapNoSyncImage.end())
+	{
+		it->second.nCount++;
+		return it->second.Point;
+	}
+	int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
+	CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
+	if (pMgr)
+	{
+		auto pNewPoint = pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
+		auto &image = m_mapNoSyncImage[index];
+		image.nCount++;
+		image.Point = pNewPoint->GetScriptPointIndex();
+		return image.Point;
+	}
+	return PointVarInfo();
+}
+
+PointVarInfo CScriptConnector::GetNoSyncImage4Index(__int64 index)
+{
+	PointVarInfo result;
+	auto it = m_mapNoSyncImage.find(index);
+	if (it != m_mapNoSyncImage.end())
+	{
+		it->second.nCount--;
+		result = it->second.Point;
+		if (it->second.nCount <= 0)
+		{
+			m_mapNoSyncImage.erase(it);
+		}
+	}
+	return result;
+}
 
 void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
@@ -1664,20 +1705,20 @@ bool CScriptRouteConnector::SendMsg(CBaseMsgReceiveState* pMsg)
 	return bResult;
 }
 
-bool CScriptRouteConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal)
-{
-	if (m_pMaster)
-	{
-		return m_pMaster->AddVar2Bytes(vBuff, pVal);
-	}
-	return false;
-}
+//bool CScriptRouteConnector::AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal)
+//{
+//	if (m_pMaster)
+//	{
+//		return m_pMaster->AddVar2Bytes(vBuff, pVal);
+//	}
+//	return false;
+//}
 
-bool CScriptRouteConnector::AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal)
+bool CScriptRouteConnector::AddVar2Bytes(std::vector<char>& vBuff, CScriptBasePointer* pPoint)
 {
 	if (m_pMaster)
 	{
-		return m_pMaster->AddVar2Bytes(vBuff, pVal);
+		return m_pMaster->AddVar2Bytes(vBuff, pPoint);
 	}
 	return false;
 }

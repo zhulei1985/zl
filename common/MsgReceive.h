@@ -8,6 +8,8 @@ enum E_MSG_TYPE
 	E_SYNC_CLASS_INFO,//同步类状态
 	E_SYNC_CLASS_DATA,//同步一个类的数据
 
+	E_NO_SYNC_CLASS_INFO,
+
 	E_SYNC_DOWN_PASSAGE,//下行同步通道
 	E_SYNC_UP_PASSAGE,//上行同步通道
 
@@ -45,6 +47,8 @@ public:
 	//网络的连接和路由连接都有可能使用run
 	virtual bool Run(CBaseScriptConnector* pClient) = 0;
 
+	virtual bool AddVar2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff, StackVarInfo *val);
+	virtual bool DecodeVar4Bytes(CBaseScriptConnector* pClient, StackVarInfo &val);
 public:
 	void SetGetDataFun(std::function<bool(std::vector<char>&, unsigned int)> fun);
 protected:
@@ -83,6 +87,7 @@ public:
 	std::string strScriptFunName;//脚本名
 	CScriptStack m_scriptParm;
 
+	std::vector<PointVarInfo> vClassPoint;
 };
 
 class CReturnMsgReceiveState : public CBaseMsgReceiveState
@@ -151,6 +156,36 @@ public:
 	std::vector<PointVarInfo> vClassPoint;
 
 };
+
+class CNoSyncClassInfoMsgReceiveState : public CBaseMsgReceiveState
+{
+public:
+	CNoSyncClassInfoMsgReceiveState()
+	{
+		m_pPoint = nullptr;
+	}
+	int GetType()
+	{
+		return E_NO_SYNC_CLASS_INFO;
+	}
+	virtual void Clear()
+	{
+		m_pPoint = nullptr;
+
+		strClassName.clear();
+		vClassPoint.clear();
+	}
+	virtual bool Recv(CScriptConnector*);
+	virtual bool Run(CBaseScriptConnector* pClient);
+	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
+public:
+
+	std::string strClassName;
+	CScriptPointInterface* m_pPoint;
+	std::vector<PointVarInfo> vClassPoint;
+
+};
+
 class CSyncClassDataReceiveState : public CBaseMsgReceiveState
 {
 public:

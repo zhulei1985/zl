@@ -17,6 +17,190 @@ bool CBaseMsgReceiveState::Send(CBaseScriptConnector* pClient)
 	return pClient->SendMsg(&m_vBuff[0], m_vBuff.size());
 	//return true;
 }
+bool CBaseMsgReceiveState::AddVar2Bytes(CBaseScriptConnector* pClient,std::vector<char>& vBuff, StackVarInfo* pVal)
+{
+	if (!pVal)
+	{
+		return false;
+	}
+	switch (pVal->cType)
+	{
+	case EScriptVal_Int:
+	{
+		AddChar2Bytes(vBuff, EScriptVal_Int);
+		AddInt642Bytes(vBuff, pVal->Int64);
+	}
+	break;
+	case EScriptVal_Double:
+	{
+		AddChar2Bytes(vBuff, EScriptVal_Double);
+		AddDouble2Bytes(vBuff, pVal->Double);
+	}
+	break;
+	case EScriptVal_String:
+	{
+		AddChar2Bytes(vBuff, EScriptVal_String);
+		const char* pStr = StackVarInfo::s_strPool.GetString(pVal->Int64);
+		AddString2Bytes(vBuff, (char*)pStr);
+	}
+	break;
+	case EScriptVal_Binary:
+	{
+		AddChar2Bytes(vBuff, EScriptVal_Binary);
+		unsigned int size = 0;
+		const char* pStr = StackVarInfo::s_binPool.GetBinary(pVal->Int64, size);
+		::AddData2Bytes(vBuff, pStr, size);
+	}
+	case EScriptVal_ClassPoint:
+	{
+		pClient->AddVar2Bytes(vBuff, pVal->pPoint);
+	}
+	break;
+	default:
+		AddChar2Bytes(vBuff, EScriptVal_None);
+		break;
+	}
+	return true;
+}
+bool CBaseMsgReceiveState::DecodeVar4Bytes(CBaseScriptConnector* pClient, StackVarInfo& val)
+{
+	int nCurParmType = 0;
+	std::vector<char> vOut;
+	int nPos = 0;
+	if (m_GetData(vOut, 1))
+	{
+		nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+	}
+	else
+	{
+		return false;
+	}
+
+	switch (nCurParmType)
+	{
+	case EScriptVal_None:
+		{
+			val.Clear();
+		}
+		break;
+	case EScriptVal_Int:
+		{
+			nPos = 0;
+			if (m_GetData(vOut, 8))
+			{
+				val = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+			}
+			else
+			{
+				return false;
+			}
+		}
+		break;
+	case EScriptVal_Double:
+		{
+			nPos = 0;
+			if (m_GetData(vOut, 8))
+			{
+				val = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
+			}
+			else
+			{
+				return false;
+			}
+		}
+		break;
+	case EScriptVal_String:
+		{
+			nPos = 0;
+			int nStringLen = 0;
+
+			if (m_GetData(vOut, 4))
+			{
+				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+			}
+			else
+			{
+				return false;
+			}
+
+			if (nStringLen > 0)
+			{
+				if (m_GetData(vOut, nStringLen))
+				{
+					vOut.push_back('\0');
+					val = (const char*)&vOut[0];
+				}
+				else
+				{
+					return false;
+				}
+			}
+		}
+		break;
+	case EScriptVal_Binary:
+		{
+			nPos = 0;
+			int nStringLen = 0;
+
+			if (m_GetData(vOut, 4))
+			{
+				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+			}
+			else
+			{
+				return false;
+			}
+
+			if (nStringLen > 0)
+			{
+				if (m_GetData(vOut, nStringLen))
+				{
+					val.Clear();
+					val.cType = EScriptVal_Binary;
+					val.Int64 = StackVarInfo::s_binPool.NewBinary((const char*)&vOut[0], nStringLen);
+				}
+				else
+				{
+					return false;
+				}
+			}
+		}
+		break;
+	case EScriptVal_ClassPoint:
+		{
+			nPos = 0;
+			unsigned int nIndex = 0;
+
+			if (m_GetData(vOut, 9))
+			{
+				nPos = 0;
+				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+
+				PointVarInfo pointVar;
+				if (cType == 0)
+				{
+					//本地类实例
+					pointVar = nClassID;
+				}
+				else if (cType == 1)
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+
+					pointVar = nIndex;
+
+				}
+				else if (cType == 2)
+				{
+				}
+			}
+		}
+		break;
+	}
+	return false;
+}
 void CBaseMsgReceiveState::SetGetDataFun(std::function<bool(std::vector<char>&, unsigned int)> fun)
 {
 	m_GetData = std::move(fun);
@@ -73,212 +257,29 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 		return false;
 	}
 
+	int nClassPointSize = 0;
+	if (m_GetData(vOut, 4))
+	{
+		nPos = 0;
+		nClassPointSize = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+	}
+	else
+	{
+		return false;
+	}
+	for (int i = 0; i < nClassPointSize; i++)
+	{
+		
+	}
 
 	while (m_scriptParm.size() < nScriptParmNum)
 	{
-		int nCurParmType = 0;
-
-		nPos = 0;
-		if (m_GetData(vOut, 1))
-		{
-			nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-		}
-		else
+		StackVarInfo var;
+		if (DecodeVar4Bytes(pClient,var) == false)
 		{
 			return false;
 		}
-
-		switch (nCurParmType)
-		{
-		case EScriptVal_None:
-		{
-			ScriptVector_PushEmptyVar(m_scriptParm);
-		}
-		break;
-		case EScriptVal_Int:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, nVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_Double:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, fVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_String:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_Binary:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_ClassPoint:
-		{
-			if (m_GetData(vOut, 9))
-			{
-				nPos = 0;
-				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-
-				PointVarInfo pointVar;
-				if (cType == 0)
-				{
-					//本地类实例
-					pointVar = nClassID;
-				}
-				else
-				{
-					//镜像类实例
-					//获取在本地的类实例索引
-					__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-					pointVar = nIndex;
-
-				}
-
-				//pPoint->Lock();
-				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
-				//pPoint->Unlock();
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_ClassData:
-		{
-			//先获取类名
-			nPos = 0;
-			int nStringLen = 0;
-			std::string strClassName;
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = (char*)&vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
-			nPos = 0;
-			int nDataLen = 0;
-			if (m_GetData(vOut, 4))
-			{
-				nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-			if (m_GetData(vOut, nDataLen))
-			{
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				auto pClassMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				CScriptPointInterface* pClass = nullptr;
-				if (pClassMgr)
-				{
-					pClass = pClassMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
-				}
-				if (pClass)
-				{
-					if (nDataLen > 0)
-					{
-						nPos = 0;
-						pClass->DecodeData4Bytes(&vOut[0], nPos, nDataLen);
-					}
-					ScriptVector_PushVar(m_scriptParm, pClass);
-				}
-				else
-				{
-					return false;
-				}
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		}
+		m_scriptParm.push(var);
 	}
 
 	return true;
@@ -301,11 +302,19 @@ bool CScriptMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std
 	AddString2Bytes(vBuff, (char*)strScriptFunName.c_str());
 	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
 
+	vClassPoint.clear();
+	tagByteArray vDataBuff;
+
 	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vDataBuff, m_scriptParm.GetVal(i));
 	}
-
+	AddInt2Bytes(vBuff, vClassPoint.size());
+	for (unsigned int i = 0; i < vClassPoint.size(); i++)
+	{
+		pClient->AddVar2Bytes(vBuff, vClassPoint[i].pPoint);
+	}
+	AddData2Bytes(vBuff, vDataBuff);
 	return true;
 }
 
@@ -342,210 +351,12 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	while (m_scriptParm.size() < nScriptParmNum)
 	{
-		int nCurParmType = 0;
-		nPos = 0;
-		if (m_GetData(vOut, 1))
-		{
-			nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-		}
-		else
+		StackVarInfo var;
+		if (DecodeVar4Bytes(pClient, var) == false)
 		{
 			return false;
 		}
-
-
-		switch (nCurParmType)
-		{
-		case EScriptVal_None:
-		{
-			ScriptVector_PushEmptyVar(m_scriptParm);
-		}
-		break;
-		case EScriptVal_Int:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, nVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_Double:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, fVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_String:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_Binary:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_ClassPoint:
-		{
-			if (m_GetData(vOut, 9))
-			{
-				nPos = 0;
-				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-
-				PointVarInfo pointVar;
-				if (cType == 0)
-				{
-					//本地类实例
-					pointVar = nClassID;
-				}
-				else
-				{
-					//镜像类实例
-					//获取在本地的类实例索引
-					__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-					pointVar = nIndex;
-
-				}
-
-				//pPoint->Lock();
-				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
-				//pPoint->Unlock();
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_ClassData:
-		{
-			//先获取类名
-			nPos = 0;
-			int nStringLen = 0;
-			std::string strClassName;
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = (char*)&vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
-			nPos = 0;
-			int nDataLen = 0;
-			if (m_GetData(vOut, 4))
-			{
-				nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-			if (m_GetData(vOut, nDataLen))
-			{
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				auto pClassMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				CScriptPointInterface* pClass = nullptr;
-				if (pClassMgr)
-				{
-					pClass = pClassMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
-				}
-				if (pClass)
-				{
-					if (nDataLen > 0)
-					{
-						nPos = 0;
-						pClass->DecodeData4Bytes(&vOut[0], nPos, nDataLen);
-					}
-
-					ScriptVector_PushVar(m_scriptParm, pClass);
-				}
-				else
-				{
-					return false;
-				}
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		}
+		m_scriptParm.push(var);
 	}
 
 	return true;
@@ -571,7 +382,7 @@ bool CReturnMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std
 
 	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vBuff, m_scriptParm.GetVal(i));
 	}
 
 	return true;
@@ -689,12 +500,16 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 					//本地类实例
 					pointVar = nClassID;
 				}
-				else
+				else if (cType == 1)
 				{
 					//镜像类实例
 					//获取在本地的类实例索引
 					__int64 nIndex = pClient->GetIndex4Image(nClassID);
 					pointVar = nIndex;
+				}
+				else if (cType == 2)
+				{
+					pointVar = pClient->GetNoSyncImage4Index(nClassID);
 				}
 				vClassPoint.push_back(pointVar);
 			}
@@ -796,9 +611,7 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 				}
 			}
 			nPos = 0;
-			m_pPoint->SetDecodeSyncClassPoints(vClassPoint);
-			m_pPoint->DecodeData4Bytes(&vOut[0], nPos, vOut.size());
-			m_pPoint->ClearDecodeSyncClassPoints();
+			m_pPoint->DecodeData4Bytes(&vOut[0], nPos, vOut.size(), vClassPoint);
 			//m_pPoint->SyncDownClassData(&vOut[0], nPos, vOut.size());
 		}
 		else
@@ -839,13 +652,175 @@ bool CSyncClassInfoMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClie
 	AddInt2Bytes(vBuff, vClassPoint.size());
 	for (unsigned int i = 0; i < vClassPoint.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, &vClassPoint[i]);
+		pClient->AddVar2Bytes(vBuff, vClassPoint[i].pPoint);
 	}
 	AddData2Bytes(vBuff, vDataBuff);
 
 	return true;
 }
+bool CNoSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
+{
+	std::vector<char> vOut;
+	int nPos = 0;
+	__int64 nClassID = 0;
+	if (m_GetData(vOut, 8))
+	{
+		nPos = 0;
+		nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+	}
+	else
+	{
+		return false;
+	}
 
+	int nClassNameStringLen = 0;
+
+	if (m_GetData(vOut, 4))
+	{
+		nPos = 0;
+		nClassNameStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+	}
+	else
+	{
+		return false;
+	}
+
+	if (nClassNameStringLen > 0)
+	{
+		if (m_GetData(vOut, nClassNameStringLen))
+		{
+			vOut.push_back('\0');
+			strClassName = (const char*)&vOut[0];
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	int nClassPointNum = 0;
+
+	if (m_GetData(vOut, 4))
+	{
+		nPos = 0;
+		nClassPointNum = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+	}
+	else
+	{
+		return false;
+	}
+	vClassPoint.clear();
+	while (vClassPoint.size() < nClassPointNum)
+	{
+		int nCurParmType = 0;
+
+		nPos = 0;
+		if (m_GetData(vOut, 1))
+		{
+			nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+		}
+		else
+		{
+			return false;
+		}
+
+		switch (nCurParmType)
+		{
+		case EScriptVal_ClassPoint:
+		{
+			if (m_GetData(vOut, 9))
+			{
+				nPos = 0;
+				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
+				PointVarInfo pointVar;
+				if (cType == 0)
+				{
+					//本地类实例
+					pointVar = nClassID;
+				}
+				else if (cType == 1)
+				{
+					//镜像类实例
+					//获取在本地的类实例索引
+					__int64 nIndex = pClient->GetIndex4Image(nClassID);
+					pointVar = nIndex;
+				}
+				else if (cType == 2)
+				{
+					pointVar = pClient->GetNoSyncImage4Index(nClassID);
+				}
+				vClassPoint.push_back(pointVar);
+			}
+			else
+				return false;
+
+		}
+		break;
+		default:
+			return false;
+		}
+	}
+
+	int nDataLen = 0;
+
+	if (m_GetData(vOut, 4))
+	{
+		nPos = 0;
+		nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
+	}
+	else
+	{
+		return false;
+	}
+
+	if (nDataLen > 0)
+	{
+		if (m_GetData(vOut, nDataLen))
+		{
+			PointVarInfo pointVar = pClient->MakeNoSyncImage(strClassName,nClassID);
+			if (pointVar.pPoint && pointVar.pPoint->GetPoint())
+			{
+				pointVar.pPoint->Lock();
+				nPos = 0;
+				pointVar.pPoint->GetPoint()->DecodeData4Bytes(&vOut[0], nPos, nDataLen, vClassPoint);
+				pointVar.pPoint->Unlock();
+
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+bool CNoSyncClassInfoMsgReceiveState::Run(CBaseScriptConnector* pClient)
+{
+	return false;
+}
+bool CNoSyncClassInfoMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff)
+{
+	if (m_pPoint == nullptr)
+	{
+		return false;
+	}
+
+	AddChar2Bytes(vBuff, E_NO_SYNC_CLASS_INFO);
+	AddInt642Bytes(vBuff, m_pPoint->GetScriptPointIndex());
+	AddString2Bytes(vBuff, (char*)strClassName.c_str());
+
+	tagByteArray vDataBuff;
+	m_pPoint->AddAllData2Bytes(vDataBuff, vClassPoint);
+	AddInt2Bytes(vBuff, vClassPoint.size());
+	for (unsigned int i = 0; i < vClassPoint.size(); i++)
+	{
+		pClient->AddVar2Bytes(vBuff, vClassPoint[i].pPoint);
+	}
+	AddData2Bytes(vBuff, vDataBuff);
+
+	return true;
+}
 bool CSyncClassDataReceiveState::Recv(CScriptConnector* pClient)
 {
 	std::vector<char> vOut;
@@ -875,49 +850,15 @@ bool CSyncClassDataReceiveState::Recv(CScriptConnector* pClient)
 	vClassPoint.clear();
 	while (vClassPoint.size() < nClassPointNum)
 	{
-		int nCurParmType = 0;
-		nPos = 0;
-		if (m_GetData(vOut, 1))
+		StackVarInfo var;
+		if (DecodeVar4Bytes(pClient, var) == false)
 		{
-			nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
+			return false;
 		}
+		if (var.cType == EScriptVal_ClassPoint)
+			vClassPoint.push_back(var.pPoint);
 		else
-		{
 			return false;
-		}
-
-		switch (nCurParmType)
-		{
-		case EScriptVal_ClassPoint:
-		{
-			if (m_GetData(vOut, 9))
-			{
-				nPos = 0;
-				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-				PointVarInfo pointVar;
-				if (cType == 0)
-				{
-					//本地类实例
-					pointVar = nClassID;
-				}
-				else
-				{
-					//镜像类实例
-					//获取在本地的类实例索引
-					__int64 nIndex = pClient->GetIndex4Image(nClassID);
-					pointVar = nIndex;
-				}
-				vClassPoint.push_back(pointVar);
-			}
-			else
-				return false;
-
-		}
-		break;
-		default:
-			return false;
-		}
 	}
 
 	int nDataLen = 0;
@@ -979,7 +920,7 @@ bool CSyncClassDataReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient,
 	AddInt2Bytes(vBuff, vClassPoint.size());
 	for (unsigned int i = 0; i < vClassPoint.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, &vClassPoint[i]);
+		pClient->AddVar2Bytes(vBuff, vClassPoint[i].pPoint);
 	}
 	//AddString2Bytes(vBuff, (char*)strClassName.c_str());
 	AddData2Bytes(vBuff, vData);
@@ -1066,208 +1007,12 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	while (m_scriptParm.size() < nScriptParmNum)
 	{
-		int nCurParmType = 0;
-		nPos = 0;
-		if (m_GetData(vOut, 1))
-		{
-			nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-		}
-		else
+		StackVarInfo var;
+		if (DecodeVar4Bytes(pClient, var) == false)
 		{
 			return false;
 		}
-
-		switch (nCurParmType)
-		{
-		case EScriptVal_None:
-		{
-			ScriptVector_PushEmptyVar(m_scriptParm);
-		}
-		break;
-		case EScriptVal_Int:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, nVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_Double:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, fVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_String:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_Binary:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_ClassPoint:
-		{
-			if (m_GetData(vOut, 9))
-			{
-				nPos = 0;
-				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-
-				PointVarInfo pointVar;
-				if (cType == 0)
-				{
-					//本地类实例
-					pointVar = nClassID;
-				}
-				else
-				{
-					//镜像类实例
-					//获取在本地的类实例索引
-					__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-					pointVar = nIndex;
-
-				}
-
-				//pPoint->Lock();
-				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
-				//pPoint->Unlock();
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_ClassData:
-		{
-			//先获取类名
-			nPos = 0;
-			int nStringLen = 0;
-			std::string strClassName;
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = (char*)&vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
-			nPos = 0;
-			int nDataLen = 0;
-			if (m_GetData(vOut, 4))
-			{
-				nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-			if (m_GetData(vOut, nDataLen))
-			{
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				auto pClassMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				CScriptPointInterface* pClass = nullptr;
-				if (pClassMgr)
-				{
-					pClass = pClassMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
-				}
-				if (pClass)
-				{
-					if (nDataLen > 0)
-					{
-						nPos = 0;
-						pClass->DecodeData4Bytes(&vOut[0], nPos, nDataLen);
-					}
-					ScriptVector_PushVar(m_scriptParm, pClass);
-				}
-				else
-				{
-					return false;
-				}
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		}
+		m_scriptParm.push(var);
 	}
 
 	return true;
@@ -1322,7 +1067,7 @@ bool CSyncUpMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std
 
 	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient,vBuff, m_scriptParm.GetVal(i));
 	}
 	return true;
 }
@@ -1379,208 +1124,12 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	while (m_scriptParm.size() < nScriptParmNum)
 	{
-		int nCurParmType = 0;
-		nPos = 0;
-		if (m_GetData(vOut, 1))
-		{
-			nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-		}
-		else
+		StackVarInfo var;
+		if (DecodeVar4Bytes(pClient, var) == false)
 		{
 			return false;
 		}
-
-		switch (nCurParmType)
-		{
-		case EScriptVal_None:
-		{
-			ScriptVector_PushEmptyVar(m_scriptParm);
-		}
-		break;
-		case EScriptVal_Int:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, nVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_Double:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, fVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_String:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_Binary:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_ClassPoint:
-		{
-			if (m_GetData(vOut, 9))
-			{
-				nPos = 0;
-				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-
-				PointVarInfo pointVar;
-				if (cType == 0)
-				{
-					//本地类实例
-					pointVar = nClassID;
-				}
-				else
-				{
-					//镜像类实例
-					//获取在本地的类实例索引
-					__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-					pointVar = nIndex;
-
-				}
-
-				//pPoint->Lock();
-				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
-				//pPoint->Unlock();
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_ClassData:
-		{
-			//先获取类名
-			nPos = 0;
-			int nStringLen = 0;
-			std::string strClassName;
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = (char*)&vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
-			nPos = 0;
-			int nDataLen = 0;
-			if (m_GetData(vOut, 4))
-			{
-				nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-			if (m_GetData(vOut, nDataLen))
-			{
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				auto pClassMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				CScriptPointInterface* pClass = nullptr;
-				if (pClassMgr)
-				{
-					pClass = pClassMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
-				}
-				if (pClass)
-				{
-					if (nDataLen > 0)
-					{
-						nPos = 0;
-						pClass->DecodeData4Bytes(&vOut[0], nPos, nDataLen);
-					}
-					ScriptVector_PushVar(m_scriptParm, pClass);
-				}
-				else
-				{
-					return false;
-				}
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		}
+		m_scriptParm.push(var);
 	}
 	return true;
 }
@@ -1626,7 +1175,7 @@ bool CSyncDownMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, s
 	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
 	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vBuff, m_scriptParm.GetVal(i));
 	}
 	return true;
 }
@@ -1684,208 +1233,12 @@ bool CSyncFunReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 
 	while (m_scriptParm.size() < nScriptParmNum)
 	{
-		int nCurParmType = 0;
-		nPos = 0;
-		if (m_GetData(vOut, 1))
-		{
-			nCurParmType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-		}
-		else
+		StackVarInfo var;
+		if (DecodeVar4Bytes(pClient, var) == false)
 		{
 			return false;
 		}
-
-		switch (nCurParmType)
-		{
-		case EScriptVal_None:
-		{
-			ScriptVector_PushEmptyVar(m_scriptParm);
-		}
-		break;
-		case EScriptVal_Int:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				__int64 nVal = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, nVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_Double:
-		{
-			nPos = 0;
-			if (m_GetData(vOut, 8))
-			{
-				double fVal = DecodeBytes2Double(&vOut[0], nPos, vOut.size());
-				ScriptVector_PushVar(m_scriptParm, fVal);
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_String:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0]);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_Binary:
-		{
-			nPos = 0;
-			int nStringLen = 0;
-
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					ScriptVector_PushVar(m_scriptParm, (const char*)&vOut[0], nStringLen);
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		break;
-		case EScriptVal_ClassPoint:
-		{
-			if (m_GetData(vOut, 9))
-			{
-				nPos = 0;
-				char cType = DecodeBytes2Char(&vOut[0], nPos, vOut.size());
-				__int64 nClassID = DecodeBytes2Int64(&vOut[0], nPos, vOut.size());
-
-				PointVarInfo pointVar;
-				if (cType == 0)
-				{
-					//本地类实例
-					pointVar = nClassID;
-				}
-				else
-				{
-					//镜像类实例
-					//获取在本地的类实例索引
-					__int64 nIndex = pClient->GetIndex4Image(nClassID);
-
-					pointVar = nIndex;
-
-				}
-
-				//pPoint->Lock();
-				ScriptVector_PushVar(m_scriptParm, pointVar.pPoint);
-				//pPoint->Unlock();
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		case EScriptVal_ClassData:
-		{
-			//先获取类名
-			nPos = 0;
-			int nStringLen = 0;
-			std::string strClassName;
-			if (m_GetData(vOut, 4))
-			{
-				nStringLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-
-			if (nStringLen > 0)
-			{
-				if (m_GetData(vOut, nStringLen))
-				{
-					vOut.push_back('\0');
-					strClassName = (char*)&vOut[0];
-				}
-				else
-				{
-					return false;
-				}
-			}
-			nPos = 0;
-			int nDataLen = 0;
-			if (m_GetData(vOut, 4))
-			{
-				nDataLen = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-			}
-			else
-			{
-				return false;
-			}
-			if (m_GetData(vOut, nDataLen))
-			{
-				int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-				auto pClassMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-				CScriptPointInterface* pClass = nullptr;
-				if (pClassMgr)
-				{
-					pClass = pClassMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
-				}
-				if (pClass)
-				{
-					if (nDataLen > 0)
-					{
-						nPos = 0;
-						pClass->DecodeData4Bytes(&vOut[0], nPos, nDataLen);
-					}
-					ScriptVector_PushVar(m_scriptParm, pClass);
-				}
-				else
-				{
-					return false;
-				}
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-		}
+		m_scriptParm.push(var);
 	}
 
 	return true;
@@ -1936,7 +1289,7 @@ bool CSyncFunReturnMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClie
 	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
 	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		pClient->AddVar2Bytes(vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vBuff, m_scriptParm.GetVal(i));
 	}
 
 	return true;
@@ -2268,6 +1621,9 @@ CBaseMsgReceiveState* CMsgReceiveMgr::CreateRceiveState(char cType)
 		break;
 	case E_SYNC_CLASS_INFO:
 		return new CSyncClassInfoMsgReceiveState;
+		break;
+	case E_NO_SYNC_CLASS_INFO:
+		return new CNoSyncClassInfoMsgReceiveState;
 		break;
 	case E_SYNC_CLASS_DATA:
 		return new CSyncClassDataReceiveState;

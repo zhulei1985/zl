@@ -105,11 +105,11 @@ public:
 	virtual bool SendMsg(CBaseMsgReceiveState* pMsg) { return false; }
 	virtual bool RunMsg(CBaseMsgReceiveState* pMsg);
 
-	virtual bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal) { return false; }
-	virtual bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal) {
+	//virtual bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal) { return false; }
+	virtual bool AddVar2Bytes(std::vector<char>& vBuff, CScriptBasePointer* pPoint) {
 		return false;
 	}
-
+	virtual void SendNoSyncClassMsg(std::string strClassName, CScriptPointInterface* pPoint);
 	virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
 	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack, std::list<__int64> listRoute);
 	virtual void SyncDownClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
@@ -225,8 +225,8 @@ public:
 	virtual bool SendMsg(char *pBuff, int len);
 	virtual bool SendMsg(CBaseMsgReceiveState* pMsg);
 
-	bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
-	bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal);
+	//bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
+	bool AddVar2Bytes(std::vector<char>& vBuff, CScriptBasePointer* pPoint);
 
 	void SetNetConnector(CNetConnector *pConnector);
 	//void SetHeadProtocol(CBaseHeadProtocol* pProtocol);
@@ -256,6 +256,21 @@ public://同步类的镜像索引
 protected:
 	std::map<__int64, __int64> m_mapClassImage2Index;
 	std::map<__int64, __int64> m_mapClassIndex2Image;
+
+public://非同步类的缓存
+	PointVarInfo MakeNoSyncImage(std::string strClassName,__int64 index);
+	PointVarInfo GetNoSyncImage4Index(__int64 index);
+protected:
+	struct tagNoSyncImage
+	{
+		tagNoSyncImage()
+		{
+			nCount = 0;
+		}
+		int nCount;
+		PointVarInfo Point;
+	};
+	std::unordered_map<__int64, tagNoSyncImage> m_mapNoSyncImage;
 public:
 	//"我"是指本连接对应的进程
 	//"我"要求"别人"执行脚本
@@ -297,8 +312,8 @@ public:
 	virtual bool SendMsg(char* pBuff, int len);
 	virtual bool SendMsg(CBaseMsgReceiveState *pMsg);
 
-	bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
-	bool AddVar2Bytes(std::vector<char>& vBuff, PointVarInfo* pVal);
+	//bool AddVar2Bytes(std::vector<char>& vBuff, StackVarInfo* pVal);
+	bool AddVar2Bytes(std::vector<char>& vBuff, CScriptBasePointer* pPoint);
 
 public://同步类的镜像索引
 
