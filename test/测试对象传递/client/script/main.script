@@ -1,0 +1,74 @@
+CAccount pMyAccount = nullptr;
+void PrintGuide()
+{
+	print("测试指令:");
+	print("SendTest [数值]");
+	//print("登录账号: LoginAccount [账号] [密码]");
+	//print("发送消息(需要登录): Talk [内容]");
+	//print("修改昵称: SetNick [名称]");
+}
+
+void Error_CannotRunScript()
+{
+	print("指令错误或是没有权限");
+}
+
+void SendTest(int val,Connector pClient)
+{
+	CTestData data = new CTestData;
+	data->varInt = val;
+	print("发送数据"+data->varInt);
+	CTestData data2 = pClient->RunScript(1,"TestDateAdd",data);
+	print("接收数据"+data2->varInt);
+}
+
+void main()
+{
+	print("启动");
+	Connector pClient = NewConnector("127.0.0.1",9999, "inner","123456");
+	pClient->SetAllScriptLimit(1);
+
+	print("初始化连接");
+	while (pClient->IsConnect()==0)
+	{
+		wait(1);
+	}
+
+	print("connect...ok");
+
+	PrintGuide();
+
+	while (1)
+	{
+		string str = UserInput();
+		if (str == "")
+		{
+			PrintGuide();
+		}
+		else
+		{
+			CArray Commands = ExecuteCommand(str);
+			if (Commands->GetSize() == 1)
+			{
+				RunScript(0,Commands->Get(0),pClient);
+			}
+			else if (Commands->GetSize() == 2)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),pClient);
+			}
+			else if (Commands->GetSize() == 3)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),Commands->Get(2),pClient);
+			}
+			else if (Commands->GetSize() == 4)
+			{
+				RunScript(0,Commands->Get(0),Commands->Get(1),Commands->Get(2),Commands->Get(3),pClient);
+			}
+			//RunScript(0,ExecuteCommand(str,pClient));
+			//pClient->RunScript(0,ExecuteCommand(str));
+		}
+
+		//print(str);
+		wait(1);
+	}
+}

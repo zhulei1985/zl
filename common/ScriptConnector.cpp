@@ -1302,11 +1302,10 @@ bool CScriptConnector::AddVar2Bytes(std::vector<char>& vBuff, CScriptBasePointer
 			{
 				//TODO 错误
 				AddChar2Bytes(vBuff, EScriptVal_None);
+				pPoint->Unlock();
 				return false;
 			}
 		}
-
-		pPoint->Unlock();
 	}
 	else
 	{
@@ -1747,6 +1746,24 @@ void CScriptRouteConnector::SetImageAndIndex(__int64 nImageID, __int64 nLoaclID)
 	{
 		m_pMaster->SetImageAndIndex(nImageID, nLoaclID);
 	}
+}
+
+PointVarInfo CScriptRouteConnector::MakeNoSyncImage(std::string strClassName, __int64 index)
+{
+	if (m_pMaster)
+	{
+		return m_pMaster->MakeNoSyncImage(strClassName, index);
+	}
+	return PointVarInfo();
+}
+
+PointVarInfo CScriptRouteConnector::GetNoSyncImage4Index(__int64 index)
+{
+	if (m_pMaster)
+	{
+		return m_pMaster->GetNoSyncImage4Index(index);
+	}
+	return PointVarInfo();
 }
 
 

@@ -196,6 +196,7 @@
     <ClCompile Include="DataBase.cpp" />
     <ClCompile Include="server_win32.cpp" />
     <ClCompile Include="TestClass.cpp" />
+    <ClCompile Include="TestDataClass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\common\base64.h" />
@@ -247,6 +248,7 @@
     <ClInclude Include="Account.h" />
     <ClInclude Include="DataBase.h" />
     <ClInclude Include="TestClass.h" />
+    <ClInclude Include="TestDataClass.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

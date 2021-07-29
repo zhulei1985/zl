@@ -171,6 +171,8 @@ public:
 		return 0;
 	}
 	virtual void SetImageAndIndex(__int64 nImageID, __int64 nLoaclID){}
+	virtual PointVarInfo MakeNoSyncImage(std::string strClassName, __int64 index) { return PointVarInfo(); }
+	virtual PointVarInfo GetNoSyncImage4Index(__int64 index) { return PointVarInfo(); }
 public:
 	void SetScriptLimit(std::string strName);
 	bool CheckScriptLimit(std::string strName);
@@ -320,6 +322,9 @@ public://同步类的镜像索引
 	__int64 GetImage4Index(__int64);
 	__int64 GetIndex4Image(__int64);
 	void SetImageAndIndex(__int64 nImageID, __int64 nLoaclID);
+
+	virtual PointVarInfo MakeNoSyncImage(std::string strClassName, __int64 index);
+	virtual PointVarInfo GetNoSyncImage4Index(__int64 index);
 public:
 	void SetMaster(CScriptConnector* pConnect);
 	void SetRouteID(__int64 nID);

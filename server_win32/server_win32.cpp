@@ -11,6 +11,7 @@
 #include "ScriptConnector.h"
 #include "ScriptConnectMgr.h"
 #include "Account.h"
+#include "TestDataClass.h"
 std::atomic_int g_nThreadRunState = 0;//0 退出 1 运行 2 暂停
 void BackGroundThreadFun()
 {
@@ -125,6 +126,7 @@ int main()
 	InitNetworkConnect();
 	CScriptConnector::Init2Script();
 	CAccount::Init2Script();
+	RegisterClassType("CTestData", CTestDataClass);
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("UserInput", UserInput);
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("ExecuteCommand", ExecuteCommand);
 	//设置脚本DEBUG输出

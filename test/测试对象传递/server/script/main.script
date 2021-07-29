@@ -1,0 +1,21 @@
+HashMap mapAccount = nullptr;
+CArray ConnectorArray = nullptr;
+void InitConnector(Connector pConnector)
+{
+	pConnector->SetAllScriptLimit(1);
+}
+CTestData TestDateAdd(CTestData data)
+{
+	print("TestDateAdd，"+data->varInt);
+	data->varInt = data->varInt+1;
+	return data;
+}
+void main()
+{
+	//初始化数据
+	InitData("Data");
+	mapAccount = new HashMap;
+	ConnectorArray = new CArray;
+	SetListenPort(9999,"inner","123456","InitConnector");
+	print("启动完成");
+}

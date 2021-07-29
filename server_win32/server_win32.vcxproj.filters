@@ -125,6 +125,9 @@
     <ClCompile Include="..\script\class\ScriptClassFunion.cpp">
       <Filter>script</Filter>
     </ClCompile>
+    <ClCompile Include="TestDataClass.cpp">
+      <Filter>class</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="network">
@@ -287,6 +290,9 @@
     </ClInclude>
     <ClInclude Include="..\script\class\ScriptClassFunion.h">
       <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="TestDataClass.h">
+      <Filter>class</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

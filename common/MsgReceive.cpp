@@ -194,12 +194,14 @@ bool CBaseMsgReceiveState::DecodeVar4Bytes(CBaseScriptConnector* pClient, StackV
 				}
 				else if (cType == 2)
 				{
+					pointVar = pClient->GetNoSyncImage4Index(nClassID);
 				}
+				val = pointVar;
 			}
 		}
 		break;
 	}
-	return false;
+	return true;
 }
 void CBaseMsgReceiveState::SetGetDataFun(std::function<bool(std::vector<char>&, unsigned int)> fun)
 {
@@ -257,21 +259,6 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 		return false;
 	}
 
-	int nClassPointSize = 0;
-	if (m_GetData(vOut, 4))
-	{
-		nPos = 0;
-		nClassPointSize = DecodeBytes2Int(&vOut[0], nPos, vOut.size());
-	}
-	else
-	{
-		return false;
-	}
-	for (int i = 0; i < nClassPointSize; i++)
-	{
-		
-	}
-
 	while (m_scriptParm.size() < nScriptParmNum)
 	{
 		StackVarInfo var;
@@ -302,19 +289,10 @@ bool CScriptMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std
 	AddString2Bytes(vBuff, (char*)strScriptFunName.c_str());
 	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
 
-	vClassPoint.clear();
-	tagByteArray vDataBuff;
-
 	for (int i = 0; i < m_scriptParm.size(); i++)
 	{
-		AddVar2Bytes(pClient, vDataBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vBuff, m_scriptParm.GetVal(i));
 	}
-	AddInt2Bytes(vBuff, vClassPoint.size());
-	for (unsigned int i = 0; i < vClassPoint.size(); i++)
-	{
-		pClient->AddVar2Bytes(vBuff, vClassPoint[i].pPoint);
-	}
-	AddData2Bytes(vBuff, vDataBuff);
 	return true;
 }
 

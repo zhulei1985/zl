@@ -86,8 +86,6 @@ public:
 
 	std::string strScriptFunName;//脚本名
 	CScriptStack m_scriptParm;
-
-	std::vector<PointVarInfo> vClassPoint;
 };
 
 class CReturnMsgReceiveState : public CBaseMsgReceiveState

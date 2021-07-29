@@ -81,8 +81,9 @@ namespace zlscript
 #define ATTR_BASE_INT64_ARRAY(val,flag,index) CScriptInt64ArrayAttribute val{#val,flag,index,this};
 #define ATTR_BASE_INT64_MAP(val,flag,index) CScriptInt64toInt64MapAttribute val{#val,flag,index,this};
 #define ATTR_BASE_CLASS_POINT(val,flag,index) CScriptClassPointAttribute val{#val,flag,index,this};
-#define ATTR_BASE_CLASS_POINT_ARRAY(val,flag,index) CScriptClassPointArrayAttribute val{#val,flag,index,this};
-#define ATTR_BASE_CLASS_POINT_MAP(val,flag,index) CScriptInt64toClassPointMapAttribute val{#val,flag,index,this};
+#define ATTR_BASE_VAR(val,flag,index) CScriptVarAttribute val{#val,flag,index,this};
+#define ATTR_BASE_VAR_ARRAY(val,flag,index) CScriptVarArrayAttribute val{#val,flag,index,this};
+#define ATTR_BASE_VAR_MAP(val,flag,index) CScriptVar2VarMapAttribute val{#val,flag,index,this};
 
 #define ATTR_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_NONE,index);
 #define ATTR_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_NONE,index);
