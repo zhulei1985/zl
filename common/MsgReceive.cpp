@@ -465,6 +465,9 @@ bool CSyncClassInfoMsgReceiveState::Recv(CScriptConnector* pClient)
 
 		switch (nCurParmType)
 		{
+		case EScriptVal_None:
+			vClassPoint.push_back(nullptr);
+			break;
 		case EScriptVal_ClassPoint:
 		{
 			if (m_GetData(vOut, 9))

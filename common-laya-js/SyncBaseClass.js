@@ -14,11 +14,38 @@ export class SyncBaseAttribute
         }
         return sign ? -1 - sum : sum;
     }
+
+    DecodeVar4Bytes(data,syncclass)
+    {
+        var parm;
+        var parmType = data.getByte();
+        console.log("参数:"+i+",类型"+parmType);
+        if (parmType == this.EScriptVal_Int)
+        {
+            parm = this.GetInt64(data);
+        }
+        else if (parmType == this.EScriptVal_Double)
+        {
+            parm = data.getFloat64();
+        }
+        else if (parmType == this.EScriptVal_String)
+        {
+            parm = this.GetString(data);
+        }
+        else if (parmType == this.EScriptVal_ClassPointIndex)
+        {
+
+            var classindex = data.getInt32();
+            console.log("type="+classtype+",index="+classindex);
+            parm = syncclass[pointindex];
+        }
+        return parm;
+    }
 }
 
 export class SyncIntAttribute extends SyncBaseAttribute
 {
-    DecodeData4Bytes(data)
+    DecodeData4Bytes(data,syncclass)
     {
         console.log("SyncIntAttribute DecodeData4Bytes");
         this.val = data.getInt32();
@@ -27,7 +54,7 @@ export class SyncIntAttribute extends SyncBaseAttribute
 
 export class SyncInt64Attribute extends SyncBaseAttribute
 {
-    DecodeData4Bytes(data)
+    DecodeData4Bytes(data,syncclass)
     {
         console.log("SyncInt64Attribute DecodeData4Bytes");
         this.val = this.getInt64(data);
@@ -36,7 +63,7 @@ export class SyncInt64Attribute extends SyncBaseAttribute
 
 export class SyncFloatAttribute extends SyncBaseAttribute
 {
-    DecodeData4Bytes(data)
+    DecodeData4Bytes(data,syncclass)
     {
         console.log("SyncFloatAttribute DecodeData4Bytes");
         this.val = data.getFloat();
@@ -45,7 +72,7 @@ export class SyncFloatAttribute extends SyncBaseAttribute
 
 export class SyncDoubleAttribute extends SyncBaseAttribute
 {
-    DecodeData4Bytes(data)
+    DecodeData4Bytes(data,syncclass)
     {
         console.log("SyncDoubleAttribute DecodeData4Bytes");
         this.val = data.getFloat64();
@@ -54,7 +81,7 @@ export class SyncDoubleAttribute extends SyncBaseAttribute
 
 export class SyncStringAttribute extends SyncBaseAttribute
 {
-    DecodeData4Bytes(data)
+    DecodeData4Bytes(data,syncclass)
     {
         console.log("SyncStringAttribute DecodeData4Bytes");
         var len = data.getInt32();
@@ -71,7 +98,7 @@ export class SyncInt64ArrayAttribute extends SyncBaseAttribute
     {
         this.val = [];
     }
-    DecodeData4Bytes(data)
+    DecodeData4Bytes(data,syncclass)
     {
         console.log("SyncInt64ArrayAttribute DecodeData4Bytes");
         var size = data.getInt32();
@@ -97,7 +124,7 @@ export class SyncInt64MapAttribute extends SyncBaseAttribute
     {
         this.val = new HashMap();
     }
-    DecodeData4Bytes(data)
+    DecodeData4Bytes(data,syncclass)
     {
         console.log("SyncInt64MapAttribute DecodeData4Bytes");
         var mode = data.getByte();
@@ -129,7 +156,7 @@ export class SyncClassPointAttribute extends SyncBaseAttribute
         this.val = syncclass[index];
     }
 }
-export class SyncClassPointArrayAttribute extends SyncBaseAttribute
+export class SyncVarArrayAttribute extends SyncBaseAttribute
 {
     constructor()
     {
@@ -151,13 +178,12 @@ export class SyncClassPointArrayAttribute extends SyncBaseAttribute
         for (var i = 0; i < num; i++)
         {
             var index = data.getInt32();
-            var pointindex = data.getInt32();
-            this.val[index] = syncclass[pointindex];
+            this.val[index] = this.DecodeVar4Bytes(data,syncclass);
         }
     }
 }
 
-export class SyncClassPointMapAttribute extends SyncBaseAttribute
+export class SyncVarMapAttribute extends SyncBaseAttribute
 {
     constructor()
     {
@@ -167,23 +193,37 @@ export class SyncClassPointMapAttribute extends SyncBaseAttribute
     {
         console.log("SyncClassPointMapAttribute DecodeData4Bytes");
         var mode = data.getByte();
+        var num = data.getInt32();
         if (mode == 1)
         {
             this.val.removeAll();
-        }
-        var num = data.getInt32();
-        for (var i = 0; i < num; i++)
-        {
-            var index = this.getInt64(data);
-            var value = data.getInt32();
-            if (value != -1)
+
+            for (var i = 0; i < num; i++)
             {
-                this.val.put(index,syncclass[value]);
-            }
-            else{
-                this.val.remove(index);
+                var index = this.DecodeVar4Bytes(data,syncclass);
+                var value = this.DecodeVar4Bytes(data,syncclass);
+
+                this.val.put(index,value);
             }
         }
+        else
+        {
+            for (var i = 0; i < num; i++)
+            {
+                var index = this.DecodeVar4Bytes(data,syncclass);
+                var cHas = data.getByte();
+
+                if (cHas != 0)
+                {
+                    var value = this.DecodeVar4Bytes(data,syncclass);                    
+                    this.val.put(index,value);
+                }
+                else{
+                    this.val.remove(index);
+                }
+            }
+        }
+
     }
 }
 
@@ -240,7 +280,7 @@ export class SyncBaseClass
         return this.index;
     }
 
-    DecodeData4Bytes(data)
+    DecodeData4Bytes(data,syncclass)
     {
         var size = data.getInt16();
         console.log("DecodeData4Bytes:"+size);        
@@ -250,7 +290,7 @@ export class SyncBaseClass
             var attr =  this.Parm[index];
             if (attr)
             {
-                attr.DecodeData4Bytes(data);
+                attr.DecodeData4Bytes(data,syncclass);
             }
         }
     }

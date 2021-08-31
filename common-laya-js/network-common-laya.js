@@ -2,7 +2,7 @@
 import classCache from "./SyncClassCache.js"
 import FunCache from "./network-fun-mgr.js"
 import HashMap from "./HashMap.js"
-
+import noSyncClassCache from "./NoSyncClassCache.js"
 export default class Connector
 {
     constructor(ip, port)
@@ -32,14 +32,16 @@ export default class Connector
 	    this.E_RUN_SCRIPT_RETURN = 65;
         this.E_SYNC_CLASS_INFO = 66;//同步类的状态
         this.E_SYNC_CLASS_DATA = 67;//同步类数据
+
+        this.E_NO_SYNC_CLASS_INFO = 68;
         
-	    this.E_SYNC_DOWN_PASSAGE = 68;//下行同步通道
-        this.E_SYNC_UP_PASSAGE = 69;//上行同步通道
+	    this.E_SYNC_DOWN_PASSAGE = 69;//下行同步通道
+        this.E_SYNC_UP_PASSAGE = 70;//上行同步通道
 
         this.E_SYNC_FUN_RETURN = 71;
 
-        this.E_SYNC_DOWN_REMOVE = 71;//关闭下行同步通道
-        this.E_SYNC_UP_REMOVE = 72;//关闭上行同步通道
+        this.E_SYNC_DOWN_REMOVE = 72;//关闭下行同步通道
+        this.E_SYNC_UP_REMOVE = 73;//关闭上行同步通道
     
         this.EScriptVal_Int = 1;
 		this.EScriptVal_Double = 2;
@@ -110,6 +112,9 @@ export default class Connector
             break;
         case this.E_SYNC_CLASS_DATA://同步类数据
             msg = this.Recv_SyncClassData();
+            break;
+        case this.E_NO_SYNC_CLASS_INFO:
+            msg = this.Recv_NoSyncClassInfo();
             break;
         case this.E_SYNC_DOWN_PASSAGE://下行同步通道
             break;
@@ -249,10 +254,14 @@ export default class Connector
                 {
                     parm = classCache.GetClass(classindex);
                 }
-                else
+                else if (classtype == 1)
                 {
                     var Index = this.GetIndex4Image(classindex);
                     parm = classCache.GetClass(Index);
+                }
+                else if (classtype == 2)
+                {
+                    parm = noSyncClassCache.GetClass(this.connectID,classindex);
                 }
                 console.log(parm);
             }
@@ -305,16 +314,22 @@ export default class Connector
                 {
                     parm = classCache.GetClass(classindex);
                 }
-                else
+                else if (classtype == 1)
                 {
                     var Index = this.GetIndex4Image(classindex);
                     parm = classCache.GetClass(Index);
+                }
+                else if (classtype == 2)
+                {
+                    parm = noSyncClassCache.GetClass(this.connectID,classindex);
                 }
             }
             msg.parm.push(parm);
         }
         if (msg.RPC_ID > 0)
         {
+            console.log("Recv_ReturnScript:"+msg.RPC_ID);
+            console.log(msg);
             var fun = this.RpcFun[msg.RPC_ID];
             if (fun != undefined)
             {
@@ -348,10 +363,13 @@ export default class Connector
                 {
                     parm = classCache.GetClass(classindex);
                 }
-                else
+                else if (classtype == 1)
                 {
                     var Index = this.GetIndex4Image(classindex);
                     parm = classCache.GetClass(Index);
+                }else if (classtype == 2)
+                {
+                    parm = noSyncClassCache.GetClass(this.connectID,classindex);
                 }
                 syncClass.push(parm);
             }
@@ -430,10 +448,14 @@ export default class Connector
                 {
                     parm = classCache.GetClass(classindex);
                 }
-                else
+                else if (classtype == 1)
                 {
                     var Index = this.GetIndex4Image(classindex);
                     parm = classCache.GetClass(Index);
+                }
+                else if (classtype == 2)
+                {
+                    parm = noSyncClassCache.GetClass(this.connectID,classindex);
                 }
                 syncClass.push(parm);
             }
@@ -448,6 +470,51 @@ export default class Connector
         }
         console.log("Recv_SyncClassData,end:");
         return msg;
+    }
+
+    Recv_NoSyncClassInfo()
+    {
+        console.log("Recv_NoSyncClassData,begin:");
+        var data = this.Recvbyte;
+        var msg = {};
+        msg.nClassID = this.GetInt64(data);
+        msg.strClassName = this.GetString(data);
+        var syncClass = [];
+        var syncClassNum = data.getInt32();
+        for (var i = 0; i < syncClassNum; i++)
+        {
+            var parmType = data.getByte();
+            if (parmType == this.EScriptVal_ClassPointIndex)
+            {
+                var parm;
+                var classtype = data.getByte();
+                var classindex = this.GetInt64(data);
+                if (classtype == 0)
+                {
+                    parm = classCache.GetClass(classindex);
+                }
+                else if (classtype == 1)
+                {
+                    var Index = this.GetIndex4Image(classindex);
+                    parm = classCache.GetClass(Index);
+                }
+                else if (classtype == 2)
+                {
+                    parm = noSyncClassCache.GetClass(this.connectID,classindex);
+                }
+                syncClass.push(parm);
+            }
+        }
+        var datalen = data.getInt32();
+        msg.classPoint = noSyncClassCache.NewClass(msg.strClassName,this.connectID, msg.nClassID);
+        if (msg.classPoint != null)
+        {
+            if ( msg.classPoint.DecodeData4Bytes instanceof Function ){
+                msg.classPoint.DecodeData4Bytes(this.Recvbyte,syncClass);
+            }
+        }
+        console.log(msg.classPoint);
+        console.log("Recv_NoSyncClassData,end:");
     }
 
     AddParm2Data(byte,parm)
@@ -492,7 +559,10 @@ export default class Connector
         byte.endian = Laya.Byte.BIG_ENDIAN;
         byte.writeByte(this.E_RUN_SCRIPT);
         //this.RpcIDAssign++;
-        this.RpcFun[msg.RPC_ID] = handler;
+        if (msg.RPC_ID!=0)
+        {
+            this.RpcFun[msg.RPC_ID] = handler;
+        }
         this.AddInt64(byte,msg.RPC_ID);
         this.AddString(byte,msg.strFunName);
         byte.writeByte(msg.parm.length);
@@ -500,8 +570,8 @@ export default class Connector
         {
             this.AddParm2Data(byte,msg.parm[i]);
         }
-        console.log("send run script msg:");
-        console.log(byte);
+        console.log("send run script msg:"+msg.strFunName+"--"+msg.RPC_ID);
+        console.log(msg);
         this.socket.send(byte.buffer);
     }
 
