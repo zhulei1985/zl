@@ -260,6 +260,7 @@ namespace zlscript
 	{
 		//TODO 日后添加缓存
 		CScriptRunState* pState = new CScriptRunState();
+		pState->m_pMachine = this;
 		pState->CallFunImmediately(this, name.c_str(), ParmStack);
 		delete pState;
 		return false;
