@@ -68,9 +68,6 @@
     <ClCompile Include="..\script\class\ScriptIntermediateCode.cpp">
       <Filter>script</Filter>
     </ClCompile>
-    <ClCompile Include="..\script\class\ScriptExecCodeMgr.cpp">
-      <Filter>script</Filter>
-    </ClCompile>
     <ClCompile Include="..\script\class\ScriptExecFrame.cpp">
       <Filter>script</Filter>
     </ClCompile>
@@ -113,9 +110,6 @@
     <ClCompile Include="..\script\class\ScriptClassAttributes.cpp">
       <Filter>script</Filter>
     </ClCompile>
-    <ClCompile Include="..\script\class\StackVarInfo.cpp">
-      <Filter>script</Filter>
-    </ClCompile>
     <ClCompile Include="..\script\class\TempScriptRunState.cpp">
       <Filter>script</Filter>
     </ClCompile>
@@ -127,6 +121,12 @@
     </ClCompile>
     <ClCompile Include="TestDataClass.cpp">
       <Filter>class</Filter>
+    </ClCompile>
+    <ClCompile Include="..\script\class\ScriptVarInfo.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\script\class\ScriptCodeStyle.cpp">
+      <Filter>script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -234,9 +234,6 @@
     <ClInclude Include="..\script\class\ScriptIntermediateCode.h">
       <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\script\class\ScriptExecCodeMgr.h">
-      <Filter>script</Filter>
-    </ClInclude>
     <ClInclude Include="..\script\class\ScriptExecFrame.h">
       <Filter>script</Filter>
     </ClInclude>
@@ -279,9 +276,6 @@
     <ClInclude Include="..\common\SyncScriptPointInterface.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\script\class\StackVarInfo.h">
-      <Filter>script</Filter>
-    </ClInclude>
     <ClInclude Include="..\script\class\TempScriptRunState.h">
       <Filter>script</Filter>
     </ClInclude>
@@ -293,6 +287,12 @@
     </ClInclude>
     <ClInclude Include="TestDataClass.h">
       <Filter>class</Filter>
+    </ClInclude>
+    <ClInclude Include="..\script\class\ScriptVarInfo.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\script\class\ScriptCodeStyle.h">
+      <Filter>script</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

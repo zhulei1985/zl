@@ -74,8 +74,8 @@ public:
 
 		strScriptFunName.clear();
 
-		while (m_scriptParm.size())
-			m_scriptParm.pop();
+		while (m_scriptParm.nIndex > 0)
+			STACK_POP(m_scriptParm);
 	}
 	virtual bool Recv(CScriptConnector*);
 	virtual bool Run(CBaseScriptConnector* pClient);
@@ -85,7 +85,7 @@ public:
 	__int64 nReturnID;//脚本执行返回用的ID
 
 	std::string strScriptFunName;//脚本名
-	CScriptStack m_scriptParm;
+	tagScriptVarStack m_scriptParm;
 };
 
 class CReturnMsgReceiveState : public CBaseMsgReceiveState
@@ -103,15 +103,15 @@ public:
 	{
 		nReturnID = -1;
 
-		while (m_scriptParm.size())
-			m_scriptParm.pop();
+		while (m_scriptParm.nIndex > 0)
+			STACK_POP(m_scriptParm);
 	}
 	virtual bool Recv(CScriptConnector*);
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
 	__int64 nReturnID;//脚本执行状态的ID
-	CScriptStack m_scriptParm;
+	tagScriptVarStack m_scriptParm;
 
 };
 
@@ -231,8 +231,8 @@ public:
 	{
 		nClassID = -1;
 		strFunName.clear();
-		while (m_scriptParm.size())
-			m_scriptParm.pop();
+		while (m_scriptParm.nIndex > 0)
+			STACK_POP(m_scriptParm);
 	}
 	virtual bool Recv(CScriptConnector*);
 	virtual bool Run(CBaseScriptConnector* pClient);
@@ -241,7 +241,7 @@ public:
 	__int64 nClassID;//涉及到的类ID
 
 	std::string strFunName;
-	CScriptStack m_scriptParm;
+	tagScriptVarStack m_scriptParm;
 
 	std::list<__int64> m_listRoute;//路径
 };
@@ -262,8 +262,8 @@ public:
 		nClassID = -1;
 
 		strFunName.clear();
-		while (m_scriptParm.size())
-			m_scriptParm.pop();
+		while (m_scriptParm.nIndex > 0)
+			STACK_POP(m_scriptParm);
 	}
 	virtual bool Recv(CScriptConnector*);
 	virtual bool Run(CBaseScriptConnector* pClient);
@@ -271,7 +271,7 @@ public:
 public:
 	__int64 nClassID;//涉及到的类ID
 	std::string strFunName;
-	CScriptStack m_scriptParm;
+	tagScriptVarStack m_scriptParm;
 
 };
 class CSyncFunReturnMsgReceiveState : public CBaseMsgReceiveState
@@ -291,12 +291,8 @@ public:
 		//nCurParmType = -1;
 		//nStringLen = -1;
 		//strClassName.clear();
-		while (m_scriptParm.size())
-			m_scriptParm.pop();
-		while (!m_scriptParm.empty())
-		{
-			m_scriptParm.pop();
-		}
+		while (m_scriptParm.nIndex > 0)
+			STACK_POP(m_scriptParm);
 		m_listRoute.clear();
 	}
 
@@ -304,7 +300,7 @@ public:
 	virtual bool Run(CBaseScriptConnector* pClient);
 	virtual bool AddAllData2Bytes(CBaseScriptConnector* pClient, std::vector<char>& vBuff);
 public:
-	CScriptStack m_scriptParm;
+	tagScriptVarStack m_scriptParm;
 	std::list<__int64> m_listRoute;//路径
 
 //protected:

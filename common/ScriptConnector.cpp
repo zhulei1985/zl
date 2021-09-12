@@ -1,6 +1,5 @@
 ﻿#include "ScriptConnector.h"
 #include "zByteArray.h"
-#include "ScriptExecCodeMgr.h"
 #include "ScriptConnectMgr.h"
 #include "TempScriptRunState.h"
 #include <functional>
@@ -327,7 +326,7 @@ int CBaseScriptConnector::RunScript2Script(CScriptCallState* pState)
 		return ECALLBACK_ERROR;
 	}
 	int nParmNum = pState->GetParamNum();
-	CScriptStack parm;
+	tagScriptVarStack parm;
 	__int64 nEventIndex = 0;
 	__int64 nReturnID = 0;
 	if (pState->m_pMaster->m_pMachine)
@@ -337,11 +336,8 @@ int CBaseScriptConnector::RunScript2Script(CScriptCallState* pState)
 		nReturnID = (__int64)pState->m_pMaster->GetId();
 	std::string strScriptFunName = pState->GetStringVarFormStack(1);
 	//pState->CopyToStack(&parm, nParmNum);
-	for (int i = 2; i < nParmNum; i++)
-	{
-		auto var = pState->GetVarFormStack(i);
-		parm.push(var);
-	}
+	STACK_MOVE_ALL_BACK(parm, pState->m_stackRegister,2);
+
 	RunFrom(strScriptFunName, parm, nReturnID, nEventIndex);
 
 
@@ -425,7 +421,7 @@ int CBaseScriptConnector::SetRoute2Script(CScriptCallState* pState)
 	}
 	if (nRouteMode_ConnectID)
 	{
-		CScriptStack scriptParm;
+		tagScriptVarStack scriptParm;
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE, GetEventIndex(), scriptParm, nRouteMode_ConnectID);
 	}
 	nRouteMode_ConnectID = 0;
@@ -469,7 +465,8 @@ int CBaseScriptConnector::GetVal2Script(CScriptCallState* pState)
 		pState->SetResult(it->second);
 		return ECALLBACK_FINISH;
 	}
-	pState->PushEmptyVarToStack();
+	StackVarInfo emptyVar;
+	pState->SetResult(emptyVar);
 	return ECALLBACK_FINISH;
 }
 
@@ -559,17 +556,19 @@ bool CBaseScriptConnector::OnProcess()
 
 void CBaseScriptConnector::OnDestroy()
 {
-	for (auto it = m_setRemoteFunName.begin(); it != m_setRemoteFunName.end(); it++)
-	{
-		CScriptExecCodeMgr::GetInstance()->RemoveRemoteFunction(*it, GetEventIndex());
-	}
+	//for (auto it = m_setRemoteFunName.begin(); it != m_setRemoteFunName.end(); it++)
+	//{
+	//	CScriptExecCodeMgr::GetInstance()->RemoveRemoteFunction(*it, GetEventIndex());
+	//}
 
 	for (auto it = m_mapReturnState.begin(); it != m_mapReturnState.end(); it++)
 	{
-		CScriptStack scriptParm;
-		ScriptVector_PushVar(scriptParm, it->second.nReturnID);
-		ScriptVector_PushEmptyVar(scriptParm);
-		//scriptParm.push();
+		tagScriptVarStack scriptParm;
+		StackVarInfo varReturnID(it->second.nReturnID);
+		StackVarInfo emptyVar;
+		STACK_PUSH(scriptParm, varReturnID);
+		STACK_PUSH(scriptParm, emptyVar);
+
 		
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN, GetEventIndex(), scriptParm, it->second.nEventIndex);
 
@@ -578,14 +577,15 @@ void CBaseScriptConnector::OnDestroy()
 
 	if (m_strDisconnectScript.size() > 0)
 	{
-		CScriptStack m_scriptParm;
-		ScriptVector_PushVar(m_scriptParm, this);
-
+		tagScriptVarStack scriptParm;
+		StackVarInfo var;
+		SCRIPTVAR_SET_INTERFACE_POINT(var, this);
+		STACK_PUSH(scriptParm,var);
 		//zlscript::CScriptVirtualMachine machine;
 		//machine.RunFunImmediately(m_strDisconnectScript, m_scriptParm);
 		if (zlscript::CScriptVirtualMachine::GetInstance())
 		{
-			zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(m_strDisconnectScript, m_scriptParm);
+			zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(m_strDisconnectScript, scriptParm);
 		}
 	}
 	RemoveClassObject(this->GetScriptPointIndex());
@@ -647,7 +647,7 @@ void CBaseScriptConnector::SendSyncClassMsg(std::string strClassName, CSyncScrip
 	SendMsg(&msg);
 }
 
-void CBaseScriptConnector::SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack, std::list<__int64> listRoute)
+void CBaseScriptConnector::SyncUpClassFunRun(__int64 classID, std::string strFunName, tagScriptVarStack& stack, std::list<__int64> listRoute)
 {
 	CSyncUpMsgReceiveState msg;
 	msg.strFunName = strFunName;
@@ -660,11 +660,11 @@ void CBaseScriptConnector::SyncUpClassFunRun(__int64 classID, std::string strFun
 	//	if (pVal)
 	//		msg.m_scriptParm.push(*pVal);
 	//}
-	msg.m_scriptParm = stack;
+	STACK_MOVE_ALL_BACK(msg.m_scriptParm, stack, 0);
 	SendMsg(&msg);
 }
 
-void CBaseScriptConnector::SyncDownClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack)
+void CBaseScriptConnector::SyncDownClassFunRun(__int64 classID, std::string strFunName, tagScriptVarStack& stack)
 {
 
 	CSyncDownMsgReceiveState msg;
@@ -725,122 +725,184 @@ void CBaseScriptConnector::SendChangeRoute(__int64 oldid, __int64 newid)
 }
 
 
-void CBaseScriptConnector::EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventReturnFun(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
-	__int64 nReturnID = GetInt_StackVar(ParmInfo.GetVal(0));
-	ParmInfo.pop_front(1);
+	StackVarInfo var;
+	STACK_GET_INDEX(ParmInfo, var, 0);
+	__int64 nReturnID = 0;
+	SCRIPTVAR_GET_INT(var, nReturnID);
+
+	STACK_POP_FRONT(ParmInfo, 1);
 	ResultFrom(ParmInfo, nReturnID);
 }
 
-void CBaseScriptConnector::EventRunFun(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventRunFun(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
-	__int64 nReturnID = GetInt_StackVar(ParmInfo.GetVal(0));
-	std::string funName = GetString_StackVar(ParmInfo.GetVal(0));
-	ParmInfo.pop_front(2);
+	StackVarInfo varReturn;
+	STACK_GET_INDEX(ParmInfo, varReturn, 0);
+	__int64 nReturnID = 0;
+	SCRIPTVAR_GET_INT(varReturn, nReturnID);
+
+	StackVarInfo varName;
+	STACK_GET_INDEX(ParmInfo, varName, 1);
+	std::string funName;
+	SCRIPTVAR_GET_STRING(varName, funName);
+	STACK_POP_FRONT(ParmInfo, 2);
 	RunFrom(funName, ParmInfo, nReturnID, nSendID);
 }
 
-void CBaseScriptConnector::EventUpSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventUpSyncFun(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
-	__int64 nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
-	std::string funName = GetString_StackVar(ParmInfo.GetVal(1));
-	__int64 nRouteNum = GetInt_StackVar(ParmInfo.GetVal(2));
+	StackVarInfo varClass;
+	STACK_GET_INDEX(ParmInfo, varClass, 0);
+	__int64 nClassID = 0;
+	SCRIPTVAR_GET_INT(varClass, nClassID);
+
+	StackVarInfo varName;
+	STACK_GET_INDEX(ParmInfo, varName, 1);
+	std::string funName;
+	SCRIPTVAR_GET_STRING(varName, funName);
+
+	StackVarInfo varRouteNum;
+	STACK_GET_INDEX(ParmInfo, varRouteNum, 2);
+	__int64 nRouteNum = 0;
+	SCRIPTVAR_GET_INT(varRouteNum, nRouteNum);
+
 	std::list<__int64> listRoute;
 	if (nRouteNum == 1)
 	{
 		//路径第一个值是远程调用返回机制的返回值
-		__int64 nStateID = GetInt_StackVar(ParmInfo.GetVal(3));
+		StackVarInfo varState;
+		STACK_GET_INDEX(ParmInfo, varState, 3);
+		__int64 nStateID = 0;
+		SCRIPTVAR_GET_INT(varState, nStateID);
 		listRoute.push_back(AddReturnState(nSendID,nStateID));
-		ParmInfo.pop_front(4);
+		STACK_POP_FRONT(ParmInfo, 4);
 	}
 	else
 	{
 		for (__int64 i = 0; i < nRouteNum; i++)
 		{
-			listRoute.push_back(GetInt_StackVar(ParmInfo.GetVal(3+i)));
+			StackVarInfo var;
+			STACK_GET_INDEX(ParmInfo, var, (3+i));
+			__int64 nID = 0;
+			SCRIPTVAR_GET_INT(var, nID);
+			listRoute.push_back(nID);
 		}
-		ParmInfo.pop_front(3+nRouteNum);
+		STACK_POP_FRONT(ParmInfo, (3 + nRouteNum));
 	}
 	SyncUpClassFunRun(nClassID, funName, ParmInfo, listRoute);
 }
 
-void CBaseScriptConnector::EventDownSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventDownSyncFun(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
-	__int64 nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
-	std::string funName = GetString_StackVar(ParmInfo.GetVal(1));
-	ParmInfo.pop_front(2);
+	StackVarInfo varClass;
+	STACK_GET_INDEX(ParmInfo, varClass, 0);
+	__int64 nClassID = 0;
+	SCRIPTVAR_GET_INT(varClass, nClassID);
+
+	StackVarInfo varName;
+	STACK_GET_INDEX(ParmInfo, varName, 1);
+	std::string funName;
+	SCRIPTVAR_GET_STRING(varName, funName);
+	STACK_POP_FRONT(ParmInfo, 2);
+
 	SyncDownClassFunRun(nClassID, funName, ParmInfo);
 }
 
-void CBaseScriptConnector::EventUpSyncData(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventUpSyncData(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
 }
 
-void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventDownSyncData(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
 	CSyncClassDataReceiveState msg;
-	msg.nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
+	StackVarInfo varClass;
+	STACK_GET_INDEX(ParmInfo, varClass, 0);
+	SCRIPTVAR_GET_INT(varClass, msg.nClassID);
+
+	StackVarInfo varBin;
+	STACK_GET_INDEX(ParmInfo, varBin, 1);
 	tagByteArray data;
-	GetBinary_StackVar(ParmInfo.GetVal(1), msg.vData);
-	__int64 nNum = ScriptStack_GetInt(ParmInfo);
+	GetBinary_StackVar(&varBin, msg.vData);
+
+	StackVarInfo varNum;
+	STACK_GET_INDEX(ParmInfo, varNum, 2);
+	__int64 nNum = 0;
+	SCRIPTVAR_GET_INT(varClass, nNum);
 	if (nNum > 0)
 	{
 		msg.vClassPoint.resize(nNum);
 		for (__int64 i = 0; i < nNum; i++)
 		{
-			auto var = ParmInfo.GetVal(2+i);
-			if (var && var->cType == EScriptVal_ClassPoint)
+			StackVarInfo var;
+			STACK_GET_INDEX(ParmInfo, var, 3+i);
+			if (var.cType == EScriptVal_ClassPoint)
 			{
-				msg.vClassPoint[i] = var->pPoint;
+				msg.vClassPoint[i] = var.pPoint;
 			}
 			else
 			{
 				msg.vClassPoint[i] = (__int64)0;
 			}
-			ParmInfo.pop();
 		}
 	}
 
 	SendMsg(&msg);
 }
 
-void CBaseScriptConnector::EventReturnSyncFun(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventReturnSyncFun(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
 	CSyncFunReturnMsgReceiveState msg;
-	__int64 nRouteNum = GetInt_StackVar(ParmInfo.GetVal(0));
+	StackVarInfo varRouteNum;
+	STACK_GET_INDEX(ParmInfo, varRouteNum, 0);
+	__int64 nRouteNum = 0;
+	SCRIPTVAR_GET_INT(varRouteNum, nRouteNum);
 	std::list<__int64> listRoute;
 	for (__int64 i = 0; i < nRouteNum; i++)
 	{
-		msg.m_listRoute.push_back(GetInt_StackVar(ParmInfo.GetVal(1+i)));
+		StackVarInfo var;
+		STACK_GET_INDEX(ParmInfo, var, 1 + i);
+		msg.m_listRoute.push_back(GetInt_StackVar(&var));
 	}
-	ParmInfo.pop_front(1 + nRouteNum);
+	STACK_POP_FRONT(ParmInfo, 1 + nRouteNum);
 	msg.m_scriptParm = ParmInfo;
 	SendMsg(&msg);
 }
 
-void CBaseScriptConnector::EventRemoveUpSync(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventRemoveUpSync(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
-	__int64 nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
+	StackVarInfo varClass;
+	STACK_GET_INDEX(ParmInfo, varClass, 0);
+	__int64 nClassID = 0;
+	SCRIPTVAR_GET_INT(varClass, nClassID);
 
 	SendRemoveSyncUp(nClassID);
 }
 
-void CBaseScriptConnector::EventRemoveDownSync(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventRemoveDownSync(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
-	__int64 nClassID = GetPointIndex_StackVar(ParmInfo.GetVal(0));
+	StackVarInfo varClass;
+	STACK_GET_INDEX(ParmInfo, varClass, 0);
+	__int64 nClassID = 0;
+	SCRIPTVAR_GET_INT(varClass, nClassID);
 
 	SendRemoveSyncDown(nClassID);
 }
 
-void CBaseScriptConnector::EventRemoveRoute(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventRemoveRoute(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
 	//__int64 nConnectID = ScriptStack_GetInt(ParmInfo);
 	SendRemoveRoute(nSendID);
 }
 
-void CBaseScriptConnector::EventChangeRoute(__int64 nSendID, CScriptStack& ParmInfo)
+void CBaseScriptConnector::EventChangeRoute(__int64 nSendID, tagScriptVarStack& ParmInfo)
 {
-	__int64 nOldConnectID = GetInt_StackVar(ParmInfo.GetVal(0));
+	StackVarInfo varOld;
+	STACK_GET_INDEX(ParmInfo, varOld, 0);
+	__int64 nOldConnectID = 0;
+	SCRIPTVAR_GET_INT(varOld, nOldConnectID);
+
 	//__int64 nNewConnectID = ScriptStack_GetInt(ParmInfo);
 	SendChangeRoute(nOldConnectID, nSendID);
 }
@@ -853,7 +915,7 @@ void CBaseScriptConnector::SetDisconnectScript(std::string val)
 
 
 
-void CBaseScriptConnector::RunFrom(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
+void CBaseScriptConnector::RunFrom(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
 	//根据nReturnID和nEventIndex生成一个返回ID
 
@@ -882,7 +944,7 @@ void CBaseScriptConnector::RunFrom(std::string funName, CScriptStack& pram, __in
 	SendMsg(&msg);
 }
 
-void CBaseScriptConnector::ResultFrom(CScriptStack& pram, __int64 nReturnID)
+void CBaseScriptConnector::ResultFrom(tagScriptVarStack& pram, __int64 nReturnID)
 {
 	CReturnMsgReceiveState msg;
 	msg.nReturnID = nReturnID;
@@ -1028,7 +1090,7 @@ bool CScriptConnector::OnProcess()
 
 	if (CanSend() && m_WaitCanSendStateID > 0)
 	{
-		CScriptStack parm;
+		tagScriptVarStack parm;
 		ResultTo(parm, m_WaitCanSendStateID, 0);
 		m_WaitCanSendStateID = 0;
 	}
@@ -1322,8 +1384,10 @@ void CScriptConnector::SetNetConnector(CNetConnector* pConnector)
 	{
 		m_pNetConnector = pConnector;
 		//说明要初始化
-		CScriptStack m_scriptParm;
-		ScriptVector_PushVar(m_scriptParm, this);
+		tagScriptVarStack m_scriptParm;
+		StackVarInfo var;
+		SCRIPTVAR_SET_INTERFACE_POINT(var, this);
+		STACK_PUSH(m_scriptParm, var);
 		if (zlscript::CScriptVirtualMachine::GetInstance())
 		{
 			zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately(pConnector->GetInitScript(), m_scriptParm);
@@ -1372,8 +1436,8 @@ void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 
 	if (pOldConnect->nRouteMode_ConnectID)
 	{
-		CScriptStack scriptParm;
-		ScriptVector_PushVar(scriptParm, pOldConnect->GetEventIndex());
+		tagScriptVarStack scriptParm;
+		STACK_PUSH_VAR(scriptParm, pOldConnect->GetEventIndex());
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_CHANGE, 
 			GetEventIndex(), scriptParm, nRouteMode_ConnectID);
 	}
@@ -1455,21 +1519,21 @@ PointVarInfo CScriptConnector::GetNoSyncImage4Index(__int64 index)
 	return result;
 }
 
-void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
+void CScriptConnector::RunTo(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
 	if (CheckScriptLimit(funName))
 	{
 
-		CScriptStack scriptParm;
-		ScriptVector_PushVar(scriptParm, nReturnID);
-		ScriptVector_PushVar(scriptParm, funName.c_str());
-		for (unsigned int i = 0; i < pram.size(); i++)
+		tagScriptVarStack scriptParm;
+		STACK_PUSH_VAR(scriptParm, nReturnID);
+		STACK_PUSH_VAR(scriptParm, funName.c_str());
+		for (unsigned int i = 0; i < pram.nIndex; i++)
 		{
-			auto p = pram.GetVal(i);
-			if (p)
-				scriptParm.push(*p);
+			StackVarInfo var;
+			STACK_GET_INDEX(pram, var,i);
+			STACK_PUSH(scriptParm, var);
 		}
-		ScriptVector_PushVar(scriptParm, this);
+		STACK_PUSH_INTERFACE(scriptParm, this);
 
 		//读取完成，执行结果
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
@@ -1493,8 +1557,8 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 			nRouteMode_ConnectID = 0;
 
 			//初始化
-			CScriptStack m_scriptParm;
-			ScriptVector_PushVar(m_scriptParm, funName.c_str());
+			tagScriptVarStack m_scriptParm;
+			STACK_PUSH_VAR(m_scriptParm, funName.c_str());
 			//zlscript::CScriptVirtualMachine machine;
 			//machine.RunFunImmediately("Error_CannotRunScript", m_scriptParm);
 			if (zlscript::CScriptVirtualMachine::GetInstance())
@@ -1530,9 +1594,9 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 		CACHE_NEW(CScriptCallState, pCallState, &tempState);
 		if (pCallState)
 		{
-			pCallState->PushVarToStack(funName.c_str());
-			pCallState->PushVarToStack("Error_CannotRunScript");
-			pCallState->PushVarToStack(0);
+			STACK_PUSH_VAR(pCallState->m_stackRegister, funName.c_str());
+			STACK_PUSH_VAR(pCallState->m_stackRegister, "Error_CannotRunScript");
+			STACK_PUSH_VAR(pCallState->m_stackRegister, (__int64)0);
 
 			RunScript2Script(pCallState);
 		}
@@ -1541,18 +1605,18 @@ void CScriptConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nR
 	}
 }
 
-void CScriptConnector::ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
+void CScriptConnector::ResultTo(tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
 	tagReturnState* pState = GetReturnState(nReturnID);
 	if (pState)
 	{
-		CScriptStack scriptParm;
-		ScriptVector_PushVar(scriptParm, pState->nReturnID);
-		for (unsigned int i = 0; i < pram.size(); i++)
+		tagScriptVarStack scriptParm;
+		STACK_PUSH_VAR(scriptParm, pState->nReturnID);
+		for (unsigned int i = 0; i < pram.nIndex; i++)
 		{
-			auto p = pram.GetVal(i);
-			if (p)
-				scriptParm.push(*p);
+			StackVarInfo var;
+			STACK_GET_INDEX(pram, var, i);
+			STACK_PUSH(scriptParm, var);
 		}
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN, GetEventIndex(), scriptParm, pState->nEventIndex);
 		RemoveReturnState(nReturnID);
@@ -1611,8 +1675,8 @@ bool CScriptConnector::RouteMsg(CRouteFrontMsgReceiveState* pState)
 		pRoute->SetRouteID(pState->nConnectID);
 		pRoute->OnInit();
 		//初始化
-		CScriptStack m_scriptParm;
-		ScriptVector_PushVar(m_scriptParm, pRoute);
+		tagScriptVarStack m_scriptParm;
+		STACK_PUSH_INTERFACE(m_scriptParm, pRoute);
 
 		//zlscript::CScriptVirtualMachine machine;
 		//machine.RunFunImmediately(strRouteInitScript, m_scriptParm);
@@ -1777,20 +1841,20 @@ void CScriptRouteConnector::SetRouteID(__int64 nID)
 	m_RouteID = nID;
 }
 
-void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
+void CScriptRouteConnector::RunTo(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
 	if (CheckScriptLimit(funName))
 	{
-		CScriptStack scriptParm;
-		ScriptVector_PushVar(scriptParm, nReturnID);
-		ScriptVector_PushVar(scriptParm, funName.c_str());
-		for (unsigned int i = 0; i < pram.size(); i++)
+		tagScriptVarStack scriptParm;
+		STACK_PUSH_VAR(scriptParm, nReturnID);
+		STACK_PUSH_VAR(scriptParm, funName.c_str());
+		for (unsigned int i = 0; i < pram.nIndex; i++)
 		{
-			auto p = pram.GetVal(i);
-			if (p)
-				scriptParm.push(*p);
+			StackVarInfo var;
+			STACK_GET_INDEX(pram, var, i);
+			STACK_PUSH(scriptParm, var);
 		}
-		ScriptVector_PushVar(scriptParm, this);
+		STACK_PUSH_INTERFACE(scriptParm, this);
 		//读取完成，执行结果
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
 	}
@@ -1800,11 +1864,11 @@ void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int
 		CScriptMsgReceiveState* pMsg = (CScriptMsgReceiveState*)CMsgReceiveMgr::GetInstance()->CreateRceiveState(E_RUN_SCRIPT);
 		pMsg->nReturnID = nReturnID;
 		pMsg->strScriptFunName = funName;
-		for (unsigned int i = 0; i < pram.size(); i++)
+		for (unsigned int i = 0; i < pram.nIndex; i++)
 		{
-			auto pVar = pram.GetVal(i);
-			if (pVar)
-				pMsg->m_scriptParm.push(*pVar);
+			StackVarInfo var;
+			STACK_GET_INDEX(pram, var, i);
+			STACK_PUSH(pMsg->m_scriptParm, var);
 		}
 		if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
 		{
@@ -1814,9 +1878,9 @@ void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int
 			CACHE_NEW(CScriptCallState, pCallState, &tempState);
 			if (pCallState)
 			{
-				pCallState->PushVarToStack(funName.c_str());
-				pCallState->PushVarToStack("Error_CannotRunScript");
-				pCallState->PushVarToStack(0);
+				STACK_PUSH_VAR(pCallState->m_stackRegister, funName.c_str());
+				STACK_PUSH_VAR(pCallState->m_stackRegister, "Error_CannotRunScript");
+				STACK_PUSH_VAR(pCallState->m_stackRegister, (__int64)0);
 
 				RunScript2Script(pCallState);
 			}
@@ -1851,9 +1915,9 @@ void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int
 		CACHE_NEW(CScriptCallState, pCallState, &tempState);
 		if (pCallState)
 		{
-			pCallState->PushVarToStack(funName.c_str());
-			pCallState->PushVarToStack("Error_CannotRunScript");
-			pCallState->PushVarToStack(0);
+			STACK_PUSH_VAR(pCallState->m_stackRegister, funName.c_str());
+			STACK_PUSH_VAR(pCallState->m_stackRegister, "Error_CannotRunScript");
+			STACK_PUSH_VAR(pCallState->m_stackRegister, (__int64)0);
 
 			RunScript2Script(pCallState);
 		}
@@ -1862,18 +1926,18 @@ void CScriptRouteConnector::RunTo(std::string funName, CScriptStack& pram, __int
 	}
 }
 
-void CScriptRouteConnector::ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex)
+void CScriptRouteConnector::ResultTo(tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
 	tagReturnState* pState = GetReturnState(nReturnID);
 	if (pState)
 	{
-		CScriptStack scriptParm;
-		ScriptVector_PushVar(scriptParm, pState->nReturnID);
-		for (unsigned int i = 0; i < pram.size(); i++)
+		tagScriptVarStack scriptParm;
+		STACK_PUSH_VAR(scriptParm, pState->nReturnID);
+		for (unsigned int i = 0; i < pram.nIndex; i++)
 		{
-			auto p = pram.GetVal(i);
-			if (p)
-				scriptParm.push(*p);
+			StackVarInfo var;
+			STACK_GET_INDEX(pram, var, i);
+			STACK_PUSH(scriptParm, var);
 		}
 		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN, GetEventIndex(), scriptParm, pState->nEventIndex);
 		RemoveReturnState(nReturnID);

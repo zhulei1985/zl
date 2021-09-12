@@ -174,12 +174,12 @@
     <ClCompile Include="..\script\class\ScriptClassFunion.cpp" />
     <ClCompile Include="..\script\class\ScriptClassMgr.cpp" />
     <ClCompile Include="..\script\class\ScriptCodeLoader.cpp" />
+    <ClCompile Include="..\script\class\ScriptCodeStyle.cpp" />
     <ClCompile Include="..\script\class\scriptcommon.cpp" />
     <ClCompile Include="..\script\class\ScriptDataMgr.cpp" />
     <ClCompile Include="..\script\class\ScriptDebugPrint.cpp" />
     <ClCompile Include="..\script\class\ScriptEventMgr.cpp" />
     <ClCompile Include="..\script\class\ScriptExecBlock.cpp" />
-    <ClCompile Include="..\script\class\ScriptExecCodeMgr.cpp" />
     <ClCompile Include="..\script\class\ScriptExecFrame.cpp" />
     <ClCompile Include="..\script\class\ScriptIntermediateCode.cpp" />
     <ClCompile Include="..\script\class\ScriptPointInterface.cpp" />
@@ -187,8 +187,8 @@
     <ClCompile Include="..\script\class\ScriptStack.cpp" />
     <ClCompile Include="..\script\class\ScriptSuperPointer.cpp" />
     <ClCompile Include="..\script\class\ScriptTriggerMg.cpp" />
+    <ClCompile Include="..\script\class\ScriptVarInfo.cpp" />
     <ClCompile Include="..\script\class\ScriptVirtualMachine.cpp" />
-    <ClCompile Include="..\script\class\StackVarInfo.cpp" />
     <ClCompile Include="..\script\class\TempScriptRunState.cpp" />
     <ClCompile Include="..\script\class\zBinaryBuffer.cpp" />
     <ClCompile Include="..\script\class\zStringBuffer.cpp" />
@@ -225,12 +225,12 @@
     <ClInclude Include="..\script\class\ScriptClassFunion.h" />
     <ClInclude Include="..\script\class\ScriptClassMgr.h" />
     <ClInclude Include="..\script\class\ScriptCodeLoader.h" />
+    <ClInclude Include="..\script\class\ScriptCodeStyle.h" />
     <ClInclude Include="..\script\class\scriptcommon.h" />
     <ClInclude Include="..\script\class\ScriptDataMgr.h" />
     <ClInclude Include="..\script\class\ScriptDebugPrint.h" />
     <ClInclude Include="..\script\class\ScriptEventMgr.h" />
     <ClInclude Include="..\script\class\ScriptExecBlock.h" />
-    <ClInclude Include="..\script\class\ScriptExecCodeMgr.h" />
     <ClInclude Include="..\script\class\ScriptExecFrame.h" />
     <ClInclude Include="..\script\class\ScriptIntermediateCode.h" />
     <ClInclude Include="..\script\class\ScriptPointInterface.h" />
@@ -238,8 +238,8 @@
     <ClInclude Include="..\script\class\ScriptStack.h" />
     <ClInclude Include="..\script\class\ScriptSuperPointer.h" />
     <ClInclude Include="..\script\class\ScriptTriggerMgr.h" />
+    <ClInclude Include="..\script\class\ScriptVarInfo.h" />
     <ClInclude Include="..\script\class\ScriptVirtualMachine.h" />
-    <ClInclude Include="..\script\class\StackVarInfo.h" />
     <ClInclude Include="..\script\class\TempScriptRunState.h" />
     <ClInclude Include="..\script\class\zBinaryBuffer.h" />
     <ClInclude Include="..\script\class\zByteArray.h" />

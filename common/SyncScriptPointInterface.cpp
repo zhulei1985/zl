@@ -36,7 +36,7 @@ namespace zlscript
 			if (GetProcessID() > 0)
 			{
 				std::string funName;
-				CScriptStack tempStack;
+				tagScriptVarStack tempStack;
 
 
 				//获取函数名
@@ -51,13 +51,15 @@ namespace zlscript
 					}
 				}
 				//m_FunLock.unlock();
-				ScriptVector_PushVar(tempStack, this);
-				ScriptVector_PushVar(tempStack, funName.c_str());
-				ScriptVector_PushVar(tempStack, (__int64)1);
-				ScriptVector_PushVar(tempStack, pState->m_pMaster->GetId());
-				for (unsigned int i = 0; i < pState->m_stackRegister.size(); i++)
+				STACK_PUSH_INTERFACE(tempStack, this);
+				STACK_PUSH_VAR(tempStack, funName.c_str());
+				STACK_PUSH_VAR(tempStack, (__int64)1);
+				STACK_PUSH_VAR(tempStack, pState->m_pMaster->GetId());
+				for (unsigned int i = 0; i < pState->m_stackRegister.nIndex; i++)
 				{
-					ScriptVector_PushVar(tempStack,pState->m_stackRegister.GetVal(i));
+					StackVarInfo var;
+					STACK_GET_INDEX(pState->m_stackRegister, var, i);
+					STACK_PUSH(tempStack, var);
 				}
 				//std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 				if (!CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_UP_SYNC_FUN, 
@@ -71,10 +73,12 @@ namespace zlscript
 			else
 			{
 				std::string funName;
-				CScriptStack parmStack;
-				for (unsigned int i = 0; i < pState->m_stackRegister.size(); i++)
+				tagScriptVarStack parmStack;
+				for (unsigned int i = 0; i < pState->m_stackRegister.nIndex; i++)
 				{
-					ScriptVector_PushVar(parmStack, pState->m_stackRegister.GetVal(i));
+					StackVarInfo var;
+					STACK_GET_INDEX(pState->m_stackRegister, var, i);
+					STACK_PUSH(parmStack, var);
 				}
 
 				//先执行本地数据
@@ -94,12 +98,14 @@ namespace zlscript
 
 				if (itSyncFlag->second & CBaseScriptClassFun::E_FLAG_SYNC_RELAY_FUN)
 				{
-					CScriptStack tempStack;
-					ScriptVector_PushVar(tempStack, this);
-					ScriptVector_PushVar(tempStack, funName.c_str());
-					for (unsigned int i = 0; i < parmStack.size(); i++)
+					tagScriptVarStack tempStack;
+					STACK_PUSH_INTERFACE(tempStack, this);
+					STACK_PUSH_VAR(tempStack, funName.c_str());
+					for (unsigned int i = 0; i < parmStack.nIndex; i++)
 					{
-						tempStack.push(*parmStack.GetVal(i));
+						StackVarInfo var;
+						STACK_GET_INDEX(pState->m_stackRegister, var, i);
+						STACK_PUSH(parmStack, var);
 					}
 					std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 					//然后再同步给子节点
@@ -154,17 +160,19 @@ namespace zlscript
 	{
 		if (GetProcessID() > 0)//不是根节点，继续往上发送
 		{
-			CScriptStack tempStack;
-			ScriptVector_PushVar(tempStack, this);
-			ScriptVector_PushVar(tempStack, strFun.c_str());
-			ScriptVector_PushVar(tempStack, (__int64)listRoute.size());
+			tagScriptVarStack tempStack;
+			STACK_PUSH_INTERFACE(tempStack, this);
+			STACK_PUSH_VAR(tempStack, strFun.c_str());
+			STACK_PUSH_VAR(tempStack, (__int64)listRoute.size());
 			for (auto it = listRoute.begin(); it != listRoute.end(); it++)
 			{
-				ScriptVector_PushVar(tempStack, *it);
+				STACK_PUSH_VAR(tempStack, *it);
 			}
-			for (unsigned int i = 0; i < pState->m_stackRegister.size(); i++)
+			for (unsigned int i = 0; i < pState->m_stackRegister.nIndex; i++)
 			{
-				ScriptVector_PushVar(tempStack, pState->m_stackRegister.GetVal(i));
+				StackVarInfo var;
+				STACK_GET_INDEX(pState->m_stackRegister, var, i);
+				STACK_PUSH(tempStack, var);
 			}
 
 			//std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
@@ -181,10 +189,12 @@ namespace zlscript
 	int CSyncScriptPointInterface::SyncDownRunFun(int nClassType, std::string strFun, CScriptCallState* pState, std::list<__int64> &listRoute)
 	{
 		std::string funName;
-		CScriptStack parmStack;
-		for (unsigned int i = 0; i < pState->m_stackRegister.size(); i++)
+		tagScriptVarStack parmStack;
+		for (unsigned int i = 0; i < pState->m_stackRegister.nIndex; i++)
 		{
-			ScriptVector_PushVar(parmStack, pState->m_stackRegister.GetVal(i));
+			StackVarInfo var;
+			STACK_GET_INDEX(pState->m_stackRegister, var, i);
+			STACK_PUSH(parmStack, var);
 		}
 
 		//先执行本地数据
@@ -210,16 +220,16 @@ namespace zlscript
 			//发送同步返回消息
 			__int64 nEventIndex = listRoute.back();
 			listRoute.pop_back();
-			CScriptStack returnStack;
+			tagScriptVarStack returnStack;
 
 			//TODO 压入剩余路径
-			ScriptVector_PushVar(returnStack, (__int64)listRoute.size());
+			STACK_PUSH_VAR(returnStack, (__int64)listRoute.size());
 			for (auto it = listRoute.begin(); it != listRoute.end(); it++)
 			{
-				ScriptVector_PushVar(returnStack, *it);
+				STACK_PUSH_VAR(returnStack, *it);
 			}
 			//TODO 压入返回值
-			ScriptVector_PushVar(returnStack, &pState->GetResult());
+			STACK_PUSH(returnStack, pState->GetResult());
 
 			if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN_SYNC_FUN, 0, returnStack, nEventIndex))
 			{
@@ -228,12 +238,14 @@ namespace zlscript
 
 		//m_FunLock.unlock();
 
-		CScriptStack tempStack;
-		ScriptVector_PushVar(tempStack, this);
-		ScriptVector_PushVar(tempStack, funName.c_str());
-		for (unsigned int i = 0; i < parmStack.size(); i++)
+		tagScriptVarStack tempStack;
+		STACK_PUSH_INTERFACE(tempStack, this);
+		STACK_PUSH_VAR(tempStack, funName.c_str());
+		for (unsigned int i = 0; i < parmStack.nIndex; i++)
 		{
-			tempStack.push(*parmStack.GetVal(i));
+			StackVarInfo var;
+			STACK_GET_INDEX(parmStack, var, i);
+			STACK_PUSH(tempStack, var);
 		}
 		auto itSyncFlag = m_mapSyncFunFlag.find(index);
 		if (itSyncFlag != m_mapSyncFunFlag.end())
@@ -334,13 +346,13 @@ namespace zlscript
 		DecodeData4Bytes((char*)pBuff, pos, len, vClassPoint);
 		//m_vecDecodeSyncClassPoint.clear();
 		//发送同步消息给下层节点
-		CScriptStack tempStack;
-		ScriptVector_PushVar(tempStack, this);
-		ScriptVector_PushVar(tempStack, pBuff + startPos, pos - startPos);
-		ScriptVector_PushVar(tempStack, (__int64)vClassPoint.size());
+		tagScriptVarStack tempStack;
+		STACK_PUSH_INTERFACE(tempStack, this);
+		STACK_PUSH_VAR(tempStack, pBuff + startPos, pos - startPos);
+		STACK_PUSH_VAR(tempStack, (__int64)vClassPoint.size());
 		for (unsigned int i = 0; i < vClassPoint.size(); i++)
 		{
-			ScriptVector_PushVar(tempStack, vClassPoint[i].pPoint);
+			STACK_PUSH_VAR(tempStack, vClassPoint[i].pPoint);
 		}
 
 		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
@@ -377,8 +389,8 @@ namespace zlscript
 	{
 		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);
 		std::map<__int64, unsigned int>::iterator itUp = m_mapUpSyncProcess.begin();
-		CScriptStack tempStack;
-		ScriptVector_PushVar(tempStack, this);
+		tagScriptVarStack tempStack;
+		STACK_PUSH_INTERFACE(tempStack, this);
 		for (; itUp != m_mapUpSyncProcess.end(); itUp++)
 		{
 			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_REMOVE_UP_SYNC, itUp->first, tempStack, GetProcessID());

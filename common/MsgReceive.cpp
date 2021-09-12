@@ -259,14 +259,14 @@ bool CScriptMsgReceiveState::Recv(CScriptConnector* pClient)
 		return false;
 	}
 
-	while (m_scriptParm.size() < nScriptParmNum)
+	while (m_scriptParm.nIndex < nScriptParmNum)
 	{
 		StackVarInfo var;
 		if (DecodeVar4Bytes(pClient,var) == false)
 		{
 			return false;
 		}
-		m_scriptParm.push(var);
+		STACK_PUSH(m_scriptParm,var);
 	}
 
 	return true;
@@ -287,11 +287,11 @@ bool CScriptMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std
 	//AddInt642Bytes(vBuff, nEventListIndex);
 	AddInt642Bytes(vBuff, nReturnID);
 	AddString2Bytes(vBuff, (char*)strScriptFunName.c_str());
-	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
+	AddChar2Bytes(vBuff, (char)m_scriptParm.nIndex);
 
-	for (int i = 0; i < m_scriptParm.size(); i++)
+	for (unsigned int i = 0; i < m_scriptParm.nIndex; i++)
 	{
-		AddVar2Bytes(pClient, vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vBuff, &m_scriptParm.m_vData[i]);
 	}
 	return true;
 }
@@ -327,14 +327,14 @@ bool CReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 	}
 
 
-	while (m_scriptParm.size() < nScriptParmNum)
+	while (m_scriptParm.nIndex < nScriptParmNum)
 	{
 		StackVarInfo var;
 		if (DecodeVar4Bytes(pClient, var) == false)
 		{
 			return false;
 		}
-		m_scriptParm.push(var);
+		STACK_PUSH(m_scriptParm,var);
 	}
 
 	return true;
@@ -356,11 +356,11 @@ bool CReturnMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std
 	AddChar2Bytes(vBuff, E_RUN_SCRIPT_RETURN);
 	//AddInt642Bytes(vBuff, nEventListIndex);
 	AddInt642Bytes(vBuff, nReturnID);
-	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
+	AddChar2Bytes(vBuff, (char)m_scriptParm.nIndex);
 
-	for (int i = 0; i < m_scriptParm.size(); i++)
+	for (int i = 0; i < m_scriptParm.nIndex; i++)
 	{
-		AddVar2Bytes(pClient, vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vBuff, &m_scriptParm.m_vData[i]);
 	}
 
 	return true;
@@ -986,14 +986,14 @@ bool CSyncUpMsgReceiveState::Recv(CScriptConnector* pClient)
 		return false;
 	}
 
-	while (m_scriptParm.size() < nScriptParmNum)
+	while (m_scriptParm.nIndex < nScriptParmNum)
 	{
 		StackVarInfo var;
 		if (DecodeVar4Bytes(pClient, var) == false)
 		{
 			return false;
 		}
-		m_scriptParm.push(var);
+		STACK_PUSH(m_scriptParm, var);
 	}
 
 	return true;
@@ -1006,10 +1006,8 @@ bool CSyncUpMsgReceiveState::Run(CBaseScriptConnector* pClient)
 	CACHE_NEW(CScriptCallState, pCallState, &TempState);
 	if (pCallState)
 	{
-		for (unsigned int i = 0; i < m_scriptParm.size(); i++)
-		{
-			pCallState->PushVarToStack(*m_scriptParm.GetVal(i));
-		}
+		STACK_MOVE_ALL_BACK(pCallState->m_stackRegister, m_scriptParm,0);
+
 
 		//下传过来的数据，说明接收方只是镜像
 		__int64 nIndex = nClassID;// pClient->GetIndex4Image(nClassID);
@@ -1044,11 +1042,11 @@ bool CSyncUpMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, std
 		AddInt642Bytes(vBuff, *it);
 	}
 
-	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
+	AddChar2Bytes(vBuff, (char)m_scriptParm.nIndex);
 
-	for (int i = 0; i < m_scriptParm.size(); i++)
+	for (int i = 0; i < m_scriptParm.nIndex; i++)
 	{
-		AddVar2Bytes(pClient,vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient,vBuff, &m_scriptParm.m_vData[i]);
 	}
 	return true;
 }
@@ -1103,14 +1101,14 @@ bool CSyncDownMsgReceiveState::Recv(CScriptConnector* pClient)
 		return false;
 	}
 
-	while (m_scriptParm.size() < nScriptParmNum)
+	while (m_scriptParm.nIndex < nScriptParmNum)
 	{
 		StackVarInfo var;
 		if (DecodeVar4Bytes(pClient, var) == false)
 		{
 			return false;
 		}
-		m_scriptParm.push(var);
+		STACK_PUSH(m_scriptParm,var);
 	}
 	return true;
 }
@@ -1122,10 +1120,8 @@ bool CSyncDownMsgReceiveState::Run(CBaseScriptConnector* pClient)
 	CACHE_NEW(CScriptCallState, pCallState, &TempState);
 	if (pCallState)
 	{
-		for (unsigned int i = 0; i < m_scriptParm.size(); i++)
-		{
-			pCallState->PushVarToStack(*m_scriptParm.GetVal(i));
-		}
+		STACK_MOVE_ALL_BACK(pCallState->m_stackRegister, m_scriptParm, 0);
+
 		//下传过来的数据，说明接收方只是镜像
 		__int64 nIndex = pClient->GetIndex4Image(nClassID);
 
@@ -1153,10 +1149,10 @@ bool CSyncDownMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClient, s
 	AddInt642Bytes(vBuff, nClassID);
 	AddString2Bytes(vBuff, (char*)strFunName.c_str());
 
-	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
-	for (int i = 0; i < m_scriptParm.size(); i++)
+	AddChar2Bytes(vBuff, (char)m_scriptParm.nIndex);
+	for (int i = 0; i < m_scriptParm.nIndex; i++)
 	{
-		AddVar2Bytes(pClient, vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vBuff, &m_scriptParm.m_vData[i]);
 	}
 	return true;
 }
@@ -1212,14 +1208,14 @@ bool CSyncFunReturnMsgReceiveState::Recv(CScriptConnector* pClient)
 		return false;
 	}
 
-	while (m_scriptParm.size() < nScriptParmNum)
+	while (m_scriptParm.nIndex < nScriptParmNum)
 	{
 		StackVarInfo var;
 		if (DecodeVar4Bytes(pClient, var) == false)
 		{
 			return false;
 		}
-		m_scriptParm.push(var);
+		STACK_PUSH(m_scriptParm, var);
 	}
 
 	return true;
@@ -1238,18 +1234,22 @@ bool CSyncFunReturnMsgReceiveState::Run(CBaseScriptConnector* pClient)
 		{
 			__int64 nEventIndex = m_listRoute.back();
 			//发送同步返回消息
-			CScriptStack returnStack;
+			tagScriptVarStack returnStack;
 
 			//TODO 压入剩余路径
 			m_listRoute.pop_back();
-			ScriptVector_PushVar(returnStack, (__int64)m_listRoute.size());
+			StackVarInfo varListSize;
+			SCRIPTVAR_SET_INT(varListSize, (__int64)m_listRoute.size());
+			STACK_PUSH(returnStack, varListSize);
 			for (auto it = m_listRoute.begin(); it != m_listRoute.end(); it++)
 			{
-				ScriptVector_PushVar(returnStack, *it);
+				StackVarInfo var;
+				SCRIPTVAR_SET_INT(var, *it);
+				STACK_PUSH(returnStack, var);
 			}
-			//TODO 压入返回值
-			for (unsigned int i = 0; i < m_scriptParm.size(); i++)
-				ScriptVector_PushVar(returnStack, m_scriptParm.GetVal(i));
+			//压入返回值
+			STACK_MOVE_ALL_BACK(returnStack, m_scriptParm, 0);
+
 			if (CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RETURN_SYNC_FUN, 0, returnStack, nEventIndex))
 			{
 			}
@@ -1267,10 +1267,10 @@ bool CSyncFunReturnMsgReceiveState::AddAllData2Bytes(CBaseScriptConnector* pClie
 	{
 		AddInt642Bytes(vBuff, *it);
 	}
-	AddChar2Bytes(vBuff, (char)m_scriptParm.size());
-	for (int i = 0; i < m_scriptParm.size(); i++)
+	AddChar2Bytes(vBuff, (char)m_scriptParm.nIndex);
+	for (int i = 0; i < m_scriptParm.nIndex; i++)
 	{
-		AddVar2Bytes(pClient, vBuff, m_scriptParm.GetVal(i));
+		AddVar2Bytes(pClient, vBuff, &m_scriptParm.m_vData[i]);
 	}
 
 	return true;

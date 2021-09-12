@@ -111,8 +111,8 @@ public:
 	}
 	virtual void SendNoSyncClassMsg(std::string strClassName, CScriptPointInterface* pPoint);
 	virtual void SendSyncClassMsg(std::string strClassName, CSyncScriptPointInterface* pPoint);
-	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack, std::list<__int64> listRoute);
-	virtual void SyncDownClassFunRun(__int64 classID, std::string strFunName, CScriptStack& stack);
+	virtual void SyncUpClassFunRun(__int64 classID, std::string strFunName, tagScriptVarStack& stack, std::list<__int64> listRoute);
+	virtual void SyncDownClassFunRun(__int64 classID, std::string strFunName, tagScriptVarStack& stack);
 	//virtual void SendSyncClassData(__int64 classID, std::vector<char>& data);
 	//virtual void SendReturnSyncFun(std::list<__int64> routeList, CScriptStack& stack);
 	virtual void SendRemoveSyncUp(__int64 classID);
@@ -120,37 +120,37 @@ public:
 	virtual void SendRemoveRoute(__int64 nConnectID);
 	virtual void SendChangeRoute(__int64 oldid, __int64 newid);
 
-	virtual void EventReturnFun(__int64 nSendID, CScriptStack& ParmInfo);
-	virtual void EventRunFun(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventReturnFun(__int64 nSendID, tagScriptVarStack& ParmInfo);
+	virtual void EventRunFun(__int64 nSendID, tagScriptVarStack& ParmInfo);
 
-	virtual void EventUpSyncFun(__int64 nSendID, CScriptStack& ParmInfo);
-	virtual void EventDownSyncFun(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventUpSyncFun(__int64 nSendID, tagScriptVarStack& ParmInfo);
+	virtual void EventDownSyncFun(__int64 nSendID, tagScriptVarStack& ParmInfo);
 
-	virtual void EventUpSyncData(__int64 nSendID, CScriptStack& ParmInfo);
-	virtual void EventDownSyncData(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventUpSyncData(__int64 nSendID, tagScriptVarStack& ParmInfo);
+	virtual void EventDownSyncData(__int64 nSendID, tagScriptVarStack& ParmInfo);
 
-	virtual void EventReturnSyncFun(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventReturnSyncFun(__int64 nSendID, tagScriptVarStack& ParmInfo);
 
-	virtual void EventRemoveUpSync(__int64 nSendID, CScriptStack& ParmInfo);
-	virtual void EventRemoveDownSync(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventRemoveUpSync(__int64 nSendID, tagScriptVarStack& ParmInfo);
+	virtual void EventRemoveDownSync(__int64 nSendID, tagScriptVarStack& ParmInfo);
 
-	virtual void EventRemoveRoute(__int64 nSendID, CScriptStack& ParmInfo);
-	virtual void EventChangeRoute(__int64 nSendID, CScriptStack& ParmInfo);
+	virtual void EventRemoveRoute(__int64 nSendID, tagScriptVarStack& ParmInfo);
+	virtual void EventChangeRoute(__int64 nSendID, tagScriptVarStack& ParmInfo);
 
 	//virtual void SetHeadProtocol(CBaseHeadProtocol* pProtocol){}
 
 	void SetDisconnectScript(std::string val);
 public:
-	virtual void RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex) {}
+	virtual void RunTo(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex) {}
 	//"我"向"别人"返回执行脚本的结果
-	virtual void ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex) {}
+	virtual void ResultTo(tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex) {}
 
 	//"我"是指本连接对应的进程
 
 	//"别人"要求"我"执行脚本
-	virtual void RunFrom(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
+	virtual void RunFrom(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex);
 	//"别人"向"我"返回执行脚本的结果
-	virtual void ResultFrom(CScriptStack& pram, __int64 nReturnID);
+	virtual void ResultFrom(tagScriptVarStack& pram, __int64 nReturnID);
 
 public:
 	virtual void SetRouteInitScript(const char*) {}
@@ -276,9 +276,9 @@ protected:
 public:
 	//"我"是指本连接对应的进程
 	//"我"要求"别人"执行脚本
-	virtual void RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
+	virtual void RunTo(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex);
 	//"我"向"别人"返回执行脚本的结果
-	virtual void ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
+	virtual void ResultTo(tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex);
 
 
 	//路由模式
@@ -335,8 +335,8 @@ protected:
 public:
 	//"我"是指本连接对应的进程
 //"我"要求"别人"执行脚本
-	virtual void RunTo(std::string funName, CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
+	virtual void RunTo(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex);
 	//"我"向"别人"返回执行脚本的结果
-	virtual void ResultTo(CScriptStack& pram, __int64 nReturnID, __int64 nEventIndex);
+	virtual void ResultTo(tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex);
 
 };
