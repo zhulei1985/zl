@@ -10,6 +10,7 @@ void InitConnector(Connector pConnector)
 }
 void InitRouteConnector(Connector pConnector)
 {
+	print("初始化路由连接");
 	//pConnector->SetHeadProtocol("inner","server","123456");
 	pConnector->SetScriptLimit("Error_CannotRunScript",1);
 	pConnector->SetScriptLimit("RegisterAccount",1);
