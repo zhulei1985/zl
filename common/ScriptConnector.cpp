@@ -756,7 +756,9 @@ void CBaseScriptConnector::EventUpSyncFun(__int64 nSendID, tagScriptVarStack& Pa
 	StackVarInfo varClass;
 	STACK_GET_INDEX(ParmInfo, varClass, 0);
 	__int64 nClassID = 0;
-	SCRIPTVAR_GET_INT(varClass, nClassID);
+	if (varClass.cType == EScriptVal_ClassPoint && varClass.pPoint)
+		nClassID = varClass.pPoint->GetID();
+	//SCRIPTVAR_GET_INT(varClass, nClassID);
 
 	StackVarInfo varName;
 	STACK_GET_INDEX(ParmInfo, varName, 1);
@@ -799,7 +801,9 @@ void CBaseScriptConnector::EventDownSyncFun(__int64 nSendID, tagScriptVarStack& 
 	StackVarInfo varClass;
 	STACK_GET_INDEX(ParmInfo, varClass, 0);
 	__int64 nClassID = 0;
-	SCRIPTVAR_GET_INT(varClass, nClassID);
+	if (varClass.cType == EScriptVal_ClassPoint && varClass.pPoint)
+		nClassID = varClass.pPoint->GetID();
+	//SCRIPTVAR_GET_INT(varClass, nClassID);
 
 	StackVarInfo varName;
 	STACK_GET_INDEX(ParmInfo, varName, 1);
@@ -875,7 +879,9 @@ void CBaseScriptConnector::EventRemoveUpSync(__int64 nSendID, tagScriptVarStack&
 	StackVarInfo varClass;
 	STACK_GET_INDEX(ParmInfo, varClass, 0);
 	__int64 nClassID = 0;
-	SCRIPTVAR_GET_INT(varClass, nClassID);
+	if (varClass.cType == EScriptVal_ClassPoint && varClass.pPoint)
+		nClassID = varClass.pPoint->GetID();
+	//SCRIPTVAR_GET_INT(varClass, nClassID);
 
 	SendRemoveSyncUp(nClassID);
 }
@@ -885,7 +891,9 @@ void CBaseScriptConnector::EventRemoveDownSync(__int64 nSendID, tagScriptVarStac
 	StackVarInfo varClass;
 	STACK_GET_INDEX(ParmInfo, varClass, 0);
 	__int64 nClassID = 0;
-	SCRIPTVAR_GET_INT(varClass, nClassID);
+	if (varClass.cType == EScriptVal_ClassPoint && varClass.pPoint)
+		nClassID = varClass.pPoint->GetID();
+	//SCRIPTVAR_GET_INT(varClass, nClassID);
 
 	SendRemoveSyncDown(nClassID);
 }
