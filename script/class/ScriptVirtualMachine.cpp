@@ -632,7 +632,10 @@ namespace zlscript
 		auto pState = PopStateFormWaitingReturnMap(nScriptStateID);
 		if (pState)
 		{
-			pState->CopyFromStack(ParmInfo);
+			StackVarInfo var;
+			STACK_GET(ParmInfo, var);
+			pState->SetResultRegister(var);
+			//pState->CopyFromStack(ParmInfo);
 			PushStateToRunList(pState);
 		}
 	}
