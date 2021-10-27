@@ -47,6 +47,11 @@ namespace zlscript
 #define ATTR_SYNC_AND_DB_UNIQUE_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index);
 #define ATTR_SYNC_AND_DB_UNIQUE_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE,index);
 
+#define ATTR_SYNC_AND_DB_INDEX_INT(val,index) ATTR_BASE_INT(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_INDEX,index);
+#define ATTR_SYNC_AND_DB_INDEX_INT64(val,index) ATTR_BASE_INT64(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_INDEX,index);
+#define ATTR_SYNC_AND_DB_INDEX_STR(val,index) ATTR_BASE_STR(val,CBaseScriptClassAttribute::E_FLAG_SYNC|CBaseScriptClassAttribute::E_FLAG_DB|CBaseScriptClassAttribute::E_FLAG_DB_INDEX,index);
+
+
 #define CLASS_SCRIPT_SYNC_FUN(classname,funname) \
 	int funname##2Script(CScriptCallState* pState); \
 	CBaseScriptClassFun funname##Fun{#funname,std::bind(&classname::funname##2Script,this,std::placeholders::_1),this,CBaseScriptClassFun::E_FLAG_SYNC };
@@ -78,8 +83,8 @@ namespace zlscript
 		//解析传来的同步数据，并向下层节点发送
 		void SyncDownClassData(const char* pBuff, int& pos, unsigned int len, std::vector<PointVarInfo>& vClassPoint);
 
-		CSyncScriptPointInterface(const CSyncScriptPointInterface& val);
-		virtual CSyncScriptPointInterface& operator=(const CSyncScriptPointInterface& val);
+		//CSyncScriptPointInterface(const CSyncScriptPointInterface& val);
+		//virtual CSyncScriptPointInterface& operator=(const CSyncScriptPointInterface& val);
 	public:
 		enum
 		{

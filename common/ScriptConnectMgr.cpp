@@ -11,6 +11,10 @@ void InitNetworkConnect()
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("SetListenPort", SetListenPort2Script);
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("NewConnector", NewConnector2Script);
 	zlscript::CScriptCallBackFunion::GetInstance()->RegisterFun("GetConnector", GetConnector2Script);
+
+	RegisterClassType("Connector", CBaseScriptConnector);
+	RegisterClassType("RealConnector", CScriptConnector);
+	RegisterClassType("RouteConnector", CScriptRouteConnector);
 }
 
 int SetListenPort2Script(zlscript::CScriptVirtualMachine* pMachine, zlscript::CScriptCallState* pState)

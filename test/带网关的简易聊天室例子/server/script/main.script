@@ -6,7 +6,7 @@ void InitConnector(Connector pConnector)
 	pConnector->SetScriptLimit("Error_CannotRunScript",1);
 	//pConnector->SetScriptLimit("RegisterAccount",1);
 	//pConnector->SetScriptLimit("LoginAccount",1);
-	pConnector->SetRouteInit("InitRouteConnector");
+	pConnector->SetRouteInitScript("InitRouteConnector");
 }
 void InitRouteConnector(Connector pConnector)
 {

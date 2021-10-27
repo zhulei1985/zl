@@ -20,6 +20,7 @@
 #include "ScriptCallBackFunion.h"
 #include "ScriptCodeLoader.h"
 #include "ScriptIntermediateCode.h"
+#include "ScriptClassMgr.h"
 
 namespace zlscript
 {
@@ -165,6 +166,25 @@ namespace zlscript
 				if (strVal.word == "nullptr")
 				{
 					defVar.Int64 = 0;
+				}
+				else if (strVal.word == "new")
+				{
+					GetNewWord(strType);
+					int dwClassIndex = CScriptSuperPointerMgr::GetInstance()->GetClassType(strType.word);
+					CBaseScriptClassMgr* pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(dwClassIndex);
+					if (pMgr)
+					{
+						auto pNewPoint = pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
+						defVar = pNewPoint;
+					}
+					else
+					{
+						AddErrorInfo(
+							strName.nSourceWordsIndex,
+							"CDefGlobalVarICode:global new class error");
+						RevertAll();
+						return false;
+					}
 				}
 			}
 			}
@@ -719,38 +739,45 @@ namespace zlscript
 				}
 				else
 				{
-					bool isFloat = false;
-					for (unsigned int i = 0; i < m_word.word.size(); i++)
+					if (m_word.word == "nullptr")
 					{
-						if ((m_word.word[i] >= '0' && m_word.word[i] <= '9'))
-						{
-							//是数字
-						}
-						else if (m_word.word[i] == '.')
-						{
-							//是点
-							isFloat = true;
-						}
-					}
-					if (isFloat)
-					{
-						cType = ESIGN_POS_CONST_FLOAT;
-						pos = vOut.vFloatConst.size();
-						vOut.vFloatConst.push_back(stod(m_word.word));
+						cType = ESIGN_POINT_NULLPTR;
 					}
 					else
 					{
-						__int64 nVal = _atoi64(m_word.word.c_str());
-						if ((nVal & 0xffffffff) == nVal)
+						bool isFloat = false;
+						for (unsigned int i = 0; i < m_word.word.size(); i++)
 						{
-							cType = ESIGN_VALUE_INT;
-							pos = nVal;
+							if ((m_word.word[i] >= '0' && m_word.word[i] <= '9'))
+							{
+								//是数字
+							}
+							else if (m_word.word[i] == '.')
+							{
+								//是点
+								isFloat = true;
+							}
+						}
+						if (isFloat)
+						{
+							cType = ESIGN_POS_CONST_FLOAT;
+							pos = vOut.vFloatConst.size();
+							vOut.vFloatConst.push_back(stod(m_word.word));
 						}
 						else
 						{
-							cType = ESIGN_POS_CONST_INT64;
-							pos = vOut.vInt64Const.size();
-							vOut.vInt64Const.push_back(nVal);
+							__int64 nVal = _atoi64(m_word.word.c_str());
+							if ((nVal & 0xffffffff) == nVal)
+							{
+								cType = ESIGN_VALUE_INT;
+								pos = nVal;
+							}
+							else
+							{
+								cType = ESIGN_POS_CONST_INT64;
+								pos = vOut.vInt64Const.size();
+								vOut.vInt64Const.push_back(nVal);
+							}
 						}
 					}
 				}
@@ -860,8 +887,8 @@ namespace zlscript
 		{
 			return false;
 		}
-		int nParamIndex = CScriptSuperPointerMgr::GetInstance()->GetClassParamIndex(pVarInfo->wExtend, strParamName);
-		if (nParamIndex < 0)
+		auto pParamInfo = CScriptSuperPointerMgr::GetInstance()->GetClassParamInfo(pVarInfo->wExtend, strParamName);
+		if (pParamInfo == nullptr)
 		{
 			return false;
 		}
@@ -874,7 +901,7 @@ namespace zlscript
 		CGetClassParamExeCode* pGetCode = CExeCodeMgr::GetInstance()->New<CGetClassParamExeCode>(m_unBeginSoureIndex);
 		pGetCode->cClassRegIndex = R_C;
 		pGetCode->cResultRegister = cRegisterIndex;
-		pGetCode->dwPos = nParamIndex;
+		pGetCode->dwPos = pParamInfo->m_index;
 		vOut.AddCode(pGetCode);
 		return true;
 	}
@@ -913,8 +940,8 @@ namespace zlscript
 		{
 			return false;
 		}
-		int nParamIndex = CScriptSuperPointerMgr::GetInstance()->GetClassParamIndex(pVarInfo->wExtend, strParamName);
-		if (nParamIndex < 0)
+		auto pParamInfo = CScriptSuperPointerMgr::GetInstance()->GetClassParamInfo(pVarInfo->wExtend, strParamName);
+		if (pParamInfo == nullptr)
 		{
 			return false;
 		}
@@ -932,7 +959,7 @@ namespace zlscript
 		CSetClassParamExeCode* pGetCode = CExeCodeMgr::GetInstance()->New<CSetClassParamExeCode>(m_unBeginSoureIndex);
 		pGetCode->cClassRegIndex = R_C;
 		pGetCode->cVarRegister = cRegisterIndex;
-		pGetCode->dwPos = nParamIndex;
+		pGetCode->dwPos = pParamInfo->m_index;
 		vOut.AddCode(pGetCode);
 
 		return true;

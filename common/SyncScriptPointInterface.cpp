@@ -376,15 +376,7 @@ namespace zlscript
 
 		}
 	}
-	CSyncScriptPointInterface::CSyncScriptPointInterface(const CSyncScriptPointInterface& val) :CScriptPointInterface(val)
-	{
-	}
-	CSyncScriptPointInterface& CSyncScriptPointInterface::operator=(const CSyncScriptPointInterface& val)
-	{
-		CScriptPointInterface::operator=(val);
-		// TODO: 在此处插入 return 语句
-		return *this;
-	}
+
 	void CSyncScriptPointInterface::ClearSyncInfo()
 	{
 		std::lock_guard<std::mutex> Lock(m_SyncProcessLock);

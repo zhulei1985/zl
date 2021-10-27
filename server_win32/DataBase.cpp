@@ -1,4 +1,5 @@
 ﻿#include "DataBase.h"
+#include "ScriptSuperPointer.h"
 #include "SyncScriptPointInterface.h"
 
 CDataBase::CDataBase()
@@ -15,12 +16,6 @@ CDataBase::~CDataBase()
 	mysql_close(&mysql);
 #endif
 	m_Lock.unlock();
-}
-
-void CDataBase::Init2Script()
-{
-	RegisterClassType("CDataBase", CDataBase);
-
 }
 
 
@@ -61,145 +56,147 @@ int CDataBase::InitTable2Script(CScriptCallState* pState)
 	}
 	std::string strSql = "CREATE TABLE IF NOT EXISTS ";
 	std::string strClassName = pState->GetStringVarFormStack(0);
+	auto& classcache = m_mapQueryCache[strClassName];
+	int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
 #ifdef NO_SQL
 	CScriptSuperPointerMgr::GetInstance()->SetClassDBIdCount(strClassName, 1);
-#else
-	int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(strClassName);
-	auto pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-	if (pMgr)
+	auto pInfo = CScriptSuperPointerMgr::GetInstance()->GetBaseClassInfo(nClassType);
+	if (pInfo)
 	{
-		auto pPoint = pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
-		if (pPoint)
+		auto itAttr = pInfo->mapDicString2ParamInfo.begin();
+		for (int index = 0; itAttr != pInfo->mapDicString2ParamInfo.end(); itAttr++)
 		{
-			std::lock_guard<std::mutex> Lock(m_Lock);
-			strSql += strClassName;
-			strSql += "(";
-			auto attributes = pPoint->GetDBAttributes();
-			auto itAttr = attributes.begin();
-			for (; itAttr != attributes.end(); itAttr++)
+			auto param = itAttr->second;
+			if (param.m_flag & CBaseScriptClassAttribute::E_FLAG_DB)
 			{
-				auto pAttr = itAttr->second;
-				if (itAttr != attributes.begin())
+				if (param.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
 				{
-					strSql += ",";
 				}
-				strSql += itAttr->first;
-				strSql += " ";
-				strSql += pAttr->ToType();
-
-				if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
+				else if (param.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
 				{
-					strSql += " NOT NULL PRIMARY KEY";
+					auto& attr = classcache.mapAttributeIndex[param.m_strAttrName];
 				}
-				else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
+				else if (param.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_INDEX)
 				{
-					strSql += " NOT NULL UNIQUE KEY";
+					auto& attr = classcache.mapAttributeIndex[param.m_strAttrName];
 				}
 			}
-			//注意！！！mysql5.7以上会出现only_full_group_by问题，需要在mysql上设置好
-			strSql += ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;\n";
+		}
+	}
+#else
+	auto pInfo = CScriptSuperPointerMgr::GetInstance()->GetBaseClassInfo(nClassType);
+	if (pInfo)
+	{
+		//auto pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
+		//if (pMgr)
+		//{
+			//auto pPoint = pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
+			//if (pPoint)
+			//{
+		std::lock_guard<std::mutex> Lock(m_Lock);
+		strSql += strClassName;
+		strSql += "(";
+		auto attributes = pInfo->mapDicString2ParamInfo;
+		auto itAttr = attributes.begin();
+		for (int nIndex = 0; itAttr != attributes.end(); itAttr++)
+		{
+			auto attr = itAttr->second;
+			if (attr.m_flag & CBaseScriptClassAttribute::E_FLAG_DB == 0)
+			{
+				continue;
+			}
+			if (nIndex > 0)
+			{
+				strSql += ",";
+			}
+			nIndex++;
+			strSql += attr.m_strAttrName;
+			strSql += " ";
+			strSql += attr.strType;
 
-			////查询数据
-			MYSQL_RES* res;
-			MYSQL_ROW row;
+			if (attr.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
+			{
+				strSql += " NOT NULL PRIMARY KEY";
+			}
+			else if (attr.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
+			{
+				strSql += " NOT NULL UNIQUE KEY";
+			}
+			else if (attr.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_INDEX)
+			{
+				strSql += " NOT NULL,INDEX(";
+				strSql += attr.m_strAttrName;
+				strSql += ")";
+			}
+		}
+		//注意！！！mysql5.7以上会出现only_full_group_by问题，需要在mysql上设置好
+		strSql += ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;\n";
+
+		////查询数据
+		MYSQL_RES* res;
+		MYSQL_ROW row;
+		SCRIPT_PRINT("sql", "%s", strSql.c_str());
+		int queryResult = mysql_query(&mysql, strSql.c_str());
+		if (queryResult == 0)
+		{
+			strSql = "DESC ";
+			strSql += strClassName;
+			strSql += ";";
 			SCRIPT_PRINT("sql", "%s", strSql.c_str());
-			int queryResult = mysql_query(&mysql, strSql.c_str());
+			queryResult = mysql_query(&mysql, strSql.c_str());
 			if (queryResult == 0)
 			{
-				strSql = "DESC ";
-				strSql += strClassName;
-				strSql += ";";
-				SCRIPT_PRINT("sql", "%s", strSql.c_str());
-				queryResult = mysql_query(&mysql, strSql.c_str());
-				if (queryResult == 0)
+				//获取结果集
+				res = mysql_store_result(&mysql);
+				//检查表的字段
+				std::map<std::string, std::string> resultDic;
+				if (res)
 				{
-					//获取结果集
-					res = mysql_store_result(&mysql);
-					//检查表的字段
-					std::map<std::string, std::string> resultDic;
-					if (res)
+					while (row = mysql_fetch_row(res))
 					{
-						while (row = mysql_fetch_row(res))
-						{
-							resultDic[row[0]] = row[1];
-						}
-					}
-
-					mysql_free_result(res);
-
-					//auto attributes = pPoint->GetDBAttributes();
-					itAttr = attributes.begin();
-					for (; itAttr != attributes.end(); itAttr++)
-					{
-						auto pAttr = itAttr->second;
-						if (resultDic.find(itAttr->first) == resultDic.end())
-						{
-							std::string sqlAddField = "ALTER TABLE ";
-							sqlAddField += strClassName;
-							sqlAddField += " ADD ";
-							sqlAddField += itAttr->first;
-							sqlAddField += " ";
-							if (pAttr->ToType() == "TEXT")
-							{
-								if ((pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
-									| pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
-								{
-									sqlAddField += "VARCHAR(128)";
-								}
-							}
-							else
-							{
-								sqlAddField += pAttr->ToType();
-							}
-							if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
-							{
-								sqlAddField += " NOT NULL PRIMARY KEY";
-							}
-							else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
-							{
-								sqlAddField += " UNIQUE";
-							}
-							mysql_query(&mysql, sqlAddField.c_str());
-						}
+						resultDic[row[0]] = row[1];
 					}
 				}
-				else
-				{
-					//错误
-					const char* pStrError = mysql_error(&mysql);
-					SCRIPT_PRINT("sqlerror", "%s", pStrError);
-				}
 
-				//查询自增变量
-				strSql = "show table status where Name =\'";
-				strSql += strClassName;
-				strSql += "\';";
-				SCRIPT_PRINT("sql", "%s", strSql.c_str());
-				queryResult = mysql_query(&mysql, strSql.c_str());
-				if (queryResult == 0)
+				mysql_free_result(res);
+
+				//auto attributes = pPoint->GetDBAttributes();
+				itAttr = attributes.begin();
+				for (; itAttr != attributes.end(); itAttr++)
 				{
-					//获取结果集
-					res = mysql_store_result(&mysql);
-					//检查表的字段
-					if (res)
+					auto attr = itAttr->second;
+					if (attr.m_flag & CBaseScriptClassAttribute::E_FLAG_DB == 0)
 					{
-						while (row = mysql_fetch_row(res))
-						{
-							if (row[0] == "Auto_increment")
-							{
-								__int64 auto_Id = _atoi64(row[1]);
-								CScriptSuperPointerMgr::GetInstance()->SetClassDBIdCount(strClassName, auto_Id);
-							}
-						}
+						continue;
 					}
+					if (resultDic.find(attr.m_strAttrName) == resultDic.end())
+					{
+						std::string sqlAddField = "ALTER TABLE ";
+						sqlAddField += strClassName;
+						sqlAddField += " ADD ";
+						sqlAddField += attr.m_strAttrName;
+						sqlAddField += " ";
+						sqlAddField += attr.strType;
 
-					mysql_free_result(res);
-				}
-				else
-				{
-					//错误
-					const char* pStrError = mysql_error(&mysql);
-					SCRIPT_PRINT("sqlerror", "%s", pStrError);
+						if (attr.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
+						{
+							sqlAddField += " NOT NULL PRIMARY KEY;";
+						}
+						else if (attr.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
+						{
+							sqlAddField += "NOT NULL  UNIQUE KEY;";
+						}
+						else if (attr.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_INDEX)
+						{
+							sqlAddField += "NOT NULL,";
+							sqlAddField += "ADD INDEX ";
+							sqlAddField += attr.m_strAttrName;
+							sqlAddField += "(";
+							sqlAddField += attr.m_strAttrName;
+							sqlAddField += "),";
+						}
+						mysql_query(&mysql, sqlAddField.c_str());
+					}
 				}
 			}
 			else
@@ -208,8 +205,47 @@ int CDataBase::InitTable2Script(CScriptCallState* pState)
 				const char* pStrError = mysql_error(&mysql);
 				SCRIPT_PRINT("sqlerror", "%s", pStrError);
 			}
-			pMgr->Release(pPoint);
+
+			//查询自增变量
+			strSql = "show table status where Name =\'";
+			strSql += strClassName;
+			strSql += "\';";
+			SCRIPT_PRINT("sql", "%s", strSql.c_str());
+			queryResult = mysql_query(&mysql, strSql.c_str());
+			if (queryResult == 0)
+			{
+				//获取结果集
+				res = mysql_store_result(&mysql);
+				//检查表的字段
+				if (res)
+				{
+					while (row = mysql_fetch_row(res))
+					{
+						if (row[0] == "Auto_increment")
+						{
+							__int64 auto_Id = _atoi64(row[1]);
+							CScriptSuperPointerMgr::GetInstance()->SetClassDBIdCount(strClassName, auto_Id);
+						}
+					}
+				}
+
+				mysql_free_result(res);
+			}
+			else
+			{
+				//错误
+				const char* pStrError = mysql_error(&mysql);
+				SCRIPT_PRINT("sqlerror", "%s", pStrError);
+			}
 		}
+		else
+		{
+			//错误
+			const char* pStrError = mysql_error(&mysql);
+			SCRIPT_PRINT("sqlerror", "%s", pStrError);
+		}
+		//pMgr->Release(pPoint);
+	//}
 	}
 #endif
 
@@ -228,8 +264,8 @@ int CDataBase::Query2Script(CScriptCallState* pState)
 	auto cache = Query4Sql(strClassName, strFieldName, Val);
 	//if (cache.bInit)
 	{
-		auto it = cache.setIndex.begin();
-		if (it != cache.setIndex.end())
+		auto it = cache.begin();
+		if (it != cache.end())
 		{
 			pState->SetClassPointResult((*it).pPoint);
 		}
@@ -256,10 +292,12 @@ int CDataBase::QueryArray2Script(CScriptCallState* pState)
 		std::string strClassName = pState->GetStringVarFormStack(0);
 		std::string strFieldName = pState->GetStringVarFormStack(1);
 		StackVarInfo Val = pState->GetVarFormStack(2);
+		int begin = pState->GetIntVarFormStack(3);
+		int size = pState->GetIntVarFormStack(4);
 		std::lock_guard<std::mutex> Lock(m_Lock);
-		auto cache = Query4Sql(strClassName, strFieldName, Val);
-		auto it = cache.setIndex.begin();
-		for (; it != cache.setIndex.end(); it++)
+		auto cache = Query4Sql(strClassName, strFieldName, Val,begin,size);
+		auto it = cache.begin();
+		for (; it != cache.end(); it++)
 		{
 			pArray->GetVars().push_back((*it).pPoint);
 		}
@@ -460,7 +498,6 @@ int CDataBase::Close2Script(CScriptCallState* pState)
 
 void CDataBase::ChangeScriptAttribute(CBaseScriptClassAttribute* pAttr, StackVarInfo& old)
 {
-	std::lock_guard<std::mutex> Lock(m_QueryLock);
 	if (pAttr == nullptr)
 	{
 		return;
@@ -469,39 +506,60 @@ void CDataBase::ChangeScriptAttribute(CBaseScriptClassAttribute* pAttr, StackVar
 	{
 		return;
 	}
+	auto itClass = m_mapQueryCache.find(pAttr->m_pMaster->getClassInfo()->strClassName);
+	if (itClass == m_mapQueryCache.end())
+	{
+		//TODO 输出错误信息，考虑到多线程性能，class分类在初始化时就要建好
+		return;
+	}
+	auto& classcache = itClass->second;
 	if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
 	{
-		auto& classcache = m_mapQueryCache[pAttr->m_pMaster->getClassInfo()->strClassName];
-		auto& attrcache = classcache[pAttr->m_strAttrName];
-		stIndex& oldindex = attrcache[old];
-		//oldindex.setIndex.erase(pAttr->m_pMaster->GetScriptPointIndex());
-		//if (oldindex.setIndex.size() == 0)
-		{
-			attrcache.erase(old);
-		}
-		stIndex& index = attrcache[pAttr->ToScriptVal()];
-		index.setIndex.clear();
-		index.setIndex.insert(pAttr->m_pMaster->GetScriptPointIndex());
-		index.bInit = true;
+		std::lock_guard<std::mutex> Lock(classcache.m_PrimaryLock);
+		classcache.mapCachePrimary[pAttr->ToScriptVal()] = pAttr->m_pMaster->GetScriptPointIndex();
+		classcache.mapCachePrimary.erase(old);
 	}
 	else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
 	{
-		auto& classcache = m_mapQueryCache[pAttr->m_pMaster->getClassInfo()->strClassName];
-		auto& attrcache = classcache[pAttr->m_strAttrName];
-		stIndex& oldindex = attrcache[old];
+		auto itAttr = classcache.mapAttributeIndex.find(pAttr->m_strAttrName);
+		if (itAttr == classcache.mapAttributeIndex.end())
+		{
+			//TODO 输出错误信息，考虑到多线程性能，属性分类也要在初始化时建好
+			return;
+		}
+		auto& attrcache = itAttr->second;
+		std::lock_guard<std::mutex> Lock(attrcache.m_IndexLock);
+
+		stIndex& index = attrcache.mapIndexs[pAttr->ToScriptVal()];
+		index.setIndex.insert(pAttr->m_pMaster->GetScriptPointIndex());
+
+		attrcache.mapIndexs.erase(old);
+	}
+	else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_INDEX)
+	{
+		auto itAttr = classcache.mapAttributeIndex.find(pAttr->m_strAttrName);
+		if (itAttr == classcache.mapAttributeIndex.end())
+		{
+			//TODO 输出错误信息，考虑到多线程性能，属性分类也要在初始化时建好
+			return;
+		}
+		auto& attrcache = itAttr->second;
+		std::lock_guard<std::mutex> Lock(attrcache.m_IndexLock);
+
+		stIndex& index = attrcache.mapIndexs[pAttr->ToScriptVal()];
+		index.setIndex.insert(pAttr->m_pMaster->GetScriptPointIndex());
+
+		stIndex& oldindex = attrcache.mapIndexs[old];
 		oldindex.setIndex.erase(pAttr->m_pMaster->GetScriptPointIndex());
 		if (oldindex.setIndex.empty())
 		{
-			attrcache.erase(old);
+			attrcache.mapIndexs.erase(old);
 		}
-		stIndex& index = attrcache[pAttr->ToScriptVal()];
-		index.setIndex.insert(pAttr->m_pMaster->GetScriptPointIndex());
 	}
 }
 
 void CDataBase::RegisterScriptAttribute(CBaseScriptClassAttribute* pAttr)
 {
-	std::lock_guard<std::mutex> Lock(m_QueryLock);
 	if (pAttr == nullptr)
 	{
 		return;
@@ -510,27 +568,49 @@ void CDataBase::RegisterScriptAttribute(CBaseScriptClassAttribute* pAttr)
 	{
 		return;
 	}
+	auto itClass = m_mapQueryCache.find(pAttr->m_pMaster->getClassInfo()->strClassName);
+	if (itClass == m_mapQueryCache.end())
+	{
+		//TODO 输出错误信息，考虑到多线程性能，class分类在初始化时就要建好
+		return;
+	}
+	auto& classcache = itClass->second;
 	if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
 	{
-		auto& classcache = m_mapQueryCache[pAttr->m_pMaster->getClassInfo()->strClassName];
-		auto& attrcache = classcache[pAttr->m_strAttrName];
-		stIndex& index = attrcache[pAttr->ToScriptVal()];
-		index.setIndex.clear();
-		index.setIndex.insert(pAttr->m_pMaster->GetScriptPointIndex());
-		index.bInit = true;
+		std::lock_guard<std::mutex> Lock(classcache.m_PrimaryLock);
+		classcache.mapCachePrimary[pAttr->ToScriptVal()] = pAttr->m_pMaster->GetScriptPointIndex();
 	}
 	else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
 	{
-		auto& classcache = m_mapQueryCache[pAttr->m_pMaster->getClassInfo()->strClassName];
-		auto& attrcache = classcache[pAttr->m_strAttrName];
-		stIndex& index = attrcache[pAttr->ToScriptVal()];
+		auto itAttr = classcache.mapAttributeIndex.find(pAttr->m_strAttrName);
+		if (itAttr == classcache.mapAttributeIndex.end())
+		{
+			//TODO 输出错误信息，考虑到多线程性能，属性分类也要在初始化时建好
+			return;
+		}
+		auto& attrcache = itAttr->second;
+		std::lock_guard<std::mutex> Lock(attrcache.m_IndexLock);
+		stIndex& index = attrcache.mapIndexs[pAttr->ToScriptVal()];
+		index.setIndex.clear();
+		index.setIndex.insert(pAttr->m_pMaster->GetScriptPointIndex());
+	}
+	else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_INDEX)
+	{
+		auto itAttr = classcache.mapAttributeIndex.find(pAttr->m_strAttrName);
+		if (itAttr == classcache.mapAttributeIndex.end())
+		{
+			//TODO 输出错误信息，考虑到多线程性能，属性分类也要在初始化时建好
+			return;
+		}
+		auto& attrcache = itAttr->second;
+		std::lock_guard<std::mutex> Lock(attrcache.m_IndexLock);
+		stIndex& index = attrcache.mapIndexs[pAttr->ToScriptVal()];
 		index.setIndex.insert(pAttr->m_pMaster->GetScriptPointIndex());
 	}
 }
 
 void CDataBase::RemoveScriptAttribute(CBaseScriptClassAttribute* pAttr)
 {
-	std::lock_guard<std::mutex> Lock(m_QueryLock);
 	if (pAttr == nullptr)
 	{
 		return;
@@ -539,42 +619,52 @@ void CDataBase::RemoveScriptAttribute(CBaseScriptClassAttribute* pAttr)
 	{
 		return;
 	}
-
+	auto itClass = m_mapQueryCache.find(pAttr->m_pMaster->getClassInfo()->strClassName);
+	if (itClass == m_mapQueryCache.end())
+	{
+		//TODO 输出错误信息，考虑到多线程性能，class分类在初始化时就要建好
+		return;
+	}
+	auto& classcache = itClass->second;
 	if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
 	{
-		auto classcacheIt = m_mapQueryCache.find(pAttr->m_pMaster->getClassInfo()->strClassName);
-		if (classcacheIt != m_mapQueryCache.end())
-		{
-			auto attrcacheIt = classcacheIt->second.find(pAttr->m_strAttrName);
-			if (attrcacheIt != classcacheIt->second.end())
-			{
-				auto indexIt = attrcacheIt->second.find(pAttr->ToScriptVal());
-				if (indexIt != attrcacheIt->second.end())
-				{
-					attrcacheIt->second.erase(indexIt);
-				}
-			}
-		}
+		std::lock_guard<std::mutex> Lock(classcache.m_PrimaryLock);
+
+		classcache.mapCachePrimary.erase(pAttr->ToScriptVal());
 	}
 	else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
 	{
-		auto classcacheIt = m_mapQueryCache.find(pAttr->m_pMaster->getClassInfo()->strClassName);
-		if (classcacheIt != m_mapQueryCache.end())
+		auto itAttr = classcache.mapAttributeIndex.find(pAttr->m_strAttrName);
+		if (itAttr == classcache.mapAttributeIndex.end())
 		{
-			auto attrcacheIt = classcacheIt->second.find(pAttr->m_strAttrName);
-			if (attrcacheIt != classcacheIt->second.end())
+			//TODO 输出错误信息，考虑到多线程性能，属性分类也要在初始化时建好
+			return;
+		}
+		auto& attrcache = itAttr->second;
+		std::lock_guard<std::mutex> Lock(attrcache.m_IndexLock);
+		attrcache.mapIndexs.erase(pAttr->ToScriptVal());
+	}
+	else if (pAttr->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_INDEX)
+	{
+		auto itAttr = classcache.mapAttributeIndex.find(pAttr->m_strAttrName);
+		if (itAttr == classcache.mapAttributeIndex.end())
+		{
+			//TODO 输出错误信息，考虑到多线程性能，属性分类也要在初始化时建好
+			return;
+		}
+		auto& attrcache = itAttr->second;
+		std::lock_guard<std::mutex> Lock(attrcache.m_IndexLock);
+
+		auto indexIt = attrcache.mapIndexs.find(pAttr->ToScriptVal());
+		if (indexIt != attrcache.mapIndexs.end())
+		{
+			indexIt->second.setIndex.erase(pAttr->m_pMaster->GetScriptPointIndex());
+			if (indexIt->second.setIndex.empty())
 			{
-				auto indexIt = attrcacheIt->second.find(pAttr->ToScriptVal());
-				if (indexIt != attrcacheIt->second.end())
-				{
-					indexIt->second.setIndex.erase(pAttr->m_pMaster->GetScriptPointIndex());
-					if (indexIt->second.setIndex.empty())
-					{
-						attrcacheIt->second.erase(indexIt);
-					}
-				}
+				attrcache.mapIndexs.erase(indexIt);
 			}
 		}
+
 	}
 }
 
@@ -675,23 +765,48 @@ bool CDataBase::Delete2DB(CScriptPointInterface* pPoint)
 	return bOk;
 }
 
+PointVarInfo CDataBase::QueryByPrimary(std::string className, StackVarInfo val)
+{
+	auto itClass = m_mapQueryCache.find(className);
+	if (itClass == m_mapQueryCache.end())
+	{
+		//TODO 输出错误信息，考虑到多线程性能，class分类在初始化时就要建好
+		return PointVarInfo();
+	}
+	auto& classcache = itClass->second;
+	std::lock_guard<std::mutex> Lock(classcache.m_PrimaryLock);
+	auto it = classcache.mapCachePrimary.find(val);
+	if (it != classcache.mapCachePrimary.end())
+	{
+		return it->second;
+	}
+	return PointVarInfo();
+}
+
 CDataBase::stIndex CDataBase::Query4Cache(std::string className, std::string attrName, StackVarInfo val)
 {
-	std::lock_guard<std::mutex> Lock(m_QueryLock);
-	auto classcacheIt = m_mapQueryCache.find(className);
-	if (classcacheIt != m_mapQueryCache.end())
+	auto itClass = m_mapQueryCache.find(className);
+	if (itClass == m_mapQueryCache.end())
 	{
-		auto attrcacheIt = classcacheIt->second.find(attrName);
-		if (attrcacheIt != classcacheIt->second.end())
-		{
-			auto indexIt = attrcacheIt->second.find(val);
-			if (indexIt != attrcacheIt->second.end())
-			{
-				return indexIt->second;
-			}
-		}
+		//TODO 输出错误信息，考虑到多线程性能，class分类在初始化时就要建好
+		return stIndex();
 	}
-	// TODO: 在此处插入 return 语句
+	auto& classcache = itClass->second;
+	auto itAttr = classcache.mapAttributeIndex.find(attrName);
+	if (itAttr == classcache.mapAttributeIndex.end())
+	{
+		//TODO 输出错误信息，考虑到多线程性能，属性分类也要在初始化时建好
+		return stIndex();
+	}
+	auto& attrcache = itAttr->second;
+	std::lock_guard<std::mutex> Lock(attrcache.m_IndexLock);
+
+	auto indexIt = attrcache.mapIndexs.find(val);
+	if (indexIt != attrcache.mapIndexs.end())
+	{
+		return indexIt->second;
+	}
+
 	return stIndex();
 }
 
@@ -728,117 +843,185 @@ void CDataBase::Remove2Cache(CScriptPointInterface* pPoint)
 	}
 }
 
-void CDataBase::SetInit2Cache(std::string className, std::string attrName, StackVarInfo val)
+void CDataBase::SetInit2Cache(std::string className, std::string attrName, StackVarInfo val, bool bInit)
 {
-	std::lock_guard<std::mutex> Lock(m_QueryLock);
-	auto& classcache = m_mapQueryCache[className];
-	auto& attrcache = classcache[attrName];
-	stIndex& cache = attrcache[val];
-	cache.bInit = true;
+	auto itClass = m_mapQueryCache.find(className);
+	if (itClass == m_mapQueryCache.end())
+	{
+		//TODO 输出错误信息，考虑到多线程性能，class分类在初始化时就要建好
+		return;
+	}
+	auto& classcache = itClass->second;
+	auto itAttr = classcache.mapAttributeIndex.find(attrName);
+	if (itAttr == classcache.mapAttributeIndex.end())
+	{
+		//TODO 输出错误信息，考虑到多线程性能，属性分类也要在初始化时建好
+		return;
+	}
+	auto& attrcache = itAttr->second;
+	std::lock_guard<std::mutex> Lock(attrcache.m_IndexLock);
+	stIndex& cache = attrcache.mapIndexs[val];
+	cache.bInit = bInit;
 }
 
-CDataBase::stIndex CDataBase::Query4Sql(std::string className, std::string attrName, StackVarInfo val)
+std::list<PointVarInfo> CDataBase::QueryByIndex(std::string className, stIndex indexs)
 {
-	stIndex cache = Query4Cache(className, attrName, val);
-	if (!cache.bInit)
+	std::list<PointVarInfo> list;
+	std::lock_guard<std::mutex> Lock(m_QueryLock);
+	auto& classcache = m_mapQueryCache[className];
+	for (auto it = indexs.setIndex.begin(); it != indexs.setIndex.end(); it++)
 	{
-#ifdef NO_SQL
-		SetInit2Cache(className, attrName, val);
-		cache.bInit = true;
-#else
-		std::unordered_set<StackVarInfo, hash_SV> setCheckHas;
-		auto it = cache.setIndex.begin();
-		for (; it != cache.setIndex.end(); it++)
+		auto itPoint = classcache.mapCachePrimary.find(*it);
+		if (itPoint != classcache.mapCachePrimary.end())
 		{
-			if ((*it).pPoint && (*it).pPoint->GetPoint())
+			list.push_back(itPoint->second);
+		}
+	}
+	return std::move(list);
+}
+
+std::list<PointVarInfo> CDataBase::Query4Sql(std::string className, std::string attrName, StackVarInfo val, unsigned int begin, unsigned int size)
+{
+	bool bIsPrimary = false;
+	bool bIndex = false;
+	int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(className);
+	auto pInfo = CScriptSuperPointerMgr::GetInstance()->GetBaseClassInfo(nClassType);
+	if (pInfo)
+	{
+		auto it = pInfo->mapDicString2ParamInfo.find(attrName);
+		if (!(it->second.m_flag & CBaseScriptClassAttribute::E_FLAG_DB))
+		{
+			return std::list<PointVarInfo>();
+		}
+		if (it->second.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
+		{
+			bIsPrimary = true;
+		}
+		if (it->second.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_INDEX)
+		{
+			bIndex = true;
+		}
+		if (it->second.m_flag & CBaseScriptClassAttribute::E_FLAG_DB_UNIQUE)
+		{
+			bIndex = true;
+		}
+	}
+	std::list<PointVarInfo> list;
+	if (bIsPrimary)
+	{
+		PointVarInfo point = QueryByPrimary(className, val);
+		if (point.pPoint == nullptr)
+		{
+			list = Load4Sql(className, attrName, val, begin, size);
+			auto it = list.begin();
+			if (it != list.end())
 			{
-				auto attributes = (*it).pPoint->GetPoint()->GetDBAttributes();
-				auto itAttr = attributes.begin();
-				for (int i = 0; itAttr != attributes.end(); itAttr++, i++)
+				if ((*it).pPoint)
+					Add2Cache((*it).pPoint->GetPoint());
+			}
+		}
+		else
+		{
+			list.push_back(point);
+		}
+		return std::move(list);
+	}
+	auto pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
+
+	stIndex cache = Query4Cache(className, attrName, val);
+	if (cache.bInit)
+	{
+		list = QueryByIndex(className, cache);
+	}
+	else
+	{
+		list = Load4Sql(className, attrName, val, begin, size);
+		if (bIndex)
+			SetInit2Cache(className, attrName, val, true);
+		for (auto it = list.begin(); it != list.end(); it++)
+		{
+			if ((*it).pPoint)
+				Add2Cache((*it).pPoint->GetPoint());
+		}
+		}
+	return std::move(list);
+	}
+
+std::list<PointVarInfo> CDataBase::Load4Sql(std::string className, std::string attrName, StackVarInfo val, unsigned int begin, unsigned int size)
+{
+#ifdef NO_SQL
+	return std::list<PointVarInfo>();
+#else
+	std::list<PointVarInfo> list;
+	int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(className);
+	auto pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
+	if (pMgr)
+	{
+		std::string strSql = "SELECT ";
+		{
+			auto pInfo = CScriptSuperPointerMgr::GetInstance()->GetBaseClassInfo(nClassType);
+			if (pInfo)
+			{
+				auto itAttr = pInfo->mapDicString2ParamInfo.begin();
+				for (int index = 0; itAttr != pInfo->mapDicString2ParamInfo.end(); itAttr++)
 				{
-					if (itAttr->second->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
+					auto param = itAttr->second;
+					if (param.m_flag & CBaseScriptClassAttribute::E_FLAG_DB)
 					{
-						setCheckHas.insert(itAttr->second->ToScriptVal());
+						if (index > 0)
+						{
+							strSql += ",";
+						}
+						index++;
+						strSql += itAttr->first;
 					}
 				}
 			}
 		}
-		int nClassType = CScriptSuperPointerMgr::GetInstance()->GetClassType(className);
-		auto pMgr = CScriptSuperPointerMgr::GetInstance()->GetClassMgr(nClassType);
-		if (pMgr)
+		strSql += " FROM ";
+		strSql += className;
+		strSql += " WHERE ";
+		strSql += attrName;
+		strSql += " =\'";
+		strSql += GetString_StackVar(&val);
+		strSql += " \'";
+		if (size > 0)
 		{
-			std::string strSql = "SELECT ";
+			char strBuff[64] = { 0 };
+			sprintf(strBuff, " LIMIT %d,%d", begin, size);
+			strSql += strBuff;
+		}
+		//查询数据
+		MYSQL_RES* res;
+		MYSQL_ROW row;
+		SCRIPT_PRINT("sql", "%s", strSql.c_str());
+		std::lock_guard<std::mutex> Lock(m_Lock);
+		int queryResult = mysql_query(&mysql, strSql.c_str());
+		if (queryResult == 0)
+		{
+			//获取结果集
+			res = mysql_store_result(&mysql);
+			//检查表的字段
+			while (row = mysql_fetch_row(res))
 			{
 				auto pPoint = pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
 				auto attributes = pPoint->GetDBAttributes();
 				auto itAttr = attributes.begin();
-				for (; itAttr != attributes.end(); itAttr++)
+				bool hasInCache = false;
+				for (int i = 0; itAttr != attributes.end(); itAttr++, i++)
 				{
-					if (itAttr != attributes.begin())
-					{
-						strSql += ",";
-					}
-					strSql += itAttr->first;
+					itAttr->second->SetVal(row[i]);
 				}
-				pMgr->Release(pPoint);
-				pPoint = nullptr;
-			}
-			strSql += " FROM ";
-			strSql += className;
-			strSql += " WHERE ";
-			strSql += attrName;
-			strSql += " =\'";
-			strSql += GetString_StackVar(&val);
-			strSql += " \'";
-			//查询数据
-			MYSQL_RES* res;
-			MYSQL_ROW row;
-			SCRIPT_PRINT("sql", "%s", strSql.c_str());
-			std::lock_guard<std::mutex> Lock(m_Lock);
-			int queryResult = mysql_query(&mysql, strSql.c_str());
-			if (queryResult == 0)
-			{
-				//获取结果集
-				res = mysql_store_result(&mysql);
-				//检查表的字段
-				while (row = mysql_fetch_row(res))
-				{
-					auto pPoint = pMgr->New(SCRIPT_NO_USED_AUTO_RELEASE);
-					auto attributes = pPoint->GetDBAttributes();
-					auto itAttr = attributes.begin();
-					bool hasInCache = false;
-					for (int i = 0; itAttr != attributes.end(); itAttr++, i++)
-					{
-						itAttr->second->SetVal(row[i]);
-						//通过辨认主键检查是否已存在与缓存中
-						if (itAttr->second->m_flag & CBaseScriptClassAttribute::E_FLAG_DB_PRIMARY)
-						{
-							if (setCheckHas.find(itAttr->second->ToScriptVal()) != setCheckHas.end())
-							{
-								hasInCache = true;
-							}
-						}
-					}
-					if (!hasInCache)
-					{
-						Add2Cache(pPoint);
-						cache.setIndex.insert(pPoint->GetScriptPointIndex());
-					}
-				}
-
-				mysql_free_result(res);
-				//设置缓存对应数据为初始化完成
-				SetInit2Cache(className, attrName, val);
-				cache.bInit = true;
-			}
-			else
-			{
-				//错误
-				const char* pStrError = mysql_error(&mysql);
-				SCRIPT_PRINT("sqlerror", "%s", pStrError);
+				list.push_back(pPoint->GetScriptPointIndex());
 			}
 		}
-#endif
+		else
+		{
+			//错误
+			const char* pStrError = mysql_error(&mysql);
+			SCRIPT_PRINT("sqlerror", "%s", pStrError);
+		}
 	}
-	return cache;
+	return std::move(list);
+#endif
 }
