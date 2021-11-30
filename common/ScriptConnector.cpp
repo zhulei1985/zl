@@ -1,4 +1,4 @@
-﻿#include "ScriptConnector.h"
+#include "ScriptConnector.h"
 #include "zByteArray.h"
 #include "ScriptConnectMgr.h"
 #include "TempScriptRunState.h"
@@ -364,7 +364,7 @@ int CBaseScriptConnector::SetAllScriptLimit2Script(CScriptCallState* pState)
 	else
 	{
 		m_bIgnoreScriptLimit = false;
-		m_mapScriptLimit.clear();
+		//m_mapScriptLimit.clear();
 	}
 	return ECALLBACK_FINISH;
 }
@@ -395,7 +395,8 @@ int CBaseScriptConnector::CheckScriptLimit2Script(CScriptCallState* pState)
 		return ECALLBACK_ERROR;
 	}
 	std::string strName = pState->GetStringVarFormStack(0);
-	bool bCheck = CheckScriptLimit(strName);
+	__int64 nRouteMode = 0;
+	bool bCheck = CheckScriptLimit(strName, nRouteMode);
 
 	pState->SetResult((__int64)(bCheck ? 1 : 0));
 	return ECALLBACK_FINISH;
@@ -419,12 +420,7 @@ int CBaseScriptConnector::SetRoute2Script(CScriptCallState* pState)
 	{
 		return ECALLBACK_ERROR;
 	}
-	if (nRouteMode_ConnectID)
-	{
-		tagScriptVarStack scriptParm;
-		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE, GetEventIndex(), scriptParm, nRouteMode_ConnectID);
-	}
-	nRouteMode_ConnectID = 0;
+
 	auto pointVal = pState->GetClassPointFormStack(0);
 	CScriptBasePointer* pPoint = pointVal.pPoint;
 	if (pPoint)
@@ -433,7 +429,13 @@ int CBaseScriptConnector::SetRoute2Script(CScriptCallState* pState)
 		auto pConnector = dynamic_cast<CBaseScriptConnector*>(pPoint->GetPoint());
 		if (pConnector)
 		{
-			nRouteMode_ConnectID = pConnector->GetEventIndex();
+			__int64 nRoute = pConnector->GetEventIndex();
+			for (int i = 1; i < pState->GetParamNum(); i++)
+			{
+				std::string str = pState->GetStringVarFormStack(i);
+				m_mapScriptRouteLimit[str] = nRoute;
+			}
+			m_setRouteIds.insert(nRoute);
 		}
 		pPoint->Unlock();
 	}
@@ -598,27 +600,27 @@ void CBaseScriptConnector::OnDestroy()
 bool CBaseScriptConnector::RunMsg(CBaseMsgReceiveState* pMsg)
 {
 	bool bResult = false;
-	if (nRouteMode_ConnectID != 0)
-	{
-		switch (pMsg->GetType())
-		{
-		case E_RUN_SCRIPT_RETURN://看起来只有这一条消息需要无条件转发
-			if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
-			{
-				//转发失败，需要转发的目标不存在，取消路由状态
-				nRouteMode_ConnectID = 0;
-				bResult = true;// pMsg->Run(this);
-			}
-			break;
-		default:
-			bResult = pMsg->Run(this);
-			break;
-		}
-	}
-	else
-	{
+	//if (nRouteMode_ConnectID != 0)
+	//{
+	//	switch (pMsg->GetType())
+	//	{
+	//	case E_RUN_SCRIPT_RETURN://看起来只有这一条消息需要无条件转发
+	//		if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
+	//		{
+	//			//转发失败，需要转发的目标不存在，取消路由状态
+	//			nRouteMode_ConnectID = 0;
+	//			bResult = true;// pMsg->Run(this);
+	//		}
+	//		break;
+	//	default:
+	//		bResult = pMsg->Run(this);
+	//		break;
+	//	}
+	//}
+	//else
+	//{
 		bResult = pMsg->Run(this);
-	}
+	//}
 	return bResult;
 }
 
@@ -970,29 +972,51 @@ void CBaseScriptConnector::ResultFrom(tagScriptVarStack& pram, __int64 nReturnID
 
 void CBaseScriptConnector::SetScriptLimit(std::string strName)
 {
-	m_mapScriptLimit[strName] = 1;
+	m_mapScriptRouteLimit[strName] = 0;
 }
 
-bool CBaseScriptConnector::CheckScriptLimit(std::string strName)
+bool CBaseScriptConnector::CheckScriptLimit(std::string strName, __int64& nRoute)
 {
 	if (m_bIgnoreScriptLimit)
 	{
 		return true;
 	}
-	auto it = m_mapScriptLimit.find(strName);
-	if (it != m_mapScriptLimit.end())
+	auto it = m_mapScriptRouteLimit.find(strName);
+	if (it != m_mapScriptRouteLimit.end())
 	{
+		nRoute = it->second;
 		return true;
 	}
+	nRoute = 0;
 	return false;
 }
 
 void CBaseScriptConnector::RemoveScriptLimit(std::string strName)
 {
-	auto it = m_mapScriptLimit.find(strName);
-	if (it != m_mapScriptLimit.end())
+	auto it = m_mapScriptRouteLimit.find(strName);
+	if (it != m_mapScriptRouteLimit.end())
 	{
-		m_mapScriptLimit.erase(it);
+		m_mapScriptRouteLimit.erase(it);
+	}
+}
+
+void CBaseScriptConnector::RemoveScriptRouteLimit(__int64 nRoute)
+{
+	if (nRoute > 0)
+	{
+		m_setRouteIds.erase(nRoute);
+		auto it = m_mapScriptRouteLimit.begin();
+		for (; it != m_mapScriptRouteLimit.end(); )
+		{
+			if (it->second == nRoute)
+			{
+				it = m_mapScriptRouteLimit.erase(it);
+			}
+			else
+				it++;
+		}
+		tagScriptVarStack scriptParm;
+		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_REMOVE, GetEventIndex(), scriptParm, nRoute);
 	}
 }
 
@@ -1442,16 +1466,18 @@ void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 	m_mapClassImage2Index = pOldConnect->m_mapClassImage2Index;
 	m_mapClassIndex2Image = pOldConnect->m_mapClassIndex2Image;
 
-	if (pOldConnect->nRouteMode_ConnectID)
+	tagScriptVarStack scriptParm;
+	STACK_PUSH_VAR(scriptParm, pOldConnect->GetEventIndex());
+	for (auto it = m_setRouteIds.begin(); it != m_setRouteIds.end(); it++)
 	{
-		tagScriptVarStack scriptParm;
-		STACK_PUSH_VAR(scriptParm, pOldConnect->GetEventIndex());
-		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_CHANGE, 
-			GetEventIndex(), scriptParm, nRouteMode_ConnectID);
+		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_TYPE_CONNECT_CHANGE,
+			GetEventIndex(), scriptParm, *it);
 	}
-	nRouteMode_ConnectID = pOldConnect->nRouteMode_ConnectID;
-	m_mapRouteConnect = pOldConnect->m_mapRouteConnect;
 
+	m_mapScriptRouteLimit = pOldConnect->m_mapScriptRouteLimit;
+
+	m_mapRouteConnect = pOldConnect->m_mapRouteConnect;
+	m_setRouteIds = pOldConnect->m_setRouteIds;
 	pOldConnect->m_mapClassImage2Index.clear();
 	pOldConnect->m_mapClassIndex2Image.clear();
 	pOldConnect->m_vecEventIndexs.clear();
@@ -1459,7 +1485,9 @@ void CScriptConnector::Merge(CScriptConnector* pOldConnect)
 	pOldConnect->m_nEventListIndex = 0;
 
 	pOldConnect->m_mapRouteConnect.clear();
-	pOldConnect->nRouteMode_ConnectID = 0;
+	pOldConnect->m_mapScriptRouteLimit.clear();
+	pOldConnect->m_setRouteIds.clear();
+	pOldConnect->m_bIgnoreScriptLimit = false;
 }
 
 
@@ -1529,72 +1557,49 @@ PointVarInfo CScriptConnector::GetNoSyncImage4Index(__int64 index)
 
 void CScriptConnector::RunTo(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
-	if (CheckScriptLimit(funName))
+	__int64 nRouteMode = 0;
+	if (CheckScriptLimit(funName, nRouteMode))
 	{
-
-		tagScriptVarStack scriptParm;
-		STACK_PUSH_VAR(scriptParm, nReturnID);
-		STACK_PUSH_VAR(scriptParm, funName.c_str());
-		for (unsigned int i = 0; i < pram.nIndex; i++)
+		if (nRouteMode > 0)
 		{
-			StackVarInfo var;
-			STACK_GET_INDEX(pram, var,i);
-			STACK_PUSH(scriptParm, var);
-		}
-		STACK_PUSH_INTERFACE(scriptParm, this);
+			//路由模式，转发
+			CScriptMsgReceiveState* pMsg = (CScriptMsgReceiveState*)CMsgReceiveMgr::GetInstance()->CreateRceiveState(E_RUN_SCRIPT);
+			pMsg->nReturnID = nReturnID;
+			pMsg->strScriptFunName = funName;
+			pMsg->m_scriptParm = pram;
 
-		//读取完成，执行结果
-		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
-	}
-	else if (nRouteMode_ConnectID > 0)
-	{
-		//路由模式，转发
-		CScriptMsgReceiveState* pMsg = (CScriptMsgReceiveState*)CMsgReceiveMgr::GetInstance()->CreateRceiveState(E_RUN_SCRIPT);
-		pMsg->nReturnID = nReturnID;
-		pMsg->strScriptFunName = funName;
-		pMsg->m_scriptParm = pram;
-		//for (unsigned int i = 0; i < pram.size(); i++)
-		//{
-		//	auto pVar = pram.GetVal(i);
-		//	if (pVar)
-		//		pMsg->m_scriptParm.push(*pVar);
-		//}
-		if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
-		{
-			//转发失败，需要转发的目标不存在，取消路由状态
-			nRouteMode_ConnectID = 0;
-
-			//初始化
-			tagScriptVarStack m_scriptParm;
-			STACK_PUSH_VAR(m_scriptParm, funName.c_str());
-			//zlscript::CScriptVirtualMachine machine;
-			//machine.RunFunImmediately("Error_CannotRunScript", m_scriptParm);
-			if (zlscript::CScriptVirtualMachine::GetInstance())
+			if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode, true, pMsg, GetEventIndex()) == false)
 			{
-				zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately("Error_CannotRunScript", m_scriptParm);
+				//转发失败，需要转发的目标不存在，取消路由状态
+				RemoveScriptRouteLimit(nRouteMode);
+
+				//初始化
+				tagScriptVarStack m_scriptParm;
+				STACK_PUSH_VAR(m_scriptParm, funName.c_str());
+				if (zlscript::CScriptVirtualMachine::GetInstance())
+				{
+					zlscript::CScriptVirtualMachine::GetInstance()->RunFunImmediately("Error_CannotRunScript", m_scriptParm);
+				}
+				CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pMsg);
 			}
-			CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pMsg);
+
 		}
-		//auto pRoute = CScriptConnectMgr::GetInstance()->GetConnector(nRouteMode_ConnectID);
-		//if (pRoute && pCurMsgReceive)
-		//{
-		//	if (pCurMsgReceive)
-		//	{
-		//		CRouteFrontMsgReceiveState msg;
-		//		msg.nConnectID = nRouteMode_ConnectID;
-		//		msg.pState = pCurMsgReceive;
-		//		msg.Send(pRoute);
-		//	}
-		//}
-		//else
-		//{
-		//	nRouteMode_ConnectID = 0;
-		//	CTempScriptRunState tempState;
-		//	tempState.PushVarToStack(funName.c_str());
-		//	tempState.PushVarToStack("Error_CannotRunScript");
-		//	tempState.PushVarToStack(0);
-		//	RunScript2Script(&tempState);
-		//}
+		else
+		{
+			tagScriptVarStack scriptParm;
+			STACK_PUSH_VAR(scriptParm, nReturnID);
+			STACK_PUSH_VAR(scriptParm, funName.c_str());
+			for (unsigned int i = 0; i < pram.nIndex; i++)
+			{
+				StackVarInfo var;
+				STACK_GET_INDEX(pram, var, i);
+				STACK_PUSH(scriptParm, var);
+			}
+			STACK_PUSH_INTERFACE(scriptParm, this);
+
+			//读取完成，执行结果
+			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
+		}
 	}
 	else
 	{
@@ -1851,73 +1856,57 @@ void CScriptRouteConnector::SetRouteID(__int64 nID)
 
 void CScriptRouteConnector::RunTo(std::string funName, tagScriptVarStack& pram, __int64 nReturnID, __int64 nEventIndex)
 {
-	if (CheckScriptLimit(funName))
+	__int64 nRouteMode = 0;
+	if (CheckScriptLimit(funName, nRouteMode))
 	{
-		tagScriptVarStack scriptParm;
-		STACK_PUSH_VAR(scriptParm, nReturnID);
-		STACK_PUSH_VAR(scriptParm, funName.c_str());
-		for (unsigned int i = 0; i < pram.nIndex; i++)
+		if (nRouteMode > 0)
 		{
-			StackVarInfo var;
-			STACK_GET_INDEX(pram, var, i);
-			STACK_PUSH(scriptParm, var);
-		}
-		STACK_PUSH_INTERFACE(scriptParm, this);
-		//读取完成，执行结果
-		CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
-	}
-	else if (nRouteMode_ConnectID > 0)
-	{
-		//路由模式，转发
-		CScriptMsgReceiveState* pMsg = (CScriptMsgReceiveState*)CMsgReceiveMgr::GetInstance()->CreateRceiveState(E_RUN_SCRIPT);
-		pMsg->nReturnID = nReturnID;
-		pMsg->strScriptFunName = funName;
-		for (unsigned int i = 0; i < pram.nIndex; i++)
-		{
-			StackVarInfo var;
-			STACK_GET_INDEX(pram, var, i);
-			STACK_PUSH(pMsg->m_scriptParm, var);
-		}
-		if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode_ConnectID, true, pMsg, GetEventIndex()) == false)
-		{
-			//转发失败，需要转发的目标不存在，取消路由状态
-			nRouteMode_ConnectID = 0;
-			CTempScriptRunState tempState;
-			CACHE_NEW(CScriptCallState, pCallState, &tempState);
-			if (pCallState)
+			//路由模式，转发
+			CScriptMsgReceiveState* pMsg = (CScriptMsgReceiveState*)CMsgReceiveMgr::GetInstance()->CreateRceiveState(E_RUN_SCRIPT);
+			pMsg->nReturnID = nReturnID;
+			pMsg->strScriptFunName = funName;
+			for (unsigned int i = 0; i < pram.nIndex; i++)
 			{
-				STACK_PUSH_VAR(pCallState->m_stackRegister, funName.c_str());
-				STACK_PUSH_VAR(pCallState->m_stackRegister, "Error_CannotRunScript");
-				STACK_PUSH_VAR(pCallState->m_stackRegister, (__int64)0);
-
-				RunScript2Script(pCallState);
+				StackVarInfo var;
+				STACK_GET_INDEX(pram, var, i);
+				STACK_PUSH(pMsg->m_scriptParm, var);
 			}
+			if (CRouteEventMgr::GetInstance()->SendEvent(nRouteMode, true, pMsg, GetEventIndex()) == false)
+			{
+				//转发失败，需要转发的目标不存在，取消路由状态
+				RemoveScriptRouteLimit(nRouteMode);
+				CTempScriptRunState tempState;
+				CACHE_NEW(CScriptCallState, pCallState, &tempState);
+				if (pCallState)
+				{
+					STACK_PUSH_VAR(pCallState->m_stackRegister, funName.c_str());
+					STACK_PUSH_VAR(pCallState->m_stackRegister, "Error_CannotRunScript");
+					STACK_PUSH_VAR(pCallState->m_stackRegister, (__int64)0);
 
-			CACHE_DELETE(pCallState);
-			CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pMsg);
+					RunScript2Script(pCallState);
+				}
+
+				CACHE_DELETE(pCallState);
+				CMsgReceiveMgr::GetInstance()->RemoveRceiveState(pMsg);
+			}
 		}
-		//auto pRoute = CScriptConnectMgr::GetInstance()->GetConnector(nRouteMode_ConnectID);
-		//if (pRoute)
-		//{
-		//	//if (pCurMsgReceive)
-		//	{
-		//		CRouteFrontMsgReceiveState msg;
-		//		msg.nConnectID = nRouteMode_ConnectID;
-		//		msg.pState = pCurMsgReceive;
-		//		msg.Send(pRoute);
-		//	}
-		//}
-		//else
-		//{
-		//	nRouteMode_ConnectID = 0;
-		//	CTempScriptRunState tempState;
-		//	tempState.PushVarToStack(funName.c_str());
-		//	tempState.PushVarToStack("Error_CannotRunScript");
-		//	tempState.PushVarToStack(0);
-		//	RunScript2Script(&tempState);
-		//}
+		else
+		{
+			tagScriptVarStack scriptParm;
+			STACK_PUSH_VAR(scriptParm, nReturnID);
+			STACK_PUSH_VAR(scriptParm, funName.c_str());
+			for (unsigned int i = 0; i < pram.nIndex; i++)
+			{
+				StackVarInfo var;
+				STACK_GET_INDEX(pram, var, i);
+				STACK_PUSH(scriptParm, var);
+			}
+			STACK_PUSH_INTERFACE(scriptParm, this);
+			//读取完成，执行结果
+			CScriptEventMgr::GetInstance()->SendEvent(E_SCRIPT_EVENT_RUNSCRIPT, GetEventIndex(), scriptParm);
+		}
 	}
-	else
+	else 
 	{
 		CTempScriptRunState tempState;
 		CACHE_NEW(CScriptCallState, pCallState, &tempState);

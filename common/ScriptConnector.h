@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "SocketConnectorMgr.h"
 #include "ZLScript.h"
 #include "SyncScriptPointInterface.h"
@@ -160,7 +160,7 @@ public:
 protected:
 	std::unordered_map<std::string, StackVarInfo> m_mapData;
 
-	__int64 nRouteMode_ConnectID;
+	//__int64 nRouteMode_ConnectID;
 
 	//这个链接处理的镜像类
 public:
@@ -175,15 +175,15 @@ public:
 	virtual PointVarInfo GetNoSyncImage4Index(__int64 index) { return PointVarInfo(); }
 public:
 	void SetScriptLimit(std::string strName);
-	bool CheckScriptLimit(std::string strName);
+	bool CheckScriptLimit(std::string strName, __int64 &nRoute);
 	void RemoveScriptLimit(std::string strName);
+	void RemoveScriptRouteLimit(__int64 nRoute);
 protected:
 	//可用脚本，不再此表里的脚本函数不能执行，如果是路由模式，不在此表的脚本函数会转发给对应的链接
-	std::map<std::string, int> m_mapScriptLimit;
+	std::unordered_map<std::string, __int64> m_mapScriptRouteLimit;
+	std::set<__int64> m_setRouteIds;
 	bool m_bIgnoreScriptLimit;
 
-	//注册的远程函数
-	std::set<std::string> m_setRemoteFunName;
 protected:
 	//每当"别人"要求"我"执行脚本并需要返回时，生成一个此状态
 	struct tagReturnState
